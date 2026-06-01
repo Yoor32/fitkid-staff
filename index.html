@@ -195,7 +195,57 @@ async function listaSimple(a,title){fk.innerHTML=back(title)+'<div class="mut">C
   h+= rows.length? '<div class="card">'+rows.map(x=>'<div class="row"><div class="avatar">'+ini(x.n||x.nombre||'?')+'</div><div style="flex:1"><div class="nm">'+(x.n||x.nombre||'—')+'</div><div class="mut">'+(x.estado||x.detalle||'')+'</div></div></div>').join('')+'</div>' : '<div class="card"><div class="empty"><div class="eic"><i class="ti ti-checks" aria-hidden="true"></i></div><div class="mut">Sin resultados (o conecta el webhook).</div></div></div>';
   fk.innerHTML=h;bindNav();}
 function stub(title){fk.innerHTML=back(title)+'<div class="card"><div class="empty"><div class="eic"><i class="ti ti-wand" aria-hidden="true"></i></div><div class="nm">Flujo guiado</div><div class="mut" style="margin-top:6px;max-width:340px;margin-inline:auto">Mismo patrón de botones paso a paso. Se activa al conectar su webhook en n8n.</div></div></div>';bindNav();}
-function route(k){if(k==='pasar_lista_dia'||k==='marcar_asistencia'||k==='marcar_falta')return pasarLista();if(k==='registrar_pago')return registrarPago();const s={quien_debe:'Quién debe',corte_del_dia:'Corte del día',vencimientos:'Vencimientos',aforo_por_horario:'Aforo por horario',consultar_saldo_creditos:'Saldo de créditos',resumen_del_dia:'Resumen del día',morosos_del_mes:'Morosos del mes',buscar_familia_alumno:'Buscar familia',eventos:'Eventos'};if(s[k])return listaSimple(k,s[k]);return stub((GROUPS.flatMap(g=>g.actions).find(a=>a.k===k)||{t:'Acción'}).t);}
+const HORAS=['4:00-5:00 PM','5:00-6:00 PM','6:00-7:00 PM','7:00-8:00 PM','9:00-10:00 AM (FitParents)'];
+const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes'];
+const PLANES=[['M1',4],['M2',8],['M3',12],['M4',16],['M5',20],['M6',24],['M7',32],['M8',40]];
+function horaChips(s){return HORAS.map(h=>'<button class="btn '+(s===h?'pri':'')+'" style="font-size:12px;padding:8px 10px" data-hora="'+h+'">'+h+'</button>').join('');}
+function diaChips(set){return DIAS.map(d=>'<button class="btn '+(set.has(d)?'pri':'')+'" style="font-size:12px;padding:8px 10px" data-dia="'+d+'">'+d+'</button>').join('');}
+function pickAlumno(title,cb){fk.innerHTML=back(title)+'<input class="field" id="bx" placeholder="Buscar alumno…" aria-label="Buscar alumno"><div id="res" class="card"></div>';bindNav();
+  const res=fk.querySelector('#res'),bx=fk.querySelector('#bx');
+  const list=async(q)=>{const r=await call('buscar_alumno',{nombre:q||''});const arr=(r.data&&r.data.length?r.data:MOCK.alumnos);res.innerHTML=arr.map(a=>'<div class="row" data-al="'+a.id+'" style="cursor:pointer"><div class="avatar">'+ini(a.nombre)+'</div><div style="flex:1"><div class="nm">'+a.nombre+'</div><div class="mut">'+a.cod+' · plan '+(a.plan||'—')+'</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>').join('');res.querySelectorAll('[data-al]').forEach(rw=>rw.onclick=()=>cb(arr.find(x=>x.id===rw.dataset.al)));};
+  bx.oninput=()=>list(bx.value);list('');}
+function altaAlumno(){const F={dias:new Set(),hora:null};draw();
+  function draw(){let h=back('Alta de alumno');
+    h+='<div class="mut" style="margin-bottom:6px">Nombre del alumno</div><input class="field" id="nm" placeholder="Nombre y apellidos" value="'+(F.nombre||'')+'">';
+    h+='<div class="mut" style="margin:4px 0 6px">Horario</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+horaChips(F.hora)+'</div>';
+    h+='<div class="mut" style="margin:12px 0 6px">Días</div><div class="steps">'+diaChips(F.dias)+'</div>';
+    h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:14px" data-act="crear-alumno"><i class="ti ti-user-plus" aria-hidden="true"></i> Crear alumno</button>';
+    fk.innerHTML=h;bindNav();const nm=fk.querySelector('#nm');nm.oninput=()=>F.nombre=nm.value;
+    fk.querySelectorAll('[data-hora]').forEach(b=>b.onclick=()=>{F.nombre=nm.value;F.hora=(F.hora===b.dataset.hora?null:b.dataset.hora);draw();});
+    fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{F.nombre=nm.value;const d=b.dataset.dia;F.dias.has(d)?F.dias.delete(d):F.dias.add(d);draw();});
+    fk.querySelector('[data-act="crear-alumno"]').onclick=async()=>{F.nombre=nm.value.trim();if(!F.nombre){toast('Escribe el nombre del alumno','');return;}const r=await call('alta_alumno',{nombre:F.nombre,hora:F.hora||undefined,dias:[...F.dias]});if(r&&r.ok){home();toast('✓ Alumno creado · '+(r.codigo||''),'ok');}else{toast('Error: '+((r&&r.error)||'no se pudo'),'');}};}}
+function renovarMensualidad(){const R={};pickAlumno('Renovar mensualidad',a=>{R.al=a;step();});
+  function step(){let h=back('Renovar mensualidad');
+    h+='<div class="mut" style="margin-bottom:10px">'+R.al.nombre+' · '+R.al.cod+'</div><div class="mut" style="margin-bottom:6px">Plan (créditos/mes)</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">'+PLANES.map(p=>'<button class="btn '+(R.plan===p[0]?'pri':'')+'" style="flex-direction:column;gap:2px;padding:12px 6px" data-plan="'+p[0]+'"><b>'+p[0]+'</b><span style="font-size:11px">'+p[1]+' cr</span></button>').join('')+'</div>';
+    h+='<div class="mut" style="margin:12px 0 6px">Estado de pago</div><div class="grid" style="grid-template-columns:1fr 1fr">'+[['Pendiente'],['Pagado']].map(e=>'<button class="btn '+(R.estado===e[0]?(e[0]==='Pagado'?'on-ok':'on-dng'):'')+'" style="justify-content:center" data-est="'+e[0]+'">'+e[0]+'</button>').join('')+'</div>';
+    h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:16px" data-act="conf-ren"><i class="ti ti-refresh" aria-hidden="true"></i> Crear membresía</button>';
+    fk.innerHTML=h;bindNav();
+    fk.querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{R.plan=b.dataset.plan;step();});
+    fk.querySelectorAll('[data-est]').forEach(b=>b.onclick=()=>{R.estado=b.dataset.est;step();});
+    fk.querySelector('[data-act="conf-ren"]').onclick=async()=>{if(!R.plan){toast('Elige un plan','');return;}const r=await call('renovar_mensualidad',{alumno_id:R.al.id,plan:R.plan,estado_pago:R.estado||'Pendiente'});if(r&&r.ok){home();toast('✓ Membresía '+(r.folio||'')+' ('+R.plan+')','ok');}else{toast('Error: '+((r&&r.error)||'no se pudo'),'');}};}}
+function cambiarPlanHorario(){const C={dias:new Set(),hora:null,plan:null};pickAlumno('Cambiar plan / horario',a=>{C.al=a;step();});
+  function step(){let h=back('Cambiar plan / horario');
+    h+='<div class="mut" style="margin-bottom:10px">'+C.al.nombre+' · '+C.al.cod+'</div><div class="mut" style="margin-bottom:6px">Nuevo horario</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+horaChips(C.hora)+'</div>';
+    h+='<div class="mut" style="margin:12px 0 6px">Días</div><div class="steps">'+diaChips(C.dias)+'</div>';
+    h+='<div class="mut" style="margin:12px 0 6px">Plan (opcional)</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(70px,1fr))">'+PLANES.map(p=>'<button class="btn '+(C.plan===p[0]?'pri':'')+'" style="padding:8px 6px;justify-content:center" data-plan="'+p[0]+'">'+p[0]+'</button>').join('')+'</div>';
+    h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:16px" data-act="conf-camb"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar cambios</button>';
+    fk.innerHTML=h;bindNav();
+    fk.querySelectorAll('[data-hora]').forEach(b=>b.onclick=()=>{C.hora=(C.hora===b.dataset.hora?null:b.dataset.hora);step();});
+    fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{const d=b.dataset.dia;C.dias.has(d)?C.dias.delete(d):C.dias.add(d);step();});
+    fk.querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{C.plan=(C.plan===b.dataset.plan?null:b.dataset.plan);step();});
+    fk.querySelector('[data-act="conf-camb"]').onclick=async()=>{const p={alumno_id:C.al.id};if(C.hora)p.hora=C.hora;if(C.dias.size)p.dias=[...C.dias];if(C.plan)p.plan=C.plan;if(!C.hora&&!C.dias.size&&!C.plan){toast('Elige algo que cambiar','');return;}const r=await call('cambiar_plan_o_horario',p);if(r&&r.ok){home();toast('✓ Cambios: '+((r.actualizado||[]).join(', ')||'guardado'),'ok');}else{toast('Error','');}};}}
+function suspenderReactivar(){pickAlumno('Suspender / reactivar',a=>{let h=back('Suspender / reactivar');
+    h+='<div class="card" style="padding:15px 16px;margin-bottom:14px"><div class="nm">'+a.nombre+'</div><div class="mut">'+a.cod+'</div></div>';
+    h+='<div style="display:flex;gap:8px"><button class="btn dng" style="flex:1;justify-content:center" data-est="Suspendido"><i class="ti ti-user-off" aria-hidden="true"></i> Suspender</button><button class="btn ok" style="flex:1;justify-content:center" data-est="Activo"><i class="ti ti-user-check" aria-hidden="true"></i> Reactivar</button></div>';
+    fk.innerHTML=h;bindNav();
+    fk.querySelectorAll('[data-est]').forEach(b=>b.onclick=async()=>{const r=await call('suspender_reactivar',{alumno_id:a.id,estado:b.dataset.est});if(r&&r.ok){home();toast('✓ '+a.nombre+': '+b.dataset.est,'ok');}else{toast('Error','');}});});}
+function regla3Meses(){pickAlumno('Regla 3 meses',a=>{let h=back('Regla 3 meses');
+    h+='<div class="card" style="padding:15px 16px;margin-bottom:14px"><div class="nm">'+a.nombre+'</div><div class="mut">'+a.cod+'</div></div>';
+    h+='<div class="toast" style="background:var(--danger-bg);color:var(--danger);text-align:left;margin:0 0 14px">Al aplicar la regla, el alumno <b>pierde su inscripción</b> ($500) y queda suspendido. Para volver deberá re-inscribirse.</div>';
+    h+='<div style="display:flex;gap:8px"><button class="btn" style="flex:1;justify-content:center" data-act="home">Cancelar</button><button class="btn dng" style="flex:2;justify-content:center" data-act="conf-regla"><i class="ti ti-alert-octagon" aria-hidden="true"></i> Aplicar regla 3 meses</button></div>';
+    fk.innerHTML=h;bindNav();
+    fk.querySelector('[data-act="conf-regla"]').onclick=async()=>{const r=await call('aplicar_regla_3_meses',{alumno_id:a.id});if(r&&r.ok){home();toast('✓ Regla aplicada a '+a.nombre,'ok');}else{toast('Error','');}};});}
+function route(k){if(k==='pasar_lista_dia'||k==='marcar_asistencia'||k==='marcar_falta')return pasarLista();if(k==='registrar_pago')return registrarPago();if(k==='alta_alumno')return altaAlumno();if(k==='renovar_mensualidad')return renovarMensualidad();if(k==='cambiar_plan_o_horario')return cambiarPlanHorario();if(k==='suspender_reactivar')return suspenderReactivar();if(k==='aplicar_regla_3_meses')return regla3Meses();const s={quien_debe:'Quién debe',corte_del_dia:'Corte del día',vencimientos:'Vencimientos',aforo_por_horario:'Aforo por horario',consultar_saldo_creditos:'Saldo de créditos',resumen_del_dia:'Resumen del día',morosos_del_mes:'Morosos del mes',buscar_familia_alumno:'Buscar familia',eventos:'Eventos'};if(s[k])return listaSimple(k,s[k]);return stub((GROUPS.flatMap(g=>g.actions).find(a=>a.k===k)||{t:'Acción'}).t);}
 function bindNav(){fk.querySelectorAll('[data-lote]').forEach(t=>t.onclick=()=>{state.lote=+t.dataset.lote;home();});fk.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>route(b.dataset.go));const hm=fk.querySelector('[data-act="home"]');if(hm)hm.onclick=()=>home();const bs=fk.querySelector('[data-act="buscar"]');if(bs)bs.onclick=()=>route('buscar_familia_alumno');const lb=fk.querySelector('[data-act="libre"]');if(lb)lb.onclick=()=>{if(CONFIG.CHAT_URL)window.open(CONFIG.CHAT_URL,'_blank');else alert('Configura CONFIG.CHAT_URL con la URL del chat de n8n.');};}
 home();
 </script>
