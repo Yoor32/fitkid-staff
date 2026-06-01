@@ -1,5 +1,5 @@
-/* FitKid Staff PWA · service worker (app shell cache) */
-const CACHE = 'fitkid-staff-v1';
+/* FitKid Staff PWA · service worker (network-first para que las actualizaciones aparezcan) */
+const CACHE = 'fitkid-staff-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -14,16 +14,16 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  // Nunca cachear llamadas a la API/acciones (POST o al webhook de n8n)
+  // No tocar la API/acciones ni peticiones que no sean GET
   if (req.method !== 'GET' || req.url.indexOf('/webhook/') !== -1 || req.url.indexOf('api.notion.com') !== -1) {
-    return; // deja pasar a la red normal
+    return;
   }
-  // App shell: cache-first con respaldo de red
+  // Network-first: siempre intenta la red (trae la versión más nueva); cae a caché solo sin conexión
   e.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+    fetch(req).then((res) => {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
   );
 });
