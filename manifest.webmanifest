@@ -1,0 +1,17 @@
+{
+  "name": "FitKid · Panel del Staff",
+  "short_name": "FitKid Staff",
+  "description": "Acciones rápidas del CRM de FitKid Gymnastic",
+  "lang": "es-MX",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0c447c",
+  "theme_color": "#185fa5",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "https://lirp.cdn-website.com/ce8372ef/dms3rep/multi/opt/FitKidGimnastic-Logo-89199942-1920w.jpeg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+  ]
+}
