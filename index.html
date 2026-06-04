@@ -107,6 +107,13 @@
   .livedrop.on{display:block}
   .liveitem{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
   .liveitem:hover{background:var(--surface-2)} .liveitem:last-child{border-bottom:none}
+  .cal{border-collapse:separate;border-spacing:4px;width:100%;min-width:520px}
+  .cal th{font-size:11px;color:var(--muted);font-weight:600;padding:2px 4px;text-align:center}
+  .cal .calb{font-size:11px;color:var(--muted);white-space:nowrap;padding-right:6px}
+  .calc{width:100%;min-width:54px;padding:8px 4px;border:1px solid var(--line);border-radius:9px;background:var(--brand-bg);color:var(--brand-600);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+  .calc:hover{border-color:var(--brand-500)}
+  .calc.full{background:var(--danger-bg);color:var(--danger)}
+  .calc .ok2{display:block;font-size:10px;font-weight:500;color:var(--ok)}
 </style>
 </head>
 <body>
@@ -184,10 +191,40 @@ function home(){const g=GROUPS[state.lote];let h=hero();
 function back(t){return '<div class="head"><button class="btn iconbtn" data-act="home" aria-label="Volver al inicio"><i class="ti ti-arrow-left" aria-hidden="true"></i></button><div class="htit" style="font-size:17px;color:var(--text)">'+t+'</div></div>';}
 function toast(m,c){const t=document.createElement('div');t.className='toast';t.style.background=c==='ok'?'var(--ok-bg)':'var(--brand-bg)';t.style.color=c==='ok'?'var(--ok)':'var(--brand-600)';t.innerHTML=m;fk.appendChild(t);}
 
-async function pasarLista(){fk.innerHTML=back('Pasar lista')+'<div class="mut">Cargando clases de hoy…</div>';bindNav();
-  const r=await call('clases_hoy',{fecha:'hoy'});state.lista=(r.data||[]).map(x=>({...x,e:x.e||null}));render();
+function pasarLista(){state.pl={fecha:new Date().toLocaleDateString('en-CA'),vista:state.pl&&state.pl.vista||'lista'};plHome();}
+function plHome(){const P=state.pl;let h=back('Pasar lista');
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><input type="date" class="field" id="plf" style="margin-bottom:0;flex:1;min-width:150px" value="'+P.fecha+'"><button class="btn '+(P.vista==='lista'?'pri':'')+'" data-vw="lista"><i class="ti ti-list" aria-hidden="true"></i> Lista</button><button class="btn '+(P.vista==='cal'?'pri':'')+'" data-vw="cal"><i class="ti ti-calendar" aria-hidden="true"></i> Calendario</button></div>';
+  h+='<div id="plbody" class="mut">Cargando clases…</div>';
+  fk.innerHTML=h;bindNav();
+  const plf=fk.querySelector('#plf');plf.onchange=()=>{P.fecha=plf.value||P.fecha;plHome();};
+  fk.querySelectorAll('[data-vw]').forEach(b=>b.onclick=()=>{P.vista=b.dataset.vw;plHome();});
+  if(P.vista==='lista')plLista();else plCal();}
+async function plLista(){const P=state.pl;const body=fk.querySelector('#plbody');if(!body)return;
+  const hl=await call('horarios_lista',{});const ch=await call('clases_hoy',{fecha:P.fecha});if(!fk.querySelector('#plbody'))return;
+  const bloques=(hl.data||[]);const rows=(ch.data||[]);const cnt={};let sin=0;rows.forEach(r=>{if(r.hid)cnt[r.hid]=(cnt[r.hid]||0)+1;else sin++;});
+  const conClases=bloques.filter(b=>cnt[b.id]);
+  let h;
+  if(!rows.length){h='<div class="card"><div class="empty"><div class="eic"><i class="ti ti-calendar-off" aria-hidden="true"></i></div><div class="mut">No hay clases el '+P.fecha+'.</div></div></div>';}
+  else{h='<div class="card">'+conClases.map(b=>'<div class="row" data-blk="'+b.id+'" style="cursor:pointer"><span class="ic" style="width:34px;height:34px;border-radius:10px;background:var(--teal-bg);color:var(--teal);display:inline-flex;align-items:center;justify-content:center"><i class="ti ti-clock" aria-hidden="true"></i></span><div style="flex:1"><div class="nm" style="font-size:13px">'+b.nombre+'</div><div class="mut">'+(cnt[b.id]||0)+' alumnos · cupo '+b.cupo+'</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>').join('')+(sin?'<div class="row" data-blk="sin" style="cursor:pointer"><span class="ic" style="width:34px;height:34px;border-radius:10px;background:var(--amber-bg);color:var(--amber);display:inline-flex;align-items:center;justify-content:center"><i class="ti ti-help" aria-hidden="true"></i></span><div style="flex:1"><div class="nm" style="font-size:13px">Sin horario asignado</div><div class="mut">'+sin+' alumnos</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>':'')+'</div>';}
+  const bodyEl=fk.querySelector('#plbody');bodyEl.innerHTML=h;bodyEl.className='';
+  fk.querySelectorAll('[data-blk]').forEach(rw=>rw.onclick=()=>{const b=bloques.find(x=>x.id===rw.dataset.blk);plRoster(P.fecha,rw.dataset.blk==='sin'?null:rw.dataset.blk,b?b.nombre:'Sin horario');});}
+async function plCal(){const P=state.pl;const body=fk.querySelector('#plbody');if(!body)return;
+  const d=new Date(P.fecha+'T12:00:00');const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);const desde=d.toISOString().slice(0,10);
+  const r=await call('agenda_semana',{desde:desde});if(!fk.querySelector('#plbody'))return;
+  if(!r||!r.ok){body.innerHTML='Error cargando agenda.';return;}
+  const dias=r.dias||[];const bloques=(r.bloques||[]).slice().sort((a,b)=>a.bloque<b.bloque?-1:1);const cel=r.celdas||{};
+  const DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
+  let h='<div style="overflow:auto"><table class="cal"><thead><tr><th></th>'+dias.map((f,i)=>'<th>'+DN[i]+'<div class="mut" style="font-weight:400">'+f.slice(8)+'</div></th>').join('')+'</tr></thead><tbody>';
+  bloques.forEach(b=>{let fila='';let alguna=false;dias.forEach(f=>{const c=cel[f+'|'+b.id];if(!c){fila+='<td></td>';return;}alguna=true;const full=c.total>=b.cupo;fila+='<td><button class="calc'+(full?' full':'')+'" data-cell="'+f+'|'+b.id+'">'+c.total+(c.asistio?'<span class="ok2">✓'+c.asistio+'</span>':'')+'</button></td>';});if(alguna)h+='<tr><td class="calb">'+b.nombre.replace(' (Lun-Vie)','')+'</td>'+fila+'</tr>';});
+  h+='</tbody></table></div><div class="mut" style="margin-top:8px;font-size:11px">Semana del '+desde+' · toca una celda para pasar lista de esa clase.</div>';
+  body.innerHTML=h;body.className='';
+  fk.querySelectorAll('[data-cell]').forEach(btn=>btn.onclick=()=>{const p=btn.dataset.cell.split('|');const b=bloques.find(x=>x.id===p[1]);plRoster(p[0],p[1],b?b.nombre:'Clase');});}
+async function plRoster(fecha,hid,label){fk.innerHTML=back('Pasar lista')+'<div class="mut">Cargando '+label+'…</div>';bindNav();
+  const r=await call('clases_hoy',hid?{fecha:fecha,horario_id:hid}:{fecha:fecha});
+  let rows=(r.data||[]);if(!hid)rows=rows.filter(x=>!x.hid);
+  state.lista=rows.map(x=>({...x,e:x.e||null}));render();
   function render(){const done=state.lista.filter(c=>c.e).length;let h=back('Pasar lista');
-    h+='<div style="margin-bottom:12px;display:flex;gap:8px"><span class="btn" style="cursor:default"><i class="ti ti-clock" aria-hidden="true"></i> Olímpica · 6-7 PM</span><span class="btn" style="cursor:default"><i class="ti ti-checks" aria-hidden="true"></i> '+done+'/'+state.lista.length+'</span></div><div class="card">';
+    h+='<div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><span class="btn" style="cursor:default"><i class="ti ti-clock" aria-hidden="true"></i> '+label+'</span><span class="btn" style="cursor:default"><i class="ti ti-calendar" aria-hidden="true"></i> '+fecha+'</span><span class="btn" style="cursor:default"><i class="ti ti-checks" aria-hidden="true"></i> '+done+'/'+state.lista.length+'</span></div><div class="card">';
     state.lista.forEach((c,idx)=>{h+='<div class="row"><div class="avatar">'+ini(c.n)+'</div><div style="flex:1"><div class="nm">'+c.n+'</div><div class="mut">'+c.cod+'</div></div><button class="btn '+(c.e==='Asistió'?'on-ok':'')+'" data-mk="'+idx+'|Asistió"><i class="ti ti-check" aria-hidden="true"></i> Asistió</button><button class="btn '+(c.e==='Falta'?'on-dng':'')+'" data-mk="'+idx+'|Falta"><i class="ti ti-x" aria-hidden="true"></i> Falta</button></div>';});
     h+='</div><button class="btn pri" style="width:100%;justify-content:center;margin-top:14px" data-act="guardar-lista"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar asistencia ('+done+')</button>';
     fk.innerHTML=h;fk.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{const p=b.dataset.mk.split('|');state.lista[+p[0]].e=state.lista[+p[0]].e===p[1]?null:p[1];render();});
@@ -224,15 +261,36 @@ function altaAlumno(){const F={dias:new Set(),hora:null};draw();
     fk.querySelectorAll('[data-hora]').forEach(b=>b.onclick=()=>{F.nombre=nm.value;F.hora=(F.hora===b.dataset.hora?null:b.dataset.hora);draw();});
     fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{F.nombre=nm.value;const d=b.dataset.dia;F.dias.has(d)?F.dias.delete(d):F.dias.add(d);draw();});
     fk.querySelector('[data-act="crear-alumno"]').onclick=async()=>{F.nombre=nm.value.trim();if(!F.nombre){toast('Escribe el nombre del alumno','');return;}const r=await call('alta_alumno',{nombre:F.nombre,hora:F.hora||undefined,dias:[...F.dias]});if(r&&r.ok){home();toast('✓ Alumno creado · '+(r.codigo||''),'ok');}else{toast('Error: '+((r&&r.error)||'no se pudo'),'');}};}}
-function renovarMensualidad(){const R={};pickAlumno('Renovar mensualidad',a=>{R.al=a;step();});
-  function step(){let h=back('Renovar mensualidad');
-    h+='<div class="mut" style="margin-bottom:10px">'+R.al.nombre+' · '+R.al.cod+'</div><div class="mut" style="margin-bottom:6px">Plan (créditos/mes)</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">'+PLANES.map(p=>'<button class="btn '+(R.plan===p[0]?'pri':'')+'" style="flex-direction:column;gap:2px;padding:12px 6px" data-plan="'+p[0]+'"><b>'+p[0]+'</b><span style="font-size:11px">'+p[1]+' cr</span></button>').join('')+'</div>';
-    h+='<div class="mut" style="margin:12px 0 6px">Estado de pago</div><div class="grid" style="grid-template-columns:1fr 1fr">'+[['Pendiente'],['Pagado']].map(e=>'<button class="btn '+(R.estado===e[0]?(e[0]==='Pagado'?'on-ok':'on-dng'):'')+'" style="justify-content:center" data-est="'+e[0]+'">'+e[0]+'</button>').join('')+'</div>';
-    h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:16px" data-act="conf-ren"><i class="ti ti-refresh" aria-hidden="true"></i> Crear membresía</button>';
+function renovarMensualidad(){const R={agendar:true,keep:true};pickAlumno('Renovar mensualidad',a=>{R.al=a;cargar();});
+  async function cargar(){fk.innerHTML=back('Renovar mensualidad')+'<div class="mut">Cargando datos del alumno…</div>';bindNav();const f=await call('ficha_alumno',{alumno_id:R.al.id});const fi=(f&&f.ok)?f:{};R.horario=fi.horario||null;R.hora=(fi.al&&fi.al.hora)||null;R.dias=(fi.al&&fi.al.dias)||[];stepHorario();}
+  function stepHorario(){let h=back('Renovar mensualidad');
+    h+='<div class="mut" style="margin-bottom:10px">'+R.al.nombre+' · '+R.al.cod+'</div>';
+    h+='<div class="card" style="padding:14px 15px;margin-bottom:12px"><div class="mut" style="font-size:11px">Horario actual</div><div class="nm" style="margin-top:3px">'+(R.horario?R.horario.nombre:(R.hora||'Sin horario asignado'))+'</div><div class="mut">'+(R.dias.length?R.dias.join(', '):'sin días definidos')+(R.horario?(' · cupo '+R.horario.cupo):'')+'</div></div>';
+    h+='<div style="display:flex;gap:8px"><button class="btn ok" style="flex:1;justify-content:center" data-hk="keep"><i class="ti ti-check" aria-hidden="true"></i> Conservar horario</button><button class="btn" style="flex:1;justify-content:center" data-hk="change"><i class="ti ti-clock-edit" aria-hidden="true"></i> Cambiar horario</button></div>';
     fk.innerHTML=h;bindNav();
-    fk.querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{R.plan=b.dataset.plan;step();});
-    fk.querySelectorAll('[data-est]').forEach(b=>b.onclick=()=>{R.estado=b.dataset.est;step();});
-    fk.querySelector('[data-act="conf-ren"]').onclick=async()=>{if(!R.plan){toast('Elige un plan','');return;}const r=await call('renovar_mensualidad',{alumno_id:R.al.id,plan:R.plan,estado_pago:R.estado||'Pendiente'});if(r&&r.ok){home();toast('✓ Membresía '+(r.folio||'')+' ('+R.plan+')','ok');}else{toast('Error: '+((r&&r.error)||'no se pudo'),'');}};}}
+    fk.querySelector('[data-hk="keep"]').onclick=()=>{R.keep=true;stepPlan();};
+    fk.querySelector('[data-hk="change"]').onclick=()=>{R.keep=false;stepCambio();};}
+  async function stepCambio(){fk.innerHTML=back('Renovar · nuevo horario')+'<div class="mut">Cargando horarios…</div>';bindNav();const hl=await call('horarios_lista',{});const bloques=hl.data||[];R.nh=R.nh||{hora:R.hora,dias:new Set(R.dias),hid:R.horario?R.horario.id:null};draw();
+    function draw(){let h=back('Renovar · nuevo horario');
+      h+='<div class="mut" style="margin-bottom:6px">Bloque del catálogo</div><div class="grid" style="grid-template-columns:1fr;gap:8px">'+bloques.map(b=>'<button class="btn '+(R.nh.hid===b.id?'pri':'')+'" style="justify-content:flex-start;font-size:12px" data-bk="'+b.id+'">'+b.nombre+' · cupo '+b.cupo+'</button>').join('')+'</div>';
+      h+='<div class="mut" style="margin:12px 0 6px">Hora</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+horaChips(R.nh.hora)+'</div>';
+      h+='<div class="mut" style="margin:12px 0 6px">Días</div><div class="steps">'+diaChips(R.nh.dias)+'</div>';
+      h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:12px" data-act="nh-ok">Continuar</button>';
+      fk.innerHTML=h;bindNav();
+      fk.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>{R.nh.hid=(R.nh.hid===b.dataset.bk?null:b.dataset.bk);draw();});
+      fk.querySelectorAll('[data-hora]').forEach(b=>b.onclick=()=>{R.nh.hora=(R.nh.hora===b.dataset.hora?null:b.dataset.hora);draw();});
+      fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{const d=b.dataset.dia;R.nh.dias.has(d)?R.nh.dias.delete(d):R.nh.dias.add(d);draw();});
+      fk.querySelector('[data-act="nh-ok"]').onclick=()=>stepPlan();}}
+  function stepPlan(){let h=back('Renovar · plan y pago');
+    h+='<div class="mut" style="margin-bottom:6px">Plan (créditos/mes)</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))">'+PLANES.map(p=>'<button class="btn '+(R.plan===p[0]?'pri':'')+'" style="flex-direction:column;gap:2px;padding:12px 6px" data-plan="'+p[0]+'"><b>'+p[0]+'</b><span style="font-size:11px">'+p[1]+' cr</span></button>').join('')+'</div>';
+    h+='<div class="mut" style="margin:12px 0 6px">Estado de pago</div><div class="grid" style="grid-template-columns:1fr 1fr">'+['Pendiente','Pagado'].map(e=>'<button class="btn '+(R.estado===e?(e==='Pagado'?'on-ok':'on-dng'):'')+'" style="justify-content:center" data-est="'+e+'">'+e+'</button>').join('')+'</div>';
+    h+='<button class="btn '+(R.agendar?'on-ok':'')+'" style="width:100%;justify-content:center;margin-top:12px" data-act="tg-ag"><i class="ti ti-calendar-check" aria-hidden="true"></i> Agendar clases del mes según créditos: <b style="margin-left:4px">'+(R.agendar?'SÍ':'NO')+'</b></button>';
+    h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:10px" data-act="conf-ren"><i class="ti ti-refresh" aria-hidden="true"></i> Renovar membresía</button>';
+    fk.innerHTML=h;bindNav();
+    fk.querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{R.plan=b.dataset.plan;stepPlan();});
+    fk.querySelectorAll('[data-est]').forEach(b=>b.onclick=()=>{R.estado=b.dataset.est;stepPlan();});
+    fk.querySelector('[data-act="tg-ag"]').onclick=()=>{R.agendar=!R.agendar;stepPlan();};
+    fk.querySelector('[data-act="conf-ren"]').onclick=async()=>{if(!R.plan){toast('Elige un plan','');return;}toast('Renovando…','');const p={alumno_id:R.al.id,plan:R.plan,estado_pago:R.estado||'Pendiente',agendar:R.agendar};if(!R.keep&&R.nh){if(R.nh.hora)p.hora=R.nh.hora;if(R.nh.dias&&R.nh.dias.size)p.dias=[...R.nh.dias];if(R.nh.hid)p.horario_id=R.nh.hid;}const r=await call('renovar_mensualidad',p);if(r&&r.ok){home();toast('✓ '+(r.folio||'Renovada')+' · '+R.plan+(R.agendar?(' · '+(r.agendadas||0)+' clases agendadas'+(r.sin_cupo?(' · '+r.sin_cupo+' sin cupo'):'')):''),'ok');}else toast('Error: '+((r&&r.error)||'no se pudo'),'');};}}
 function cambiarPlanHorario(){const C={dias:new Set(),hora:null,plan:null};pickAlumno('Cambiar plan / horario',a=>{C.al=a;step();});
   function step(){let h=back('Cambiar plan / horario');
     h+='<div class="mut" style="margin-bottom:10px">'+C.al.nombre+' · '+C.al.cod+'</div><div class="mut" style="margin-bottom:6px">Nuevo horario</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+horaChips(C.hora)+'</div>';
