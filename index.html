@@ -198,9 +198,9 @@ function plHome(){const P=state.pl;let h=back('Pasar lista');
   fk.innerHTML=h;bindNav();
   const plf=fk.querySelector('#plf');plf.onchange=()=>{P.fecha=plf.value||P.fecha;plHome();};
   fk.querySelectorAll('[data-vw]').forEach(b=>b.onclick=()=>{P.vista=b.dataset.vw;plHome();});
-  if(P.vista==='lista')plLista();else plCal();}
-async function plLista(){const P=state.pl;const body=fk.querySelector('#plbody');if(!body)return;
-  const hl=await call('horarios_lista',{});const ch=await call('clases_hoy',{fecha:P.fecha});if(!fk.querySelector('#plbody'))return;
+  P.seq=(P.seq||0)+1;if(P.vista==='lista')plLista(P.seq);else plCal(P.seq);}
+async function plLista(seq){const P=state.pl;const body=fk.querySelector('#plbody');if(!body)return;
+  const hl=await call('horarios_lista',{});const ch=await call('clases_hoy',{fecha:P.fecha});if(state.pl.seq!==seq||!fk.querySelector('#plbody'))return;
   const bloques=(hl.data||[]);const rows=(ch.data||[]);const cnt={};let sin=0;rows.forEach(r=>{if(r.hid)cnt[r.hid]=(cnt[r.hid]||0)+1;else sin++;});
   const conClases=bloques.filter(b=>cnt[b.id]);
   let h;
@@ -208,9 +208,9 @@ async function plLista(){const P=state.pl;const body=fk.querySelector('#plbody')
   else{h='<div class="card">'+conClases.map(b=>'<div class="row" data-blk="'+b.id+'" style="cursor:pointer"><span class="ic" style="width:34px;height:34px;border-radius:10px;background:var(--teal-bg);color:var(--teal);display:inline-flex;align-items:center;justify-content:center"><i class="ti ti-clock" aria-hidden="true"></i></span><div style="flex:1"><div class="nm" style="font-size:13px">'+b.nombre+'</div><div class="mut">'+(cnt[b.id]||0)+' alumnos · cupo '+b.cupo+'</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>').join('')+(sin?'<div class="row" data-blk="sin" style="cursor:pointer"><span class="ic" style="width:34px;height:34px;border-radius:10px;background:var(--amber-bg);color:var(--amber);display:inline-flex;align-items:center;justify-content:center"><i class="ti ti-help" aria-hidden="true"></i></span><div style="flex:1"><div class="nm" style="font-size:13px">Sin horario asignado</div><div class="mut">'+sin+' alumnos</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>':'')+'</div>';}
   const bodyEl=fk.querySelector('#plbody');bodyEl.innerHTML=h;bodyEl.className='';
   fk.querySelectorAll('[data-blk]').forEach(rw=>rw.onclick=()=>{const b=bloques.find(x=>x.id===rw.dataset.blk);plRoster(P.fecha,rw.dataset.blk==='sin'?null:rw.dataset.blk,b?b.nombre:'Sin horario');});}
-async function plCal(){const P=state.pl;const body=fk.querySelector('#plbody');if(!body)return;
+async function plCal(seq){const P=state.pl;const body=fk.querySelector('#plbody');if(!body)return;
   const d=new Date(P.fecha+'T12:00:00');const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);const desde=d.toISOString().slice(0,10);
-  const r=await call('agenda_semana',{desde:desde});if(!fk.querySelector('#plbody'))return;
+  const r=await call('agenda_semana',{desde:desde});if(state.pl.seq!==seq||!fk.querySelector('#plbody'))return;
   if(!r||!r.ok){body.innerHTML='Error cargando agenda.';return;}
   const dias=r.dias||[];const bloques=(r.bloques||[]).slice().sort((a,b)=>a.bloque<b.bloque?-1:1);const cel=r.celdas||{};
   const DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
