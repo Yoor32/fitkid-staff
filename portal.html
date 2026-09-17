@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>FitKid · Portal de Padres</title>
+<!-- Única dependencia externa: generador de QR, versión fija con verificación de integridad. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+  integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta name="theme-color" content="#185fa5">
+
+<style>
+  :root{
+    --brand-700:#0c447c; --brand-600:#185fa5; --brand-500:#2477c9; --brand-bg:#e8f1fb;
+    --energy:#ef7d2e;
+    --bg:#eef2f7; --surface:#ffffff; --surface-2:#f7f9fc; --line:#e3e8f0; --line-2:#d3dae6;
+    --text:#13151a; --muted:#667085; --hint:#9aa3b2;
+    --ok:#0f6e56; --ok-bg:#e1f5ee; --danger:#a32d2d; --danger-bg:#fcebeb; --amber:#854f0b; --amber-bg:#faeeda;
+    --r-lg:16px; --r:13px; --r-sm:10px; --r-pill:999px;
+    --sp-3:14px; --sp-4:18px; --sp-5:24px;
+    --logo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230c447c'/%3E%3Cstop offset='.55' stop-color='%23185fa5'/%3E%3Cstop offset='1' stop-color='%231d9e75'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='112' fill='url(%23g)'/%3E%3Ctext x='256' y='300' text-anchor='middle' font-family='system-ui,Arial,sans-serif' font-size='210' font-weight='800' fill='%23fff'%3EFK%3C/text%3E%3Crect x='150' y='350' width='212' height='12' rx='6' fill='%23ef7d2e'/%3E%3C/svg%3E");
+    --sh-sm:0 1px 2px rgba(16,24,40,.05); --sh-md:0 6px 20px rgba(16,30,54,.08); --sh-lg:0 14px 40px rgba(16,30,54,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  html{background:var(--bg)}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;color:var(--text);
+    background:radial-gradient(1200px 480px at 80% -8%, #e3edf9 0%, transparent 60%), radial-gradient(900px 420px at -5% 4%, #e6f5ee 0%, transparent 55%), var(--bg);
+    background-attachment:fixed;min-height:100vh;-webkit-font-smoothing:antialiased}
+  #fk{max-width:460px;margin:0 auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+  :focus-visible{outline:3px solid var(--brand-500);outline-offset:2px;border-radius:8px}
+  .ico{width:1.15em;height:1.15em;flex:0 0 auto;vertical-align:-.2em}
+
+  .hero{border-radius:var(--r-lg);padding:18px 18px;color:#fff;margin-bottom:var(--sp-4);box-shadow:var(--sh-md);
+    background:linear-gradient(120deg,#0a345f 0%,#0d5f7c 55%,#1d9e75 100%)}
+  .row1{display:flex;align-items:center;gap:13px}
+  .hlogo{width:46px;height:46px;border-radius:13px;background:#fff var(--logo) center/100% no-repeat;box-shadow:var(--sh-sm);flex:0 0 auto}
+  .htit{font-weight:700;font-size:19px;line-height:1.15}
+  .hsub{font-size:13px;opacity:.92;margin-top:2px}
+
+  button{font-family:inherit}
+  .btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font-size:15px;cursor:pointer;color:var(--text);box-shadow:var(--sh-sm)}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.6;cursor:default;transform:none}
+  .btn.pri{background:var(--brand-600);border-color:var(--brand-600);color:#fff;box-shadow:0 4px 12px rgba(24,95,165,.28)}
+  .btn.xl{min-height:52px;font-size:16px;font-weight:600}
+  .btn.full{width:100%;justify-content:center}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-sm)}
+  .pad{padding:16px}
+  .row{display:flex;align-items:center;gap:11px;padding:12px 15px}
+  .row+.row{border-top:1px solid var(--line)}
+  .avatar{width:46px;height:46px;border-radius:50%;background:var(--brand-bg);color:var(--brand-600);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex:0 0 auto}
+  .nm{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+  .mut{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+  label.mut{display:block;margin-bottom:6px}
+  .field{width:100%;min-height:52px;padding:13px 15px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:17px;margin-bottom:10px;font-family:inherit;background:#fff}
+  .field.codigo{font-size:26px;letter-spacing:10px;text-align:center;font-variant-numeric:tabular-nums}
+  .field:focus{border-color:var(--brand-500);outline:none;box-shadow:0 0 0 4px var(--brand-bg)}
+  .msg{min-height:20px;margin-top:10px;font-size:14px}
+  .msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
+  .empty{padding:30px 20px;text-align:center}
+  .footer{margin-top:var(--sp-5);text-align:center;font-size:12px;color:var(--hint)}
+  .secline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:20px 2px 10px;font-weight:600}
+  .aviso{padding:13px 15px;border-radius:var(--r-sm);font-size:14px;background:var(--danger-bg);color:var(--danger);margin-bottom:14px}
+
+  .selector{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;margin-bottom:12px;-webkit-overflow-scrolling:touch}
+  .chip{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:44px;padding:9px 16px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-pill);font-size:14px;color:var(--muted);cursor:pointer;box-shadow:var(--sh-sm)}
+  .chip[aria-pressed="true"]{color:#fff;background:var(--brand-600);border-color:var(--brand-600)}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;box-shadow:var(--sh-sm);min-width:0}
+  .stat .l{font-size:12px;color:var(--muted)}
+  .stat .v{font-weight:700;font-size:17px;margin-top:3px;overflow-wrap:anywhere}
+  .pill{display:inline-block;padding:3px 10px;border-radius:var(--r-pill);font-size:13px;font-weight:600}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--amber-bg);color:var(--amber)} .pill.bad{background:var(--danger-bg);color:var(--danger)}
+
+  /* ---- tarjeta wallet: vertical, ocupa la pantalla ---- */
+  .wallet-overlay{position:fixed;inset:0;z-index:50;background:#0a1423;display:flex;align-items:center;justify-content:center;
+    padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))}
+  .wallet{position:relative;overflow:hidden;color:#fff;border-radius:24px;box-shadow:var(--sh-lg);display:flex;flex-direction:column;
+    aspect-ratio:5/8;height:100%;max-height:760px;max-width:100%;
+    background:linear-gradient(160deg,var(--brand-700) 0%,var(--brand-500) 55%,#1d9e75 120%)}
+  .wallet-top{display:flex;align-items:center;gap:10px;padding:18px 18px 0}
+  .wallet-logo{width:34px;height:34px;border-radius:10px;background:#fff var(--logo) center/100% no-repeat}
+  .wallet-brand{font-weight:700;font-size:14px}
+  .wallet-close{margin-left:auto;background:rgba(255,255,255,.22);border:none;color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .wallet-mid{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 18px}
+  .wallet-avatar{width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;overflow:hidden;flex:0 0 auto}
+  .wallet-avatar img{width:100%;height:100%;object-fit:cover}
+  .wallet-nombre{font-size:20px;font-weight:700;text-align:center;line-height:1.2;overflow-wrap:anywhere}
+  .wallet-folio{font-family:ui-monospace,Menlo,monospace;font-size:14px;opacity:.9}
+  .wallet-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+  .wallet-tag{font-size:12px;background:rgba(255,255,255,.2);padding:5px 11px;border-radius:var(--r-pill)}
+  .wallet-qr{background:#fff;border-radius:16px;padding:14px;margin:0 auto 12px;width:min(62%,250px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center}
+  .wallet-qr img,.wallet-qr canvas{display:block;width:100%;height:auto}
+  .wallet-hint{text-align:center;font-size:12.5px;opacity:.9;padding:0 18px 18px}
+  body.wallet-on{overflow:hidden}
+</style>
+</head>
+<body>
+<main id="fk" aria-live="polite"></main>
+<script>
+/* CONFIG — URLs del router de n8n para el portal de tutores. No son secretas. */
+const CONFIG = {
+  OTP_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-otp",
+  VERIFY_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-verify",
+  PORTAL_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-acciones"
+};
+const fk=document.getElementById('fk');
+/* Sesión del tutor: SOLO en memoria. Nunca localStorage/sessionStorage/cookies. Se pierde al recargar. */
+const AUTH={token:null};
+/* Datos personales en memoria mientras dura la sesión; se borran al salir. */
+const state={perfiles:[],idx:0,ficha:null,seq:0,timer:null};
+
+/* ---------- utilidades ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ini(n){return String(n||'').split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';}
+const ICONOS={
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  escudo:'<path d="M12 3 5 6v6c0 4.2 3 7.7 7 9 4-1.3 7-4.8 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  atras:'<path d="M5 12h14M5 12l6-6M5 12l6 6"/>',
+  reenviar:'<path d="M20 11A8 8 0 1 0 18 17"/><path d="M20 4v7h-7"/>',
+  tarjeta:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h2M15 12h2M7 16h10"/>',
+  salir:'<path d="M14 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/><path d="M9 12h12l-3-3M21 12l-3 3"/>',
+  cerrar:'<path d="M18 6 6 18M6 6l12 12"/>',
+  calendario:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/>',
+  persona:'<circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>'
+};
+function ic(n){return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONOS[n]+'</svg>';}
+function hero(sub){return '<header class="hero"><div class="row1"><div class="hlogo" role="img" aria-label="FitKid"></div><div><div class="htit">Portal de Padres</div><div class="hsub">'+esc(sub||'FitKid Gymnastic')+'</div></div></div></header>';}
+const FOOTER='<div class="footer">FitKid Gymnastic · Formando gimnastas, creando Guerreros</div>';
+function pararTimer(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
+
+/* ---------- red ---------- */
+/* Sin sesión o con 401 la promesa queda pendiente, para que ninguna pantalla se pinte encima de la de entrada. */
+const SIN_SESION=()=>new Promise(()=>{});
+async function postJson(url,body,token){
+  const headers={'Content-Type':'text/plain;charset=UTF-8'};
+  if(token)headers.Authorization='Bearer '+token;
+  const r=await fetch(url,{method:'POST',headers,body:JSON.stringify(body||{})});
+  let data=null;try{data=await r.json();}catch(e){}
+  return {status:r.status,data:data||{}};
+}
+async function callPortal(accion,p){
+  const tk=AUTH.token;if(!tk)return SIN_SESION();
+  try{
+    const r=await postJson(CONFIG.PORTAL_URL,{accion,...(p||{})},tk);
+    if(r.status===401){if(AUTH.token===tk)salir('Tu sesión expiró, entra de nuevo');return SIN_SESION();}
+    return r.data;
+  }catch(e){return {ok:false,error:'Sin conexión. Revisa tu internet e intenta de nuevo.'};}
+}
+function salir(msg){AUTH.token=null;pararTimer();state.perfiles=[];state.ficha=null;state.idx=0;state.seq++;cerrarWallet();entrada(msg);}
+
+/* ---------- 1) correo → código ---------- */
+function entrada(msg){
+  pararTimer();
+  fk.innerHTML=hero('Entra con tu correo, sin contraseña')+
+    '<div class="card pad">'+(msg?'<div class="aviso" role="alert">'+esc(msg)+'</div>':'')+
+    '<label class="mut" for="em">Correo del tutor</label>'+
+    '<input class="field" id="em" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="correo@ejemplo.com">'+
+    '<button class="btn pri xl full" id="ebtn">'+ic('mail')+' Enviarme un código</button>'+
+    '<div id="emsg" class="msg err" role="alert"></div></div>'+FOOTER;
+  const em=fk.querySelector('#em'),msgEl=fk.querySelector('#emsg'),btn=fk.querySelector('#ebtn');
+  const enviar=async()=>{
+    const email=em.value.trim().toLowerCase();
+    if(!email||!em.checkValidity()){msgEl.textContent='Escribe un correo válido';em.focus();return;}
+    btn.disabled=true;msgEl.textContent='';
+    const r=await pedirCodigo(email);
+    btn.disabled=false;
+    if(r.error){msgEl.textContent=r.error;return;}
+    codigo(email);
+  };
+  btn.onclick=enviar;
+  em.addEventListener('keydown',e=>{if(e.key==='Enter')enviar();});
+  em.focus();
+}
+/* La respuesta no revela si el correo está registrado: solo se distinguen falta de conexión y exceso de intentos. */
+async function pedirCodigo(email){
+  try{
+    const r=await postJson(CONFIG.OTP_URL,{email});
+    if(r.status===429)return {error:'Demasiados intentos. Espera unos minutos y vuelve a intentar.'};
+    if(r.status>=500)return {error:'No pudimos enviar el código. Intenta de nuevo en un momento.'};
+    return {};
+  }catch(e){return {error:'Sin conexión. Revisa tu internet e intenta de nuevo.'};}
+}
+
+/* ---------- 2) código → token ---------- */
+function codigo(email){
+  pararTimer();
+  fk.innerHTML=hero('Escribe el código que te enviamos')+
+    '<div class="card pad"><div class="mut" style="margin-bottom:14px;font-size:14px">Si <b>'+esc(email)+'</b> está registrado, te llegará un código de 6 dígitos. Puede tardar unos minutos; revisa también tu carpeta de spam.</div>'+
+    '<label class="mut" for="cd">Código de 6 dígitos</label>'+
+    '<input class="field codigo" id="cd" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" placeholder="••••••">'+
+    '<button class="btn pri xl full" id="cbtn">'+ic('escudo')+' Entrar</button>'+
+    '<div id="cmsg" class="msg err" role="alert"></div>'+
+    '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px">'+
+    '<button class="btn" id="volver">'+ic('atras')+' Cambiar correo</button>'+
+    '<button class="btn" id="rbtn" disabled>Reenviar en <span id="rct">30</span> s</button></div></div>'+FOOTER;
+  const cd=fk.querySelector('#cd'),msgEl=fk.querySelector('#cmsg'),btn=fk.querySelector('#cbtn'),rbtn=fk.querySelector('#rbtn');
+  fk.querySelector('#volver').onclick=()=>entrada();
+  let left=30;
+  state.timer=setInterval(()=>{left--;const rct=fk.querySelector('#rct');if(rct)rct.textContent=left;if(left<=0){pararTimer();rbtn.disabled=false;rbtn.innerHTML=ic('reenviar')+' Reenviar código';}},1000);
+  rbtn.onclick=async()=>{
+    rbtn.disabled=true;
+    const r=await pedirCodigo(email);
+    if(r.error){rbtn.disabled=false;msgEl.className='msg err';msgEl.textContent=r.error;return;}
+    codigo(email);
+    const m=fk.querySelector('#cmsg');m.className='msg ok';m.textContent='✓ Te enviamos un código nuevo';
+  };
+  cd.oninput=()=>{cd.value=cd.value.replace(/\D/g,'').slice(0,6);if(cd.value.length===6)entrar();};
+  const entrar=async()=>{
+    const c=cd.value;
+    if(c.length!==6){msgEl.className='msg err';msgEl.textContent='El código tiene 6 dígitos';return;}
+    if(btn.disabled)return;
+    btn.disabled=true;msgEl.textContent='';
+    let r;
+    try{r=await postJson(CONFIG.VERIFY_URL,{email,codigo:c});}catch(e){r=null;}
+    btn.disabled=false;
+    if(!r){msgEl.className='msg err';msgEl.textContent='Sin conexión. Revisa tu internet e intenta de nuevo.';return;}
+    const d=r.data;
+    if(r.status===429){msgEl.className='msg err';msgEl.textContent='Demasiados intentos. Pide un código nuevo en unos minutos.';return;}
+    if(!d.token||d.rol!=='tutor'){msgEl.className='msg err';msgEl.textContent='Código incorrecto o vencido';cd.select();return;}
+    pararTimer();
+    AUTH.token=d.token;
+    inicio();
+  };
+  btn.onclick=entrar;
+  cd.addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+  cd.focus();
+}
+
+/* ---------- 3) inicio: selector + ficha ---------- */
+async function inicio(){
+  fk.innerHTML=hero('Cargando tu información…')+'<div class="mut" style="text-align:center;padding:30px">Un momento…</div>';
+  const r=await callPortal('mis_alumnos',{});
+  if(!r||r.ok===false){pantallaError('No pudimos cargar tu información.',inicio);return;}
+  state.perfiles=Array.isArray(r.data)?r.data:[];
+  if(!state.perfiles.length){fk.innerHTML=hero()+'<div class="card"><div class="empty"><div class="nm">No encontramos alumnos ligados a tu correo.</div><div class="mut" style="margin-top:6px">Si crees que es un error, comunícate con recepción.</div></div></div>'+botonSalir()+FOOTER;bindSalir();return;}
+  state.idx=0;
+  cargarFicha();
+}
+function esFitParents(p){return !!p&&(p.tipo==='fitparent'||p.programa==='FitParents');}
+function pantallaError(t,reintentar){
+  fk.innerHTML=hero()+'<div class="card"><div class="empty"><div class="nm">'+esc(t)+'</div><button class="btn pri" style="margin-top:14px" id="reint">'+ic('reenviar')+' Intentar de nuevo</button></div></div>'+botonSalir()+FOOTER;
+  fk.querySelector('#reint').onclick=reintentar;bindSalir();
+}
+function selector(){
+  if(state.perfiles.length<2)return '';
+  return '<div class="selector" role="group" aria-label="Elegir alumno">'+state.perfiles.map((p,i)=>
+    '<button class="chip" data-idx="'+i+'" aria-pressed="'+(i===state.idx)+'">'+ic('persona')+' '+esc(p.nombre)+'</button>').join('')+'</div>';
+}
+function bindSelector(){fk.querySelectorAll('[data-idx]').forEach(b=>b.onclick=()=>{const i=+b.dataset.idx;if(i===state.idx&&state.ficha)return;state.idx=i;cargarFicha();});}
+function botonSalir(){return '<button class="btn full" style="margin-top:12px" data-act="salir">'+ic('salir')+' Cerrar sesión</button>';}
+function bindSalir(){const b=fk.querySelector('[data-act="salir"]');if(b)b.onclick=()=>salir();}
+function saludo(p){return 'Hola, '+(p.tutor_nombre||p.nombre||'');}
+
+async function cargarFicha(){
+  const p=state.perfiles[state.idx];
+  const seq=++state.seq;
+  state.ficha=null;
+  fk.innerHTML=hero(saludo(p))+selector()+'<div class="mut" style="text-align:center;padding:24px">Cargando '+esc(p.nombre)+'…</div>';
+  bindSelector();
+  const r=await callPortal('ficha_alumno_tutor',{perfil_id:p.id});
+  if(seq!==state.seq)return; /* el tutor ya cambió de alumno */
+  if(!r||r.ok===false){pantallaError('No pudimos cargar la ficha de '+(p.nombre||'este alumno')+'.',cargarFicha);return;}
+  state.ficha=Object.assign({tipo:p.tipo},r.perfil||r);
+  dibujarFicha();
+}
+function estadoPago(e){
+  const t=String(e||'').toLowerCase();
+  const cls=/pagad|al corriente/.test(t)?'ok':(/vencid|adeud|atrasad/.test(t)?'bad':'warn');
+  return e?'<span class="pill '+cls+'">'+esc(e)+'</span>':'—';
+}
+function stat(l,v){return '<div class="stat"><div class="l">'+esc(l)+'</div><div class="v">'+v+'</div></div>';}
+function contacto(nombre,tel,correo){
+  return '<div class="card pad"><div class="nm">'+esc(nombre||'—')+'</div>'+
+    (tel?'<div class="mut" style="margin-top:4px">Tel. '+esc(tel)+'</div>':'')+
+    (correo?'<div class="mut">'+esc(correo)+'</div>':'')+'</div>';
+}
+function dibujarFicha(){
+  const f=state.ficha,adulto=esFitParents(f);
+  const p=state.perfiles[state.idx];
+  let h=hero(saludo(p))+selector();
+  h+='<div class="card pad" style="display:flex;align-items:center;gap:12px"><div class="avatar" aria-hidden="true">'+esc(ini(f.nombre))+'</div><div style="min-width:0"><div class="nm" style="font-size:17px">'+esc(f.nombre)+'</div><div class="mut">'+esc([f.folio,adulto?'FitParents':f.programa].filter(Boolean).join(' · '))+'</div></div></div>';
+  h+='<div class="secline">'+(adulto?'Tu membresía':'Membresía')+'</div><div class="stats">';
+  const cr=(f.creditos_restantes!=null)?esc(f.creditos_restantes)+(f.creditos_total!=null?' <span class="mut">de '+esc(f.creditos_total)+'</span>':''):'—';
+  h+=stat('Plan',esc(f.plan||'—'))+stat('Créditos disponibles',cr)+stat('Estado de pago',estadoPago(f.estado_pago))+stat('Inscripción anual vence',esc(f.vencimiento||'—'));
+  h+='</div>';
+  if(adulto){
+    h+='<div class="secline">'+ic('persona')+' Tus datos</div>'+contacto(f.nombre,f.telefono,f.correo);
+  }else if(f.tutor_responsable){
+    const t=f.tutor_responsable;
+    h+='<div class="secline">'+ic('escudo')+' Tutor responsable</div>'+contacto(t.nombre,t.telefono,t.correo);
+  }
+  h+='<div class="secline">'+ic('calendario')+' Próximas clases</div>';
+  const prox=Array.isArray(f.proximas)?f.proximas:[];
+  h+=prox.length?'<div class="card">'+prox.map(c=>'<div class="row">'+ic('calendario')+'<div><div class="nm" style="font-size:14px">'+esc(c.fecha)+'</div>'+(c.hora?'<div class="mut">'+esc(c.hora)+'</div>':'')+'</div></div>').join('')+'</div>'
+    :'<div class="card"><div class="empty" style="padding:18px"><div class="mut">Sin clases próximas.</div></div></div>';
+  h+='<button class="btn pri xl full" style="margin-top:20px" data-act="tarjeta">'+ic('tarjeta')+' Ver mi tarjeta</button>';
+  h+=botonSalir()+FOOTER;
+  fk.innerHTML=h;
+  bindSelector();bindSalir();
+  fk.querySelector('[data-act="tarjeta"]').onclick=e=>abrirWallet(f,e.currentTarget);
+}
+
+/* ---------- 4) tarjeta wallet con QR ---------- */
+let WALLET=null;
+function abrirWallet(f,origen){
+  cerrarWallet();
+  const programa=esFitParents(f)?'FitParents':f.programa;
+  const ov=document.createElement('div');
+  ov.className='wallet-overlay';
+  ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Tarjeta de '+(f.nombre||'alumno'));
+  ov.innerHTML='<div class="wallet"><div class="wallet-top"><div class="wallet-logo" aria-hidden="true"></div><div class="wallet-brand">FitKid Gymnastic</div>'+
+    '<button class="wallet-close" data-act="cerrar" aria-label="Cerrar tarjeta">'+ic('cerrar')+'</button></div>'+
+    '<div class="wallet-mid"><div class="wallet-avatar" data-avatar>'+esc(ini(f.nombre))+'</div>'+
+    '<div class="wallet-nombre">'+esc(f.nombre)+'</div>'+
+    (f.folio?'<div class="wallet-folio">'+esc(f.folio)+'</div>':'')+
+    '<div class="wallet-tags">'+(programa?'<span class="wallet-tag">'+esc(programa)+'</span>':'')+
+    (f.plan?'<span class="wallet-tag">Plan '+esc(f.plan)+'</span>':'')+'</div></div>'+
+    '<div class="wallet-qr" data-qr></div><div class="wallet-hint">Muestra este código en recepción</div></div>';
+  document.body.appendChild(ov);
+  document.body.classList.add('wallet-on');
+  fk.setAttribute('aria-hidden','true');
+  if(f.foto_url&&/^https:\/\//i.test(f.foto_url)){
+    const img=new Image();img.alt='';img.referrerPolicy='no-referrer';
+    img.onload=()=>{const av=ov.querySelector('[data-avatar]');if(av){av.textContent='';av.appendChild(img);}};
+    img.src=f.foto_url;
+  }
+  /* El QR lleva únicamente el token opaco del backend; nunca se genera aquí ni lleva datos personales. */
+  const qr=ov.querySelector('[data-qr]');
+  if(typeof f.qr_token==='string'&&f.qr_token&&window.QRCode){
+    const lado=Math.max(200,Math.min(320,Math.round(qr.clientWidth*(window.devicePixelRatio||1))));
+    new QRCode(qr,{text:f.qr_token,width:lado,height:lado,correctLevel:QRCode.CorrectLevel.M});
+    qr.removeAttribute('title');
+    qr.setAttribute('role','img');qr.setAttribute('aria-label','Código QR para recepción');
+  }else{
+    qr.textContent=window.QRCode?'Código no disponible. Pide ayuda en recepción.':'No se pudo cargar el generador de códigos. Revisa tu conexión.';
+  }
+  const cerrarBtn=ov.querySelector('[data-act="cerrar"]');
+  cerrarBtn.onclick=cerrarWallet;
+  const tecla=e=>{if(e.key==='Escape')cerrarWallet();else if(e.key==='Tab'){e.preventDefault();cerrarBtn.focus();}};
+  document.addEventListener('keydown',tecla);
+  WALLET={ov,tecla,origen};
+  cerrarBtn.focus();
+}
+function cerrarWallet(){
+  if(!WALLET)return;
+  document.removeEventListener('keydown',WALLET.tecla);
+  WALLET.ov.remove();
+  document.body.classList.remove('wallet-on');
+  fk.removeAttribute('aria-hidden');
+  if(WALLET.origen&&WALLET.origen.isConnected)WALLET.origen.focus();
+  WALLET=null;
+}
+
+entrada();
+</script>
+</body>
+</html>
