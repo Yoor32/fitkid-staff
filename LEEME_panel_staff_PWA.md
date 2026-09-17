@@ -19,7 +19,7 @@ Backend de acciones = router `wf-staff-acciones` (ya activo). Agente Gemini = "M
   src="https://yoor32.app.n8n.cloud/webhook/fitkid-widget"
   title="Panel del Staff FitKid"
   style="width:100%;min-height:760px;border:0;border-radius:16px"
-  allow="clipboard-write"></iframe>
+  allow="camera; clipboard-write"></iframe>
 ```
 3. Publica. Listo: el panel queda dentro del sitio, aislado del tema de Duda.
 
@@ -36,9 +36,47 @@ tienes que tocar nada en Duda: el iframe siempre apunta a la misma URL.
 
 ## Seguridad
 - La página vive detrás del **login de miembros de Duda** (privada).
-- El panel manda un secreto (`fitkid-staff-2026`) que el router valida. Si lo cambias en
-  `wf-staff-acciones` (constante `SECRET`), hay que cambiarlo también en el panel.
-- Recomendado: rota ese secreto antes de producción real.
+- El panel pide login (usuario/contraseña) contra `POST /webhook/fitkid-auth`, que responde
+  `{ token, rol, expira }`. El token se guarda **solo en una variable de JavaScript en
+  memoria** (nunca en localStorage/sessionStorage/cookies) y se pierde al recargar la página.
+- Cada acción manda el token en el header `Authorization: Bearer <token>` contra
+  `/webhook/fitkid-staff-acciones` y `/webhook/fitkid-stripe-link`. Ya no hay ningún secreto
+  fijo en el código del panel.
+- Si el backend responde 401, el panel borra el token y regresa a la pantalla de login
+  ("Tu sesión expiró, vuelve a entrar"). Si estaba abierto el kiosco manual, se cierra y
+  los check-ins que estaban en cola sin conexión se pierden.
+- Rol `staff` ve todo el panel; rol `kiosco` ve solo la pantalla de check-in por código
+  (`/webhook/fitkid-qr-scan`); rol `tutor` no puede entrar por aquí (se rechaza en el front).
+
+## Botón "Escanear tarjeta" (QR del Portal de Padres)
+- Abre la cámara trasera y lee el QR con la API `BarcodeDetector` del navegador (sin librerías).
+  Funciona en Chrome para Android; **Safari (iPad/iPhone) no la tiene**, ahí se ofrece buscar por nombre.
+- El iframe de Duda necesita `allow="camera"` (ver arriba); sin eso el navegador niega la cámara.
+- Al leer: `POST /webhook/fitkid-qr-scan` con `{ qr_token }` (Bearer). Buscar por nombre usa la acción
+  `estado_checkin` con `{ alumno_id }` y espera la misma respuesta.
+- Botones: "Cobrar crédito y marcar asistencia" (`guardar_asistencias` con `estatus: 'Asistió'`),
+  "Registrar en esta clase" (`registrar_en_clase`) y "Agregar a lista de espera" (`agregar_lista_espera`).
+  **Pendiente en n8n:** `fitkid-qr-scan`, `estado_checkin`, `registrar_en_clase` y `agregar_lista_espera`.
+- La cámara se apaga al leer un código, al salir de la pantalla, al ocultar la pestaña o al perder la sesión.
+
+## Botón "Abrir kiosco" (check-in manual con foto, desde el panel de staff)
+Cualquier staff logueado puede tocar **"Abrir kiosco"** en el inicio del panel para convertir
+el dispositivo en un kiosco temporal, sin necesitar la cuenta separada de rol `kiosco`:
+1. Elige el bloque de clase activo (de `horarios_lista`).
+2. Entra en pantalla completa con lista de alumnos del bloque + buscador.
+3. Al tocar un alumno, abre la cámara para capturar su foto (o "Sin foto") y registra la
+   asistencia con `guardar_asistencias` (misma acción que "Pasar lista").
+4. **Pendiente en n8n:** si hay foto, el panel manda una acción nueva
+   `guardar_foto_alumno` con `{ alumno_id, foto_base64 }` (JPEG recomprimido a ~480px de
+   ancho, va como data URL). El router `wf-staff-acciones` todavía **no** tiene esta acción
+   implementada — hay que agregarla (por ejemplo, subir la foto a Notion/Drive y guardar la
+   referencia en la ficha del alumno). Mientras no exista, esas llamadas fallan silenciosamente
+   y el check-in se guarda igual, pero sin la foto (o se encola si además no hay conexión).
+5. Si una llamada falla (sin conexión), el registro queda en una cola **solo en memoria**
+   (no se guarda en el navegador) con reintento automático cada 60 s y al reconectar; se pierde
+   si se recarga la página a propósito.
+6. Para salir del kiosco hay que volver a escribir usuario y contraseña de staff (reutiliza
+   `/webhook/fitkid-auth`) y solo acepta cuentas de rol `staff`; no existe un PIN numérico separado.
 
 ---
 
