@@ -165,7 +165,8 @@ async function simularPortal(url,body){
 }
 async function postJson(url,body,token){
   if(MOCK_PORTAL)return simularPortal(url,body||{});
-  const headers={'Content-Type':'text/plain;charset=UTF-8'};
+  /* application/json: con text/plain n8n no parsea el cuerpo del webhook. */
+  const headers={'Content-Type':'application/json'};
   if(token)headers.Authorization='Bearer '+token;
   const r=await fetch(url,{method:'POST',headers,body:JSON.stringify(body||{})});
   let data=null;try{data=await r.json();}catch(e){}

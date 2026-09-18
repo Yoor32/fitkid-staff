@@ -203,7 +203,8 @@ const MOCK={
 const SIN_SESION=()=>new Promise(()=>{});
 async function call(a,p){ if(DEMO){await new Promise(r=>setTimeout(r,220));return{demo:1,data:MOCK[a]||[]};} return callUrl(CONFIG.WEBHOOK_URL,{accion:a,...(p||{})}); }
 async function callUrl(url,p){ if(!url){return {ok:false,error:'sin URL'};} const tk=AUTH.token; if(!tk)return SIN_SESION(); try{ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8','Authorization':'Bearer '+tk},body:JSON.stringify(p||{})}); if(r.status===401){ if(AUTH.token===tk)sessionExpired(); return SIN_SESION(); } return await r.json(); }catch(e){ return {ok:false,error:String(e),data:[],red:true}; } }
-async function callAuth(usuario,pass){ try{ const r=await fetch(CONFIG.AUTH_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({usuario:usuario,contrasena:pass})}); return await r.json(); }catch(e){ return {ok:false,error:String(e)}; } }
+/* wf-auth necesita application/json: con text/plain n8n no parsea el cuerpo y responde 401. */
+async function callAuth(usuario,pass){ try{ const r=await fetch(CONFIG.AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:usuario,contrasena:pass})}); return await r.json(); }catch(e){ return {ok:false,error:String(e)}; } }
 function borrarSesion(){ AUTH.token=null;AUTH.rol=null;AUTH.nombre=null;AUTH.expira=null; detenerKiosco(); detenerEscaner(); }
 function sessionExpired(){ borrarSesion(); loginScreen('Tu sesión expiró, vuelve a entrar'); }
 function doLogout(){ borrarSesion(); loginScreen(); }
