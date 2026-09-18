@@ -137,7 +137,12 @@ const CONFIG = { WEBHOOK_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-staff-
    'verificar_alumno' todavía no existe en el router de n8n). Cámbialo a false cuando el
    endpoint esté publicado: es lo único que hay que tocar, el resto del código no sabe si
    está simulando. */
-const MOCK_VERIFICAR=true;
+const MOCK_VERIFICAR=false;
+/* MOCK_ESCANER: true = el escáner y el check-in NO llaman al backend (fitkid-qr-scan,
+   estado_checkin, registrar_en_clase y agregar_lista_espera todavía no existen en n8n).
+   Simula los tres escenarios por turnos: con clase hoy, sin clase con cupo y sin clase
+   con el bloque lleno. Cámbialo a false cuando los endpoints estén publicados. */
+const MOCK_ESCANER=true;
 const fk=document.getElementById('fk'); const DEMO=!CONFIG.WEBHOOK_URL; const state={lote:0}; let PRE=null;
 /* Token de sesión: SOLO en memoria. Nunca localStorage/sessionStorage/cookies. Se pierde al recargar. */
 const AUTH={token:null,rol:null,nombre:null,expira:null};
@@ -202,11 +207,26 @@ async function callAuth(usuario,pass){ try{ const r=await fetch(CONFIG.AUTH_URL,
 function borrarSesion(){ AUTH.token=null;AUTH.rol=null;AUTH.nombre=null;AUTH.expira=null; detenerKiosco(); detenerEscaner(); }
 function sessionExpired(){ borrarSesion(); loginScreen('Tu sesión expiró, vuelve a entrar'); }
 function doLogout(){ borrarSesion(); loginScreen(); }
+function errorStaff(r){
+  if(!r)return 'No se pudo completar. Intenta de nuevo.';
+  if(r.red)return 'Sin conexión. Revisa el internet e intenta de nuevo.';
+  const e=String(r.error||'');
+  if(/rol no puede/i.test(e))return 'Tu cuenta no tiene permiso para esta acción. Pídesela a un usuario de staff.';
+  return e?('No se pudo completar: '+e):'No se pudo completar. Intenta de nuevo.';
+}
+function detalleRechazos(r){
+  const rech=(r&&r.rechazados)||[];
+  if(!rech.length)return '';
+  return rech.map(x=>typeof x==='string'?x:(x.motivo||x.error||x.id||'')).filter(Boolean).join(', ');
+}
 function cv(c){return getComputedStyle(document.documentElement).getPropertyValue('--'+c).trim();}
 function ini(n){return n.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();}
 function calcEdad(fISO){ if(!fISO)return null; const bd=new Date(fISO+'T00:00:00'); if(isNaN(bd.getTime()))return null; const hoy=new Date(); let e=hoy.getFullYear()-bd.getFullYear(); const m=hoy.getMonth()-bd.getMonth(); if(m<0||(m===0&&hoy.getDate()<bd.getDate()))e--; return e; }
 function categoriaDeEdad(edad){ if(edad==null)return null; if(edad>=3&&edad<=6)return 'Iniciación Deportiva'; if(edad>=7&&edad<=14)return 'Gimnasia Olímpica'; return null; }
-function categoriaDeHorario(nombre){ if(!nombre)return null; const n=nombre.toLowerCase(); if(n.indexOf('fitparent')!==-1)return 'FitParents'; if(n.indexOf('olímpic')!==-1||n.indexOf('olimpic')!==-1)return 'Gimnasia Olímpica'; if(n.indexOf('iniciaci')!==-1)return 'Iniciación Deportiva'; const m=nombre.match(/(\d{1,2})/); if(m){ const h=parseInt(m[1],10); if(h===4||h===5)return 'Iniciación Deportiva'; if(h===6||h===7)return 'Gimnasia Olímpica'; } return null; }
+/* El programa SOLO se deduce del nombre del bloque. Deducirlo de la hora sería falso: el catálogo
+   tiene bloques distintos a la misma hora (FitParents 7-8 PM y Olímpica 7-8 PM). Si el nombre no lo
+   dice, devuelve null y arriba se trata como "Requiere revisión". */
+function categoriaDeHorario(nombre){ if(!nombre)return null; const n=String(nombre).toLowerCase(); if(n.indexOf('fitparent')!==-1)return 'FitParents'; if(n.indexOf('olímpic')!==-1||n.indexOf('olimpic')!==-1)return 'Gimnasia Olímpica'; if(n.indexOf('iniciaci')!==-1)return 'Iniciación Deportiva'; return null; }
 
 function hero(){const r=MOCK.resumen;return '<header class="hero"><div class="row1"><div class="hlogo" role="img" aria-label="FitKid"></div><div><div class="htit">Panel del Staff</div><div class="hsub">FitKid Gymnastic · acciones rápidas del CRM</div></div>'+'<div style="margin-left:auto;display:flex;align-items:center;gap:8px">'+(DEMO?'<span class="demo">modo demo</span>':'')+'<button class="btn iconbtn" data-act="logout" aria-label="Cerrar sesión" style="background:rgba(255,255,255,.22);border-color:transparent;color:#fff"><i class="ti ti-logout" aria-hidden="true"></i></button></div></div><div class="stats"><div class="stat"><div class="v"><i class="ti ti-checklist" aria-hidden="true"></i>'+r.clases+'</div><div class="l">clases hoy</div></div><div class="stat"><div class="v"><i class="ti ti-cash" aria-hidden="true"></i>$'+r.cobrado.toLocaleString()+'</div><div class="l">cobrado hoy</div></div><div class="stat"><div class="v"><i class="ti ti-alert-triangle" aria-hidden="true"></i>'+r.pend+'</div><div class="l">por cobrar</div></div></div></header>';}
 function tabsBar(){let h='<nav class="tabs" aria-label="Secciones">';GROUPS.forEach((g,i)=>{const on=i===state.lote;h+='<button class="tab '+(on?'on':'')+'" data-lote="'+i+'" '+(on?'aria-current="page"':'')+' style="'+(on?'background:'+cv(g.color):'')+'"><i class="ti ti-'+g.icon+'" aria-hidden="true"></i> '+g.name+' <span class="cnt">'+g.actions.length+'</span></button>';});return h+'</nav>';}
@@ -260,7 +280,15 @@ async function plRoster(fecha,hid,label){fk.innerHTML=back('Pasar lista')+'<div 
     state.lista.forEach((c,idx)=>{h+='<div class="row"><div class="avatar">'+ini(c.n)+'</div><div style="flex:1"><div class="nm">'+c.n+'</div><div class="mut">'+c.cod+'</div></div><button class="btn '+(c.e==='Asistió'?'on-ok':'')+'" data-mk="'+idx+'|Asistió"><i class="ti ti-check" aria-hidden="true"></i> Asistió</button><button class="btn '+(c.e==='Falta'?'on-dng':'')+'" data-mk="'+idx+'|Falta"><i class="ti ti-x" aria-hidden="true"></i> Falta</button></div>';});
     h+='</div><button class="btn pri" style="width:100%;justify-content:center;margin-top:14px" data-act="guardar-lista"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar asistencia ('+done+')</button>';
     fk.innerHTML=h;fk.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{const p=b.dataset.mk.split('|');state.lista[+p[0]].e=state.lista[+p[0]].e===p[1]?null:p[1];render();});
-    fk.querySelector('[data-act="guardar-lista"]').onclick=async()=>{await call('guardar_asistencias',{items:state.lista.filter(c=>c.e)});render();toast('✓ Asistencia guardada en Notion','ok');};bindNav();}}
+    fk.querySelector('[data-act="guardar-lista"]').onclick=async()=>{
+      const items=state.lista.filter(c=>c.e).map(c=>({id:c.id,estatus:c.e}));
+      const r=await call('guardar_asistencias',{items:items});
+      render();
+      if(!r||r.ok!==true){toast(errorStaff(r),'');return;}
+      const det=detalleRechazos(r),n=(r.actualizadas!=null?r.actualizadas:items.length);
+      if(det||(r.rechazados&&r.rechazados.length))toast('Guardadas '+n+' de '+(r.recibidos!=null?r.recibidos:items.length)+' · rechazadas: '+esc(det||String(r.rechazados.length)),'');
+      else toast('✓ '+n+' asistencia(s) guardada(s) en Notion','ok');
+    };bindNav();}}
 function registrarPago(){state.pago=PRE?{step:2,al:PRE}:{step:1};PRE=null;draw();
   async function draw(){const P=state.pago;let h=back('Registrar pago');
     h+='<div class="steps">'+['Alumno','Concepto','Monto y método','Confirmar'].map((s,i)=>'<span class="stp '+(i+1===P.step?'on':'')+'">'+(i+1)+'. '+s+'</span>').join('')+'</div>';
@@ -397,8 +425,8 @@ function horaDeBloque(nombre){
   const v=m[1]+':'+(m[2]||'00')+'-'+m[3]+':'+(m[4]||'00')+' '+(m[5].toLowerCase()==='a'?'AM':'PM');
   const cand=HORAS.filter(h=>h===v||h.indexOf(v+' (')===0);
   if(cand.length!==1)return null;
-  const bloqueFP=categoriaDeHorario(nombre)==='FitParents'||/fitparent/i.test(nombre);
-  if(bloqueFP!==/FitParents/i.test(cand[0]))return null;
+  /* Las opciones "(FitParents)" son solo de adultos; las de la tarde las comparten ambos programas. */
+  if(/FitParents/i.test(cand[0])&&categoriaDeHorario(nombre)!=='FitParents')return null;
   return cand[0];
 }
 function tel52(t){const d=String(t||'').replace(/\D/g,'').slice(-10);return d.length===10?('+52'+d):'';}
@@ -530,7 +558,7 @@ function verificarAlumno(a,pre,ctx){
     btn.disabled=true;$('verr').textContent='Guardando…';
     const r=await guardarVerificacion(payload);
     btn.disabled=false;
-    if(!r||!r.ok){$('verr').textContent=(r&&r.error&&!r.red)?r.error:'No se pudo guardar. Revisa la conexión e intenta de nuevo.';return;}
+    if(!r||!r.ok){$('verr').textContent=errorStaff(r);return;}
     if(r.simulado)VERIFICADOS_SIMULADOS.add(a.id);
     let msg=r.simulado?'Datos completos · modo de prueba: no se guardaron':'✓ Alumno verificado';
     if(r.tutor_creado)msg+=' · tutor nuevo creado';
@@ -695,21 +723,25 @@ function registrarCheckin(a,fotoBase64){
   fk.innerHTML='<div class="kiosk-wrap"><div class="card" style="padding:34px;text-align:center"><div class="mut">Guardando…</div></div></div>';
   if(!navigator.onLine){encolarKiosco(a,fotoBase64);return;}
   (async()=>{
-    const r1=await call('guardar_asistencias',{items:[{id:a.id,e:'Asistió'}]});
-    let r2={ok:true};
-    if(fotoBase64)r2=await call('guardar_foto_alumno',{alumno_id:a.id,foto_base64:fotoBase64});
-    if(r1&&r1.ok!==false&&r2&&r2.ok!==false){toast('✓ '+a.nombre+' registrado','ok');setTimeout(()=>{if(KIOSK)kioscoRoster();},500);}
-    else{encolarKiosco(a,fotoBase64);}
+    const r1=await call('guardar_asistencias',{items:[{id:a.id,estatus:'Asistió'}]});
+    const okAsistencia=r1&&r1.ok===true&&!(r1.rechazados&&r1.rechazados.length);
+    if(okAsistencia){
+      let sinFoto=false;
+      if(fotoBase64){const r2=await call('guardar_foto_alumno',{alumno_id:a.id,foto_base64:fotoBase64});sinFoto=!(r2&&r2.ok!==false);}
+      toast('✓ '+a.nombre+' registrado'+(sinFoto?' (la foto no se guardó)':''),'ok');
+      setTimeout(()=>{if(KIOSK)kioscoRoster();},500);
+    }
+    else if(r1&&r1.red)encolarKiosco(a,fotoBase64);
+    else{toast(errorStaff(r1)+(detalleRechazos(r1)?(' · '+detalleRechazos(r1)):''),'');if(KIOSK)kioscoRoster();}
   })();}
 function encolarKiosco(a,fotoBase64){if(!KIOSK)return;KIOSK.queue.push({a,fotoBase64});toast('Sin conexión: '+a.nombre+' quedó en cola ('+KIOSK.queue.length+')','');kioscoRoster();}
 function procesarColaKiosco(){if(!KIOSK||!KIOSK.queue.length||!navigator.onLine)return;
   const item=KIOSK.queue[0];
   (async()=>{
-    const r1=await call('guardar_asistencias',{items:[{id:item.a.id,e:'Asistió'}]});
-    let r2={ok:true};
-    if(item.fotoBase64)r2=await call('guardar_foto_alumno',{alumno_id:item.a.id,foto_base64:item.fotoBase64});
+    const r1=await call('guardar_asistencias',{items:[{id:item.a.id,estatus:'Asistió'}]});
+    if(item.fotoBase64&&r1&&r1.ok===true)await call('guardar_foto_alumno',{alumno_id:item.a.id,foto_base64:item.fotoBase64});
     if(!KIOSK)return;
-    if(r1&&r1.ok!==false&&r2&&r2.ok!==false){KIOSK.queue.shift();toast('✓ '+item.a.nombre+' sincronizado','ok');if(KIOSK.view==='roster')kioscoRoster(true);if(KIOSK.queue.length)procesarColaKiosco();}
+    if(r1&&r1.ok===true&&!(r1.rechazados&&r1.rechazados.length)){KIOSK.queue.shift();toast('✓ '+item.a.nombre+' sincronizado','ok');if(KIOSK.view==='roster')kioscoRoster(true);if(KIOSK.queue.length)procesarColaKiosco();}
   })();}
 function salirKioscoIntento(){
   if(KIOSK)KIOSK.view='exit';
@@ -738,6 +770,38 @@ function detenerKiosco(){
   if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});}
 function cerrarKiosco(){detenerKiosco();home();}
 /* ---------- Escanear tarjeta (QR del Portal de Padres) ---------- */
+/* Único punto de red del check-in: con MOCK_ESCANER en true nada de esto sale del navegador. */
+const SIM={ciclo:0,alumnos:{}};
+async function apiCheckin(que,p,alumnoId){
+  const payload=Object.assign({},p||{});
+  const nombre=payload.nombre_simulado;delete payload.nombre_simulado; /* solo sirve para simular */
+  if(!MOCK_ESCANER)return que==='qr'?callUrl(CONFIG.QR_URL,payload):call(que,payload);
+  await new Promise(r=>setTimeout(r,400));
+  return simularCheckin(que,Object.assign({alumno_id:alumnoId,nombre_simulado:nombre},payload));
+}
+function simularCheckin(que,p){
+  const id=p.alumno_id||('sim-'+String(p.qr_token||'').slice(-8));
+  if(!SIM.alumnos[id])SIM.alumnos[id]={escenario:(SIM.ciclo++)%3,cobrada:false,registrado:false,espera:false,nombre:p.nombre_simulado||('Alumno de prueba '+(SIM.ciclo))};
+  const st=SIM.alumnos[id];
+  if(p.nombre_simulado)st.nombre=p.nombre_simulado;
+  if(que==='guardar_asistencias'){st.cobrada=true;return {ok:true,actualizadas:1,recibidos:1,rechazados:[],simulado:true};}
+  if(que==='registrar_en_clase'){st.registrado=true;return {ok:true,asistencia_id:'sim-asi',simulado:true};}
+  if(que==='agregar_lista_espera'){st.espera=true;return {ok:true,id:'sim-espera',posicion:2,simulado:true};}
+  const d=new Date(),hoyISO=d.toLocaleDateString('en-CA');d.setDate(d.getDate()+1);
+  const manana=d.toLocaleDateString('en-CA');
+  const alumno={id:id,nombre:st.nombre,folio:'26-SIM-00'+(st.escenario+1),programa:'Gimnasia Olímpica (7-14)',plan:'M2',
+    creditos_restantes:6,creditos_total:8,estado_pago:'Pagado',estatus:'Activo'};
+  if(st.escenario===0||st.registrado){
+    return {ok:true,simulado:true,alumno:alumno,
+      clase_hoy:{asistencia_id:'sim-asi',horario_id:'sim-h',bloque:'Olímpica · 6:00-7:00 PM',fecha:hoyISO,hora:'6:00-7:00 PM',estado:st.cobrada?'Asistió':'Reservado'},
+      siguiente_clase:null,accion_sugerida:st.cobrada?'ninguna':'cobrar_asistencia'};
+  }
+  const lleno=st.escenario===2;
+  return {ok:true,simulado:true,alumno:alumno,clase_hoy:null,
+    siguiente_clase:{horario_id:'sim-h2',bloque:'Olímpica · 7:00-8:00 PM',fecha:manana,hora:'7:00-8:00 PM',cupo:30,ocupados:lleno?30:25,en_espera:st.espera},
+    accion_sugerida:lleno?'lista_espera':'registrar'};
+}
+function bannerPrueba(){return MOCK_ESCANER?'<div class="pruebabar" role="status"><i class="ti ti-flask" aria-hidden="true"></i> Modo de prueba: el check-in no se guarda todavía</div>':'';}
 let ESCANER=null;
 function detenerEscaner(){
   if(!ESCANER)return;
@@ -760,7 +824,7 @@ function bindCheckinNav(){
 }
 function escanearTarjeta(){
   detenerEscaner();
-  fk.innerHTML=back('Escanear tarjeta')+
+  fk.innerHTML=back('Escanear tarjeta')+bannerPrueba()+
     '<div class="card" style="padding:12px"><div class="escaner"><video id="evid" playsinline muted autoplay></video><div class="escaner-marco" aria-hidden="true"></div></div>'+
     '<div id="eest" role="status" class="mut" style="margin-top:10px;font-size:14px;text-align:center">Abriendo la cámara…</div></div>'+
     btnGrande('chk-buscar','search','Buscar alumno por nombre');
@@ -820,7 +884,7 @@ function camaraNoDisponible(tipo){
     insegura:['La cámara no está disponible aquí','El panel tiene que abrirse desde una dirección segura (que empiece con https).'],
     soporte:['Este navegador no puede leer códigos QR','Abre el panel en Chrome actualizado en Android, o busca al alumno por nombre.']
   }[tipo];
-  let h=back('Escanear tarjeta')+'<div class="card" style="padding:16px 18px"><div class="nm" style="font-size:16px">'+ico('camera-off')+' '+T[0]+'</div><div class="mut" style="font-size:14px;line-height:1.5;margin-top:8px">'+T[1]+'</div>';
+  let h=back('Escanear tarjeta')+bannerPrueba()+'<div class="card" style="padding:16px 18px"><div class="nm" style="font-size:16px">'+ico('camera-off')+' '+T[0]+'</div><div class="mut" style="font-size:14px;line-height:1.5;margin-top:8px">'+T[1]+'</div>';
   if(enIframe&&tipo==='permiso')h+='<div class="mut" style="font-size:14px;line-height:1.5;margin-top:10px">Si el panel está dentro de la página de Duda, quien administra el sitio también tiene que permitir la cámara en el recuadro del panel.</div>';
   h+='</div>';
   if(tipo==='permiso'||tipo==='ocupada')h+=btnGrande('chk-escanear','refresh','Intentar de nuevo');
@@ -828,19 +892,19 @@ function camaraNoDisponible(tipo){
   fk.innerHTML=h;bindNav();bindCheckinNav();
 }
 async function procesarQR(qr){
-  fk.innerHTML=back('Escanear tarjeta')+'<div class="mut" role="status">Buscando la tarjeta…</div>';bindNav();bindCheckinNav();
-  const r=await callUrl(CONFIG.QR_URL,{qr_token:qr});
+  fk.innerHTML=back('Escanear tarjeta')+bannerPrueba()+'<div class="mut" role="status">Buscando la tarjeta…</div>';bindNav();bindCheckinNav();
+  const r=await apiCheckin('qr',{qr_token:qr});
   if(r&&r.alumno&&r.alumno.id)return resultadoCheckin(r);
   /* Nunca se muestran detalles técnicos: solo sin conexión, expirada o no válida. */
   const m=(r&&r.red)?['No pudimos revisar la tarjeta','Revisa la conexión a internet e intenta de nuevo.']
     :(r&&r.motivo==='expirado')?['Esta tarjeta ya expiró','Pide al tutor que abra su tarjeta de nuevo en el Portal de Padres, o busca al alumno por nombre.']
     :['Este código no es una tarjeta válida','Pide al tutor que abra su tarjeta en el Portal de Padres, o busca al alumno por nombre.'];
-  fk.innerHTML=back('Escanear tarjeta')+cajaAviso('<b>'+m[0]+'</b><br>'+m[1],'err')+
+  fk.innerHTML=back('Escanear tarjeta')+bannerPrueba()+cajaAviso('<b>'+m[0]+'</b><br>'+m[1],'err')+
     btnGrande('chk-escanear','scan','Escanear otra vez','pri')+btnGrande('chk-buscar','search','Buscar alumno por nombre');
   bindNav();bindCheckinNav();
 }
 function buscarParaCheckin(){
-  fk.innerHTML=back('Buscar alumno')+'<label class="mut" for="cbx" style="display:block;margin-bottom:6px">Nombre del alumno</label><input class="field xl" id="cbx" autocomplete="off" placeholder="Escribe al menos 2 letras"><div id="cres" aria-live="polite"></div>'+
+  fk.innerHTML=back('Buscar alumno')+bannerPrueba()+'<label class="mut" for="cbx" style="display:block;margin-bottom:6px">Nombre del alumno</label><input class="field xl" id="cbx" autocomplete="off" placeholder="Escribe al menos 2 letras"><div id="cres" aria-live="polite"></div>'+
     btnGrande('chk-escanear','scan','Escanear tarjeta');
   bindNav();bindCheckinNav();
   const bx=fk.querySelector('#cbx'),res=fk.querySelector('#cres');let t,seq=0;
@@ -853,18 +917,18 @@ function buscarParaCheckin(){
     const arr=(r&&r.ok!==false&&r.data)||[];
     res.innerHTML=arr.length?'<div class="card">'+arr.map((a,i)=>'<button class="row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;min-height:56px;font:inherit;color:inherit" data-i="'+i+'"><div class="avatar">'+esc(ini(a.nombre||'?'))+'</div><div style="flex:1"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.cod||'')+'</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></button>').join('')+'</div>'
       :'<div class="card"><div class="empty"><div class="mut">'+(r&&r.ok===false?'No se pudo buscar. Intenta de nuevo.':'Sin resultados.')+'</div></div></div>';
-    res.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>cargarCheckin(arr[+b.dataset.i].id));
+    res.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>cargarCheckin(arr[+b.dataset.i].id,null,null,arr[+b.dataset.i].nombre));
   },250);};
   bx.focus();
 }
-async function cargarCheckin(alumnoId,aviso,tipo){
-  fk.innerHTML=back('Check-in')+'<div class="mut" role="status">Consultando…</div>';bindNav();bindCheckinNav();
-  const r=await call('estado_checkin',{alumno_id:alumnoId});
+async function cargarCheckin(alumnoId,aviso,tipo,nombre){
+  fk.innerHTML=back('Check-in')+bannerPrueba()+'<div class="mut" role="status">Consultando…</div>';bindNav();bindCheckinNav();
+  const r=await apiCheckin('estado_checkin',{alumno_id:alumnoId,nombre_simulado:nombre||undefined});
   if(r&&r.ok===true&&r.alumno&&r.alumno.id)return resultadoCheckin(r,aviso,tipo);
-  fk.innerHTML=back('Check-in')+(aviso?cajaAviso(aviso,tipo||'ok'):'')+cajaAviso('No se pudo consultar la información del alumno. Intenta de nuevo.','err')+
+  fk.innerHTML=back('Check-in')+bannerPrueba()+(aviso?cajaAviso(aviso,tipo||'ok'):'')+cajaAviso('No se pudo consultar la información del alumno. Intenta de nuevo.','err')+
     btnGrande('chk-reintentar','refresh','Intentar de nuevo','pri')+btnGrande('chk-buscar','search','Buscar otro alumno');
   bindNav();bindCheckinNav();
-  fk.querySelector('[data-act="chk-reintentar"]').onclick=()=>cargarCheckin(alumnoId,aviso,tipo);
+  fk.querySelector('[data-act="chk-reintentar"]').onclick=()=>cargarCheckin(alumnoId,aviso,tipo,nombre);
 }
 function fechaClase(iso){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||''))return iso||'';
@@ -881,7 +945,7 @@ function resultadoCheckin(r,aviso,tipo){
   const al=r.alumno;
   const hoy=(r.clase_hoy&&typeof r.clase_hoy==='object')?r.clase_hoy:null;
   const sig=(r.siguiente_clase&&typeof r.siguiente_clase==='object')?r.siguiente_clase:null;
-  let h=back('Check-in');
+  let h=back('Check-in')+bannerPrueba();
   if(aviso)h+=cajaAviso(aviso,tipo||'ok');
   h+='<div class="card" style="padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px"><div class="avatar" id="chkav" style="width:56px;height:56px;font-size:18px;overflow:hidden">'+esc(ini(al.nombre||'?'))+'</div><div style="flex:1;min-width:0"><div class="nm" style="font-size:17px">'+esc(al.nombre)+'</div><div class="mut">'+esc([al.folio,al.programa,al.plan?'Plan '+al.plan:''].filter(Boolean).join(' · '))+'</div></div></div>';
   const cr=al.creditos_restantes!=null?esc(al.creditos_restantes)+(al.creditos_total!=null?' de '+esc(al.creditos_total):''):'—';
@@ -917,15 +981,16 @@ function resultadoCheckin(r,aviso,tipo){
     btn.onclick=async()=>{
       const botones=fk.querySelectorAll('[data-act^="chk-"]'),txt=btn.innerHTML,err=fk.querySelector('#chkerr');
       botones.forEach(b=>b.disabled=true);btn.textContent='Guardando…';err.textContent='';
-      const res=await call(accion,payload);
+      const res=await apiCheckin(accion,payload,al.id);
       if(res&&res.ok===true&&exito(res))return cargarCheckin(al.id,msgOk(res));
       if(siFalla&&siFalla(res))return;
       botones.forEach(b=>b.disabled=false);btn.innerHTML=txt;
-      err.textContent=(res&&res.error&&!res.red)?'No se pudo guardar: '+res.error:'No se pudo guardar. Revisa la conexión e intenta de nuevo.';
+      const det=detalleRechazos(res);
+      err.textContent=errorStaff(res)+(det?(' · rechazado: '+det):'');
     };
   };
   if(hoy)ejecutar('chk-cobrar','guardar_asistencias',{items:[{id:hoy.asistencia_id,estatus:'Asistió'}]},
-    x=>Number(x.actualizadas)>=1,()=>'✓ Asistencia registrada y crédito cobrado.');
+    x=>Number(x.actualizadas)>=1&&!(x.rechazados&&x.rechazados.length),()=>'✓ Asistencia registrada y crédito cobrado.');
   if(sig){
     const p={alumno_id:al.id,horario_id:sig.horario_id,fecha:sig.fecha};
     ejecutar('chk-registrar','registrar_en_clase',p,x=>!!x.asistencia_id,()=>'✓ Registrado en '+(sig.bloque||'la clase')+' · '+fechaClase(sig.fecha)+'.',

@@ -110,6 +110,10 @@ const CONFIG = {
   VERIFY_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-verify",
   PORTAL_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-acciones"
 };
+/* MOCK_PORTAL: true = el portal NO llama al backend (fitkid-portal-otp, -verify y
+   -acciones todavía no existen en n8n). Con cualquier correo y cualquier código de 6
+   dígitos entra y muestra datos de ejemplo. Cámbialo a false cuando estén publicados. */
+const MOCK_PORTAL=true;
 const fk=document.getElementById('fk');
 /* Sesión del tutor: SOLO en memoria. Nunca localStorage/sessionStorage/cookies. Se pierde al recargar. */
 const AUTH={token:null};
@@ -138,7 +142,29 @@ function pararTimer(){if(state.timer){clearInterval(state.timer);state.timer=nul
 /* ---------- red ---------- */
 /* Sin sesión o con 401 la promesa queda pendiente, para que ninguna pantalla se pinte encima de la de entrada. */
 const SIN_SESION=()=>new Promise(()=>{});
+async function simularPortal(url,body){
+  await new Promise(r=>setTimeout(r,400));
+  const hoy=new Date(),otro=new Date();otro.setDate(otro.getDate()+2);
+  const fmt=x=>x.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  if(url===CONFIG.OTP_URL)return {status:200,data:{ok:true,simulado:true}};
+  if(url===CONFIG.VERIFY_URL)return {status:200,data:(String(body.codigo||'').length===6)?{ok:true,token:'simulado',rol:'tutor',simulado:true}:{ok:false,error:'Código incorrecto o vencido'}};
+  if(body.accion==='mis_alumnos')return {status:200,data:{ok:true,data:[
+    {id:'sim1',nombre:'Mateo Pérez (ejemplo)',tipo:'alumno',tutor_nombre:'Laura'},
+    {id:'sim2',nombre:'Laura Pérez (ejemplo)',tipo:'fitparent',tutor_nombre:'Laura'}]}};
+  if(body.accion==='ficha_alumno_tutor'){
+    const menor=body.perfil_id!=='sim2';
+    return {status:200,data:{ok:true,perfil:menor?
+      {nombre:'Mateo Pérez (ejemplo)',folio:'26-MPE-004',programa:'Iniciación Deportiva (3-6)',plan:'M2',creditos_restantes:5,creditos_total:8,
+       estado_pago:'Pagado',vencimiento:'10 de febrero de 2027',proximas:[{fecha:fmt(hoy),hora:'4:00-5:00 PM'},{fecha:fmt(otro),hora:'4:00-5:00 PM'}],
+       tutor_responsable:{nombre:'Laura Pérez',telefono:'9991234567',correo:'laura@ejemplo.com'},qr_token:'simulado-mateo'}:
+      {nombre:'Laura Pérez (ejemplo)',folio:'26-LPE-010',programa:'FitParents',plan:'FP',creditos_restantes:18,creditos_total:20,
+       estado_pago:'Pendiente',vencimiento:'5 de enero de 2027',proximas:[{fecha:fmt(hoy),hora:'7:00-8:00 AM'}],
+       telefono:'9991234567',correo:'laura@ejemplo.com',qr_token:'simulado-laura'}}};
+  }
+  return {status:200,data:{ok:false,error:'acción no simulada'}};
+}
 async function postJson(url,body,token){
+  if(MOCK_PORTAL)return simularPortal(url,body||{});
   const headers={'Content-Type':'text/plain;charset=UTF-8'};
   if(token)headers.Authorization='Bearer '+token;
   const r=await fetch(url,{method:'POST',headers,body:JSON.stringify(body||{})});
@@ -358,6 +384,13 @@ function cerrarWallet(){
   WALLET=null;
 }
 
+if(MOCK_PORTAL){
+  const bar=document.createElement('div');
+  bar.setAttribute('role','status');
+  bar.style.cssText='background:#faeeda;color:#854f0b;border-bottom:1px solid #e8cfa2;padding:10px 16px;font-size:14px;font-weight:600;text-align:center';
+  bar.textContent='Modo de prueba: datos de ejemplo, nada se guarda';
+  document.body.insertBefore(bar,document.body.firstChild);
+}
 entrada();
 </script>
 </body>
