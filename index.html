@@ -121,6 +121,8 @@
   body.kiosk-on{background:#0c1420}
   body.kiosk-on #fk{max-width:640px}
   .kiosk-wrap{animation:rise .2s ease}
+  .ferr{color:var(--danger);font-size:13px;margin-top:6px}
+  .pruebabar{background:var(--amber-bg);color:var(--amber);border:1px solid #e8cfa2;border-radius:var(--r-sm);padding:11px 14px;font-size:14px;font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:8px}
   .escaner{position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:3/4;max-height:60vh;border-radius:14px;overflow:hidden;background:#000}
   .escaner video{width:100%;height:100%;object-fit:cover;display:block}
   .escaner-marco{position:absolute;inset:16% 14%;border:3px solid rgba(255,255,255,.92);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -131,6 +133,11 @@
 <script>
 /* CONFIG — pega la URL del router de webhooks de n8n. Vacío = MODO DEMO. */
 const CONFIG = { WEBHOOK_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-staff-acciones", AUTH_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-auth", QR_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-qr-scan", CHAT_URL:"https://yoor32.app.n8n.cloud/webhook/140c2254-cd40-40f0-a9ec-3d3cbe25199c/chat", STRIPE_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-stripe-link" };
+/* MOCK_VERIFICAR: true = guardar la verificación NO llama al backend (la acción
+   'verificar_alumno' todavía no existe en el router de n8n). Cámbialo a false cuando el
+   endpoint esté publicado: es lo único que hay que tocar, el resto del código no sabe si
+   está simulando. */
+const MOCK_VERIFICAR=true;
 const fk=document.getElementById('fk'); const DEMO=!CONFIG.WEBHOOK_URL; const state={lote:0}; let PRE=null;
 /* Token de sesión: SOLO en memoria. Nunca localStorage/sessionStorage/cookies. Se pierde al recargar. */
 const AUTH={token:null,rol:null,expira:null};
@@ -373,108 +380,161 @@ function stat2(l,v){return '<div class="card" style="padding:11px 13px"><div cla
 function suspQuick(a,est){call('suspender_reactivar',{alumno_id:a.id,estado:est}).then(r=>{if(r&&r.ok){fichaAlumno(a);toast('✓ '+a.nombre+': '+est,'ok');}else toast('Error','');});}
 function reagendarAsistencia(asid,fechaAct,a){fk.innerHTML=back('Reagendar clase')+'<div class="mut" style="margin-bottom:10px">'+a.nombre+' · clase del '+fechaAct+'</div><input type="date" class="field" id="fch"><button class="btn pri" style="width:100%;justify-content:center" data-act="conf-rea2"><i class="ti ti-calendar-event" aria-hidden="true"></i> Reagendar</button>';bindNav();fk.querySelector('[data-act="conf-rea2"]').onclick=async()=>{const f=fk.querySelector('#fch').value;if(!f){toast('Elige una fecha','');return;}const r=await call('reagendar_clase',{asistencia_id:asid,nueva_fecha:f});if(r&&r.ok){fichaAlumno(a);toast('✓ Reagendada a '+f,'ok');}else toast('Error','');};}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-/* Categoría esperada para comparar contra el horario: adultos van a FitParents; 0-2 y 15-17 no tienen categoría. */
-function categoriaParaHorario(edad){ if(edad==null)return null; if(edad>=18)return 'FitParents'; return categoriaDeEdad(edad); }
+/* Valores exactos del select "Programa" en Notion. */
+const PROG={ini:'Iniciación Deportiva (3-6)',oli:'Gimnasia Olímpica (7-14)',fp:'FitParents',rev:'Requiere revisión'};
+const PROG_INFANTIL={[PROG.ini]:1,[PROG.oli]:1};
+/* Alumnos verificados en modo simulado: evita que la ficha vuelva a pedir la verificación. Solo en memoria. */
+const VERIFICADOS_SIMULADOS=new Set();
+function categoriaSugerida(edad){ if(edad==null||edad<0)return null; if(edad>=3&&edad<=6)return PROG.ini; if(edad>=7&&edad<=14)return PROG.oli; if(edad>=18)return PROG.fp; return PROG.rev; }
+function programaDeHorario(nombre){ const c=categoriaDeHorario(nombre); return c==='FitParents'?PROG.fp:c==='Gimnasia Olímpica'?PROG.oli:c==='Iniciación Deportiva'?PROG.ini:PROG.rev; }
+/* "Olímpica 6-7 PM (Lun-Vie)" → "6:00-7:00 PM", solo si existe como opción en Notion. */
+function horaDeBloque(nombre){
+  const m=String(nombre||'').match(/(\d{1,2})(?::(\d{2}))?\s*(?:-|–|a)\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?/i);
+  if(!m)return null;
+  const v=m[1]+':'+(m[2]||'00')+'-'+m[3]+':'+(m[4]||'00')+' '+(m[5].toLowerCase()==='a'?'AM':'PM');
+  return HORAS.indexOf(v)!==-1?v:(HORAS.filter(h=>h.indexOf(v+' ')===0)[0]||null);
+}
+function tel52(t){const d=String(t||'').replace(/\D/g,'').slice(-10);return d.length===10?('+52'+d):'';}
+/* Único punto de guardado de la verificación. Con MOCK_VERIFICAR en true no toca la red. */
+async function guardarVerificacion(payload){
+  const falta=(!payload.nombre&&'el nombre del alumno')||(!payload.fecha_nacimiento&&'la fecha de nacimiento')||(!payload.alergias&&'las alergias')||(!payload.horario_id&&'el horario')||(!(payload.dias&&payload.dias.length)&&'los días');
+  if(falta)return {ok:false,error:'Falta '+falta+'.'};
+  if(!MOCK_VERIFICAR)return call('verificar_alumno',payload);
+  await new Promise(r=>setTimeout(r,400));
+  const edad=calcEdad(payload.fecha_nacimiento),sug=categoriaSugerida(edad);
+  return {ok:true,alumno_id:payload.alumno_id,edad:edad,categoria_sugerida:sug,
+    alerta_edad_horario:!!(sug&&PROG_INFANTIL[sug]&&PROG_INFANTIL[payload.programa]&&sug!==payload.programa),
+    tutor_id:'simulado',tutor_creado:false,simulado:true};
+}
 function verificarAlumno(a,pre,ctx){
   pre=pre||{};ctx=ctx||{};
   const creditos=ctx.mem?Number(ctx.mem.creditos):0;
   const maxDias=creditos>0?Math.floor(creditos/4):null;
   const fnacPre=/^\d{4}-\d{2}-\d{2}/.test(pre.fecha_nacimiento||'')?pre.fecha_nacimiento.slice(0,10):'';
-  const V={nombre:pre.nombre||a.nombre||'',fnac:fnacPre,tutor_nombre:pre.tutor_nombre||'',tutor_correo:pre.tutor_correo||'',tutor_whats:pre.tutor_whatsapp||'',emerg_nombre:pre.emergencia_nombre||'',emerg_tel:pre.emergencia_telefono||'',alergias:pre.alergias||'',
-    horario_id:(ctx.horario&&ctx.horario.id)||pre.horario_id||null,horario_nombre:null,dias:new Set((pre.dias||[]).filter(d=>DIAS.indexOf(d)!==-1)),bloques:[]};
+  const V={nombre:pre.nombre||a.nombre||'',fnac:fnacPre,tutor_nombre:pre.tutor_nombre||'',tutor_correo:pre.tutor_correo||'',tutor_whats:pre.tutor_whatsapp||'',
+    emerg_nombre:pre.emergencia_nombre||'',emerg_tel:pre.emergencia_telefono||'',parentesco:pre.parentesco||'',alergias:pre.alergias||'',
+    horario_id:(ctx.horario&&ctx.horario.id)||pre.horario_id||null,horario_nombre:null,hora_manual:'',dias:new Set((pre.dias||[]).filter(d=>DIAS.indexOf(d)!==-1)),bloques:[]};
   const hoy=new Date().toLocaleDateString('en-CA');
   const aviso=t=>'<div class="toast" role="alert" style="animation:none;background:var(--danger-bg);color:var(--danger);text-align:left;font-weight:600;margin:10px 0 0;border:1px solid #f0c7c7"><i class="ti ti-alert-triangle" aria-hidden="true"></i> '+t+'</div>';
-  const campo=(id,label,val,attrs)=>'<label class="mut" for="'+id+'" style="display:block;margin:16px 0 6px">'+label+'</label><input class="field xl" style="margin-bottom:0" id="'+id+'" value="'+esc(val)+'" '+(attrs||'')+'>';
-  const digitos=t=>(t||'').replace(/\D/g,'');
+  const campo=(id,label,val,attrs)=>'<label class="mut" for="'+id+'" style="display:block;margin:16px 0 6px">'+label+'</label><input class="field xl" style="margin-bottom:0" id="'+id+'" value="'+esc(val)+'" '+(attrs||'')+'><div class="ferr" id="e-'+id+'" role="alert"></div>';
+  const $=id=>fk.querySelector('#'+id);
+  const horaElegida=()=>V.horario_nombre?(horaDeBloque(V.horario_nombre)||V.hora_manual||''):'';
   cargar();
   async function cargar(){
     fk.innerHTML=back('Verificación de alumno')+'<div class="mut">Cargando horarios…</div>';bindNav();
     const hl=await call('horarios_lista',{});
     V.bloques=hl.data||[];
-    const b=V.bloques.find(x=>x.id===V.horario_id);
+    const b=V.bloques.filter(x=>x.id===V.horario_id)[0];
     if(b)V.horario_nombre=b.nombre;else V.horario_id=null;
     draw();
   }
   function draw(){
     let h=back('Verificación de alumno');
-    h+='<div class="toast" style="background:var(--brand-bg);color:var(--brand-600);text-align:left;margin:0"><i class="ti ti-shield-check" aria-hidden="true"></i> Primera visita a front desk: confirma los datos con el tutor antes de continuar.</div>';
+    if(MOCK_VERIFICAR)h+='<div class="pruebabar" role="status"><i class="ti ti-flask" aria-hidden="true"></i> Modo de prueba: los datos no se guardan todavía</div>';
+    h+='<div class="toast" style="animation:none;background:var(--brand-bg);color:var(--brand-600);text-align:left;margin:0"><i class="ti ti-shield-check" aria-hidden="true"></i> Primera visita a front desk: confirma los datos con el tutor antes de continuar.</div>';
     h+=campo('vnm','Nombre completo del alumno',V.nombre,'autocomplete="off" placeholder="Nombre y apellidos"');
     h+=campo('vfn','Fecha de nacimiento',V.fnac,'type="date" max="'+hoy+'"');
     h+='<div id="vedad" aria-live="polite"></div>';
     h+=campo('vtn','Nombre del tutor',V.tutor_nombre,'autocomplete="off" placeholder="Nombre y apellidos"');
     h+=campo('vtc','Correo del tutor',V.tutor_correo,'type="email" inputmode="email" autocomplete="off" placeholder="correo@ejemplo.com"');
     h+=campo('vtw','WhatsApp del tutor',V.tutor_whats,'type="tel" inputmode="tel" autocomplete="off" placeholder="10 dígitos"');
+    h+=campo('vpa','Parentesco con el alumno',V.parentesco,'autocomplete="off" placeholder="Mamá, papá, abuela…"');
     h+=campo('ven','Contacto de emergencia',V.emerg_nombre,'autocomplete="off" placeholder="Nombre del contacto"');
     h+=campo('vet','Teléfono de emergencia',V.emerg_tel,'type="tel" inputmode="tel" autocomplete="off" placeholder="10 dígitos"');
     h+=campo('val','Alergias o condiciones médicas',V.alergias,'autocomplete="off" placeholder="Si no hay, escribe &quot;ninguna&quot;"');
-    h+='<div class="mut" style="margin:20px 0 6px">Bloque de clase (hora)</div>';
+    h+='<div class="mut" style="margin:20px 0 6px">Bloque de clase</div>';
     h+= V.bloques.length? '<div class="grid" style="grid-template-columns:1fr;gap:8px">'+V.bloques.map(b=>'<button type="button" class="btn xl" style="justify-content:flex-start" data-bk="'+esc(b.id)+'" data-nm="'+esc(b.nombre)+'">'+esc(b.nombre)+' · cupo '+esc(b.cupo)+'</button>').join('')+'</div>' : '<div class="card"><div class="empty"><div class="mut">No hay horarios disponibles.</div></div></div>';
+    h+='<div class="ferr" id="e-bloque" role="alert"></div><div id="vhora"></div>';
     h+='<div class="mut" style="margin:20px 0 6px">Días <span id="vdcnt"></span></div>';
     h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px">'+DIAS.map(d=>'<button type="button" class="btn xl" style="justify-content:center" data-dia="'+d+'">'+d+'</button>').join('')+'</div>';
+    h+='<div class="ferr" id="e-dias" role="alert"></div>';
     h+='<div style="position:sticky;bottom:0;z-index:2;background:var(--bg);border-top:1px solid var(--line);padding:10px 0 calc(10px + env(safe-area-inset-bottom));margin-top:20px">';
     h+='<div id="vaviso"></div><div id="verr" role="alert" style="color:var(--danger);font-size:14px;margin:6px 0 0"></div>';
     h+='<button type="button" class="btn pri xl" style="width:100%;justify-content:center;margin-top:8px" id="vguardar"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar verificación</button></div>';
     fk.innerHTML=h;bindNav();
-    const $=id=>fk.querySelector('#'+id);
-    [['vnm','nombre'],['vtn','tutor_nombre'],['vtc','tutor_correo'],['vtw','tutor_whats'],['ven','emerg_nombre'],['vet','emerg_tel'],['val','alergias']].forEach(([id,k])=>{$(id).oninput=()=>{V[k]=$(id).value;};});
-    const fn=$('vfn');fn.oninput=fn.onchange=()=>{V.fnac=fn.value;actualizar();};
-    fk.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>{V.horario_id=b.dataset.bk;V.horario_nombre=b.dataset.nm;actualizar();});
+    [['vnm','nombre'],['vtn','tutor_nombre'],['vtc','tutor_correo'],['vtw','tutor_whats'],['vpa','parentesco'],['ven','emerg_nombre'],['vet','emerg_tel'],['val','alergias']].forEach(function(x){$(x[0]).oninput=function(){V[x[1]]=$(x[0]).value;limpiarErr('e-'+x[0]);};});
+    const fn=$('vfn');fn.oninput=fn.onchange=()=>{V.fnac=fn.value;limpiarErr('e-vfn');actualizar();};
+    fk.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>{V.horario_id=b.dataset.bk;V.horario_nombre=b.dataset.nm;V.hora_manual='';limpiarErr('e-bloque');actualizar();});
     fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{const d=b.dataset.dia;
       if(V.dias.has(d))V.dias.delete(d);
-      else if(maxDias!=null&&V.dias.size>=maxDias){$('verr').textContent='Su plan permite '+maxDias+' día'+(maxDias===1?'':'s')+' por semana. Quita uno para elegir otro.';return;}
+      else if(maxDias!=null&&V.dias.size>=maxDias){$('e-dias').textContent='Su plan permite '+maxDias+' día'+(maxDias===1?'':'s')+' por semana. Quita uno para elegir otro.';return;}
       else V.dias.add(d);
-      actualizar();});
+      limpiarErr('e-dias');actualizar();});
     $('vguardar').onclick=guardar;
     actualizar();
   }
+  function limpiarErr(id){const e=$(id);if(e)e.textContent='';}
   function actualizar(){
     const edad=calcEdad(V.fnac),futura=edad!=null&&edad<0;
-    const catEdad=categoriaDeEdad(edad),catH=categoriaDeHorario(V.horario_nombre);
-    const txt=(!futura&&edad!=null&&catH&&categoriaParaHorario(edad)!==catH)?'Este horario es de '+catH+' pero el alumno tiene '+edad+(edad===1?' año':' años')+'. Confirma con el tutor antes de guardar.':'';
+    const catEdad=categoriaDeEdad(edad),catH=categoriaDeHorario(V.horario_nombre),sug=categoriaSugerida(edad);
+    const txt=(!futura&&edad!=null&&catH&&programaDeHorario(V.horario_nombre)!==sug)?'Este horario es de '+catH+' pero el alumno tiene '+edad+(edad===1?' año':' años')+'. Confirma con el tutor antes de guardar.':'';
     let h='';
     if(futura)h=aviso('La fecha de nacimiento no puede ser posterior a hoy.');
     else if(edad!=null)h='<div class="grid" style="animation:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">'+stat2('Edad',edad+(edad===1?' año':' años'))+stat2('Categoría',catEdad||(edad>=18?'FitParents (adulto)':'Fuera de rango (3 a 14 años)'))+'</div>';
     if(txt)h+=aviso(txt);
-    fk.querySelector('#vedad').innerHTML=h;
-    fk.querySelector('#vaviso').innerHTML=txt?aviso(txt):'';
-    fk.querySelector('#verr').textContent='';
+    $('vedad').innerHTML=h;
+    $('vaviso').innerHTML=txt?aviso(txt):'';
+    $('verr').textContent='';
     fk.querySelectorAll('[data-bk]').forEach(b=>{const on=b.dataset.bk===V.horario_id;b.classList.toggle('pri',on);b.setAttribute('aria-pressed',on);});
     fk.querySelectorAll('[data-dia]').forEach(b=>{const on=V.dias.has(b.dataset.dia);b.classList.toggle('pri',on);b.setAttribute('aria-pressed',on);});
-    fk.querySelector('#vdcnt').textContent=maxDias!=null?'('+V.dias.size+' de '+maxDias+' según su plan)':'';
+    $('vdcnt').textContent=maxDias!=null?'('+V.dias.size+' de '+maxDias+' según su plan)':'(no conocemos su plan: revisa que sean los correctos)';
+    dibujarHora();
+  }
+  /* La hora se saca del nombre del bloque; si no se puede, el staff la elige (es un select de Notion). */
+  function dibujarHora(){
+    const cont=$('vhora');if(!cont)return;
+    if(!V.horario_id){cont.innerHTML='';return;}
+    const auto=horaDeBloque(V.horario_nombre);
+    if(auto){cont.innerHTML='<div class="mut" style="margin-top:8px">Hora de clase: <b>'+esc(auto)+'</b></div>';return;}
+    cont.innerHTML='<label class="mut" for="vho" style="display:block;margin:16px 0 6px">Hora de clase</label><select class="field xl" id="vho" style="margin-bottom:0"><option value="">Elige la hora…</option>'+HORAS.map(x=>'<option value="'+esc(x)+'"'+(V.hora_manual===x?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select><div class="ferr" id="e-vho" role="alert"></div>';
+    $('vho').onchange=()=>{V.hora_manual=$('vho').value;limpiarErr('e-vho');};
   }
   async function guardar(){
-    const $=id=>fk.querySelector('#'+id),err=$('verr'),btn=$('vguardar');
-    ['nombre','tutor_nombre','tutor_correo','emerg_nombre','alergias'].forEach(k=>V[k]=(V[k]||'').trim());
+    const btn=$('vguardar');
+    ['nombre','tutor_nombre','tutor_correo','emerg_nombre','alergias','parentesco'].forEach(k=>V[k]=(V[k]||'').trim());
     const edad=calcEdad(V.fnac);
-    const falta=[
-      [!V.nombre,'vnm','Falta el nombre del alumno'],
-      [!V.fnac,'vfn','Falta la fecha de nacimiento'],
-      [edad!=null&&edad<0,'vfn','La fecha de nacimiento no puede ser posterior a hoy'],
-      [!V.tutor_nombre,'vtn','Falta el nombre del tutor'],
-      [!V.tutor_correo||!$('vtc').checkValidity(),'vtc','Revisa el correo del tutor'],
-      [digitos(V.tutor_whats).length!==10,'vtw','El WhatsApp del tutor debe tener 10 dígitos'],
-      [!V.emerg_nombre,'ven','Falta el contacto de emergencia'],
-      [digitos(V.emerg_tel).length!==10,'vet','El teléfono de emergencia debe tener 10 dígitos'],
-      [!V.alergias,'val','Escribe las alergias o condiciones médicas, o "ninguna"'],
-      [!V.horario_id,null,'Confirma el bloque de clase'],
-      [!V.dias.size,null,'Elige al menos un día'],
-      [maxDias!=null&&V.dias.size>maxDias,null,'Su plan permite '+maxDias+' día(s) por semana; quita días'],
-    ].find(x=>x[0]);
-    if(falta){err.textContent=falta[2];if(falta[1])$(falta[1]).focus();return;}
-    const catH=categoriaDeHorario(V.horario_nombre);
-    btn.disabled=true;err.textContent='Guardando…';
-    const r=await call('verificar_alumno',{alumno_id:a.id,nombre:V.nombre,fecha_nacimiento:V.fnac,edad:edad,categoria:categoriaDeEdad(edad),
-      tutor_nombre:V.tutor_nombre,tutor_correo:V.tutor_correo,tutor_whatsapp:digitos(V.tutor_whats),emergencia_nombre:V.emerg_nombre,emergencia_telefono:digitos(V.emerg_tel),
-      alergias:V.alergias,horario_id:V.horario_id,horario_nombre:V.horario_nombre,dias:DIAS.filter(d=>V.dias.has(d)),
-      categoria_no_coincide:!!(catH&&categoriaParaHorario(edad)!==catH),verificado_front_desk:true});
+    const fallas=[
+      [!V.nombre,'e-vnm','vnm','Escribe el nombre completo del alumno'],
+      [!V.fnac,'e-vfn','vfn','Falta la fecha de nacimiento'],
+      [edad!=null&&edad<0,'e-vfn','vfn','La fecha no puede ser posterior a hoy'],
+      [!V.tutor_nombre,'e-vtn','vtn','Escribe el nombre del tutor'],
+      [!V.tutor_correo||!$('vtc').checkValidity(),'e-vtc','vtc','Revisa el correo del tutor'],
+      [!tel52(V.tutor_whats),'e-vtw','vtw','El WhatsApp debe tener 10 dígitos'],
+      [!V.emerg_nombre,'e-ven','ven','Escribe el contacto de emergencia'],
+      [!tel52(V.emerg_tel),'e-vet','vet','El teléfono debe tener 10 dígitos'],
+      [!V.alergias,'e-val','val','Escribe las alergias o "ninguna"'],
+      [!V.horario_id,'e-bloque',null,'Elige el bloque de clase'],
+      [!horaElegida(),'e-vho','vho','Elige la hora de clase'],
+      [!V.dias.size,'e-dias',null,'Elige al menos un día'],
+      [maxDias!=null&&V.dias.size>maxDias,'e-dias',null,'Su plan permite '+maxDias+' día(s) por semana; quita días'],
+    ].filter(x=>x[0]);
+    fk.querySelectorAll('.ferr').forEach(e=>e.textContent='');
+    if(fallas.length){
+      fallas.forEach(f=>{const e=$(f[1]);if(e)e.textContent=f[3];});
+      const primero=fallas[0],campo1=primero[2]?$(primero[2]):$(primero[1]);
+      if(campo1&&campo1.scrollIntoView)campo1.scrollIntoView({block:'center',behavior:'smooth'});
+      if(primero[2]&&$(primero[2]))$(primero[2]).focus({preventScroll:true});
+      $('verr').textContent='Revisa los datos marcados en rojo.';
+      return;
+    }
+    const payload={alumno_id:a.id,nombre:V.nombre,fecha_nacimiento:V.fnac,programa:programaDeHorario(V.horario_nombre),
+      horario_id:V.horario_id,dias:DIAS.filter(d=>V.dias.has(d)),hora_clase:horaElegida(),alergias:V.alergias,
+      tutor:{nombre:V.tutor_nombre,email:V.tutor_correo,whatsapp:tel52(V.tutor_whats),contacto_emergencia:V.emerg_nombre,telefono_emergencia:tel52(V.emerg_tel),parentesco:V.parentesco}};
+    btn.disabled=true;$('verr').textContent='Guardando…';
+    const r=await guardarVerificacion(payload);
     btn.disabled=false;
-    if(r&&r.ok){fichaAlumno(a,'✓ Alumno verificado');}else{err.textContent='No se pudo guardar: '+((r&&r.error)||'intenta de nuevo');}
+    if(!r||!r.ok){$('verr').textContent=(r&&r.error&&!r.red)?r.error:'No se pudo guardar. Revisa la conexión e intenta de nuevo.';return;}
+    if(r.simulado)VERIFICADOS_SIMULADOS.add(a.id);
+    let msg=r.simulado?'Datos completos · modo de prueba: no se guardaron':'✓ Alumno verificado';
+    if(r.tutor_creado)msg+=' · tutor nuevo creado';
+    if(r.alerta_edad_horario)msg+=' · quedó marcada la alerta de edad/horario';
+    fichaAlumno(a,msg);
   }
 }
 function fichaAlumno(a,avisoOk){fk.innerHTML=back('Ficha del alumno')+'<div class="mut">Cargando ficha…</div>';bindNav();
   call('ficha_alumno',{alumno_id:a.id}).then(r=>{if(!r||!r.ok){fk.innerHTML=back('Ficha del alumno')+'<div class="card"><div class="empty"><div class="mut">No se pudo cargar la ficha.</div></div></div>';bindNav();return;}
     const al=r.al||{},mem=r.mem,prox=r.prox||[],pagos=r.pagos||[];const estDng=al.estatus==='Suspendido';
-    if(!al.verificado_front_desk){verificarAlumno(a,al,{mem:mem,horario:r.horario});return;}
+    if(!al.verificado_front_desk&&!VERIFICADOS_SIMULADOS.has(a.id)){verificarAlumno(a,al,{mem:mem,horario:r.horario});return;}
     let h=back('Ficha del alumno');
     h+='<div class="card" style="padding:15px 16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px"><div class="avatar" style="width:46px;height:46px;font-size:16px">'+ini(al.nombre||a.nombre||'?')+'</div><div style="flex:1"><div class="nm" style="font-size:16px">'+(al.nombre||a.nombre)+'</div><div class="mut">'+(al.cod||a.cod||'')+(al.hora?(' · '+al.hora):'')+'</div></div><span class="btn '+(estDng?'dng':'ok')+'" style="cursor:default;padding:5px 11px;font-size:12px">'+(al.estatus||'Activo')+'</span></div>'+((al.dias&&al.dias.length)?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+al.dias.map(d=>'<span class="stp on">'+d+'</span>').join('')+'</div>':'')+'</div>';
     h+='<div class="grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">'+stat2('Plan',mem?mem.plan:'—')+stat2('Créditos',mem&&mem.restantes!=null?(mem.restantes+'/'+mem.creditos):'—')+stat2('Estado de pago',mem?(mem.estado||'—'):'—')+stat2('Inscripción',al.insc||'—')+'</div>';

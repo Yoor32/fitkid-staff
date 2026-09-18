@@ -48,6 +48,15 @@ tienes que tocar nada en Duda: el iframe siempre apunta a la misma URL.
 - Rol `staff` ve todo el panel; rol `kiosco` ve solo la pantalla de check-in por código
   (`/webhook/fitkid-qr-scan`); rol `tutor` no puede entrar por aquí (se rechaza en el front).
 
+## Verificación de alumno en front desk
+- Se muestra antes de la ficha cuando `Verificado en front desk` viene en false.
+- Guarda con la acción `verificar_alumno` (contrato del 18-sep: `programa`, `horario_id`,
+  `dias`, `hora_clase`, `alergias` y `tutor` anidado con teléfonos en formato `+52##########`).
+  El servidor calcula edad, categoría y la alerta de edad/horario.
+- **`MOCK_VERIFICAR` (index.html, cerca del CONFIG) está en `true`**: el guardado no llama al
+  webhook porque la acción todavía no existe en el router. Al ponerlo en `false` se usa el
+  webhook real y desaparece el aviso de "Modo de prueba". No hay que tocar nada más.
+
 ## Botón "Escanear tarjeta" (QR del Portal de Padres)
 - Abre la cámara trasera y lee el QR con la API `BarcodeDetector` del navegador (sin librerías).
   Funciona en Chrome para Android; **Safari (iPad/iPhone) no la tiene**, ahí se ofrece buscar por nombre.
