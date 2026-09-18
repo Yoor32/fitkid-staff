@@ -36,8 +36,8 @@ tienes que tocar nada en Duda: el iframe siempre apunta a la misma URL.
 
 ## Seguridad
 - La página vive detrás del **login de miembros de Duda** (privada).
-- El panel pide login (usuario/contraseña) contra `POST /webhook/fitkid-auth`, que responde
-  `{ token, rol, expira }`. El token se guarda **solo en una variable de JavaScript en
+- El panel pide login (usuario/contraseña) contra `POST /webhook/fitkid-auth` con
+  `{ usuario, contrasena }` (sin ñ) y espera `{ ok, token, rol, nombre, expira }`. El token se guarda **solo en una variable de JavaScript en
   memoria** (nunca en localStorage/sessionStorage/cookies) y se pierde al recargar la página.
 - Cada acción manda el token en el header `Authorization: Bearer <token>` contra
   `/webhook/fitkid-staff-acciones` y `/webhook/fitkid-stripe-link`. Ya no hay ningún secreto

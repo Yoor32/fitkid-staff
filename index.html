@@ -140,7 +140,7 @@ const CONFIG = { WEBHOOK_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-staff-
 const MOCK_VERIFICAR=true;
 const fk=document.getElementById('fk'); const DEMO=!CONFIG.WEBHOOK_URL; const state={lote:0}; let PRE=null;
 /* Token de sesión: SOLO en memoria. Nunca localStorage/sessionStorage/cookies. Se pierde al recargar. */
-const AUTH={token:null,rol:null,expira:null};
+const AUTH={token:null,rol:null,nombre:null,expira:null};
 /* Estado del kiosco manual (botón "Abrir kiosco"): SOLO en memoria, incluida la cola sin conexión. */
 let KIOSK=null;
 
@@ -198,8 +198,8 @@ const MOCK={
 const SIN_SESION=()=>new Promise(()=>{});
 async function call(a,p){ if(DEMO){await new Promise(r=>setTimeout(r,220));return{demo:1,data:MOCK[a]||[]};} return callUrl(CONFIG.WEBHOOK_URL,{accion:a,...(p||{})}); }
 async function callUrl(url,p){ if(!url){return {ok:false,error:'sin URL'};} const tk=AUTH.token; if(!tk)return SIN_SESION(); try{ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8','Authorization':'Bearer '+tk},body:JSON.stringify(p||{})}); if(r.status===401){ if(AUTH.token===tk)sessionExpired(); return SIN_SESION(); } return await r.json(); }catch(e){ return {ok:false,error:String(e),data:[],red:true}; } }
-async function callAuth(usuario,pass){ try{ const r=await fetch(CONFIG.AUTH_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({usuario:usuario,contraseña:pass})}); return await r.json(); }catch(e){ return {ok:false,error:String(e)}; } }
-function borrarSesion(){ AUTH.token=null;AUTH.rol=null;AUTH.expira=null; detenerKiosco(); detenerEscaner(); }
+async function callAuth(usuario,pass){ try{ const r=await fetch(CONFIG.AUTH_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({usuario:usuario,contrasena:pass})}); return await r.json(); }catch(e){ return {ok:false,error:String(e)}; } }
+function borrarSesion(){ AUTH.token=null;AUTH.rol=null;AUTH.nombre=null;AUTH.expira=null; detenerKiosco(); detenerEscaner(); }
 function sessionExpired(){ borrarSesion(); loginScreen('Tu sesión expiró, vuelve a entrar'); }
 function doLogout(){ borrarSesion(); loginScreen(); }
 function cv(c){return getComputedStyle(document.documentElement).getPropertyValue('--'+c).trim();}
@@ -274,7 +274,8 @@ async function listaSimple(a,title){fk.innerHTML=back(title)+'<div class="mut">C
   h+= rows.length? '<div class="card">'+rows.map(x=>'<div class="row"><div class="avatar">'+ini(x.n||x.nombre||'?')+'</div><div style="flex:1"><div class="nm">'+(x.n||x.nombre||'—')+'</div><div class="mut">'+(x.estado||x.detalle||'')+'</div></div></div>').join('')+'</div>' : '<div class="card"><div class="empty"><div class="eic"><i class="ti ti-checks" aria-hidden="true"></i></div><div class="mut">Sin resultados (o conecta el webhook).</div></div></div>';
   fk.innerHTML=h;bindNav();}
 function stub(title){fk.innerHTML=back(title)+'<div class="card"><div class="empty"><div class="eic"><i class="ti ti-wand" aria-hidden="true"></i></div><div class="nm">Flujo guiado</div><div class="mut" style="margin-top:6px;max-width:340px;margin-inline:auto">Mismo patrón de botones paso a paso. Se activa al conectar su webhook en n8n.</div></div></div>';bindNav();}
-const HORAS=['4:00-5:00 PM','5:00-6:00 PM','6:00-7:00 PM','7:00-8:00 PM','9:00-10:00 AM (FitParents)'];
+/* Copia exacta de las opciones del select "Hora de clase" en Notion (orden cronológico). */
+const HORAS=['7:00-8:00 AM (FitParents)','8:00-9:00 AM (FitParents)','9:00-10:00 AM (FitParents)','10:00-11:00 AM (FitParents)','4:00-5:00 PM','5:00-6:00 PM','6:00-7:00 PM','7:00-8:00 PM'];
 const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes'];
 const PLANES=[['M1',4],['M2',8],['M3',12],['M4',16],['M5',20],['M6',24],['M7',32],['M8',40]];
 function horaChips(s){return HORAS.map(h=>'<button class="btn '+(s===h?'pri':'')+'" style="font-size:12px;padding:8px 10px" data-hora="'+h+'">'+h+'</button>').join('');}
@@ -387,12 +388,18 @@ const PROG_INFANTIL={[PROG.ini]:1,[PROG.oli]:1};
 const VERIFICADOS_SIMULADOS=new Set();
 function categoriaSugerida(edad){ if(edad==null||edad<0)return null; if(edad>=3&&edad<=6)return PROG.ini; if(edad>=7&&edad<=14)return PROG.oli; if(edad>=18)return PROG.fp; return PROG.rev; }
 function programaDeHorario(nombre){ const c=categoriaDeHorario(nombre); return c==='FitParents'?PROG.fp:c==='Gimnasia Olímpica'?PROG.oli:c==='Iniciación Deportiva'?PROG.ini:PROG.rev; }
-/* "Olímpica 6-7 PM (Lun-Vie)" → "6:00-7:00 PM", solo si existe como opción en Notion. */
+/* "Olímpica 6-7 PM (Lun-Vie)" → "6:00-7:00 PM". Devuelve null salvo que la hora se deduzca
+   sin ambigüedad Y coincida en programa con el bloque: meter a un adulto de FitParents en la
+   clase de 3 a 6 años (o al revés) es peor que pedirle al staff que elija la hora a mano. */
 function horaDeBloque(nombre){
   const m=String(nombre||'').match(/(\d{1,2})(?::(\d{2}))?\s*(?:-|–|a)\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?/i);
   if(!m)return null;
   const v=m[1]+':'+(m[2]||'00')+'-'+m[3]+':'+(m[4]||'00')+' '+(m[5].toLowerCase()==='a'?'AM':'PM');
-  return HORAS.indexOf(v)!==-1?v:(HORAS.filter(h=>h.indexOf(v+' ')===0)[0]||null);
+  const cand=HORAS.filter(h=>h===v||h.indexOf(v+' (')===0);
+  if(cand.length!==1)return null;
+  const bloqueFP=categoriaDeHorario(nombre)==='FitParents'||/fitparent/i.test(nombre);
+  if(bloqueFP!==/FitParents/i.test(cand[0]))return null;
+  return cand[0];
 }
 function tel52(t){const d=String(t||'').replace(/\D/g,'').slice(-10);return d.length===10?('+52'+d):'';}
 /* Único punto de guardado de la verificación. Con MOCK_VERIFICAR en true no toca la red. */
@@ -594,10 +601,10 @@ function loginScreen(msg){
     btn.disabled=true;err.textContent='';
     const r=await callAuth(usuario,pass);
     btn.disabled=false;
-    if(!r||!r.token||!r.rol){err.textContent=(r&&r.error)||'Usuario o contraseña incorrectos';return;}
+    if(!r||r.ok===false||!r.token||!r.rol){err.textContent=(r&&r.error)||'Usuario o contraseña incorrectos';return;}
     if(r.rol==='tutor'){err.textContent='Este panel es solo para staff';return;}
     if(r.rol!=='staff'&&r.rol!=='kiosco'){err.textContent='Rol no reconocido';return;}
-    AUTH.token=r.token;AUTH.rol=r.rol;AUTH.expira=r.expira||null;
+    AUTH.token=r.token;AUTH.rol=r.rol;AUTH.nombre=r.nombre||null;AUTH.expira=r.expira||null;
     if(r.rol==='kiosco')kioscoScreen();else home();
   };
   btn.onclick=submit;
@@ -716,7 +723,7 @@ function salirKioscoIntento(){
     btn.disabled=true;err.textContent='';
     const r=await callAuth(usuario,pass);
     btn.disabled=false;
-    if(!r||!r.token||r.rol!=='staff'){err.textContent='Usuario o contraseña incorrectos';return;}
+    if(!r||r.ok===false||!r.token||r.rol!=='staff'){err.textContent='Usuario o contraseña incorrectos';return;}
     cerrarKiosco();
   };
   btn.onclick=submit;
