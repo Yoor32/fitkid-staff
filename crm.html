@@ -181,6 +181,13 @@
   .loterow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;flex-wrap:wrap} .loterow:last-child{border-bottom:0}
   .loterow input{width:20px;height:20px;flex:none} .loterow .nm{flex:1;min-width:160px}
   .lotetag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--warn-bg,#fff4e5);color:var(--warn,#9a5b00)} .lotetag.dng{background:var(--danger-bg);color:var(--danger)}
+  a.btn{text-decoration:none}
+  .docpick{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);font:inherit;color:inherit;cursor:pointer} .docpick:hover{background:var(--surface-2)}
+  .infaviso{padding:12px 16px;margin-bottom:14px;background:var(--amber-bg);border-color:transparent;color:var(--amber);font-size:13px}
+  .infcal{padding:0 16px;margin-bottom:8px} .infcal summary{display:flex;justify-content:space-between;gap:8px;padding:12px 0;cursor:pointer;font-size:13.5px} .infcal summary b{color:var(--danger)} .infcal summary b.ok{color:var(--ok)} .infcal[open] summary{border-bottom:1px solid var(--line)}
+  .ipila{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--line);min-width:4px} .ipila i,.ileyenda i{display:block} .ipila .asistio,.ileyenda .asistio{background:var(--ok)} .ipila .falta,.ileyenda .falta{background:var(--danger)} .ipila .sin_marcar,.ileyenda .sin_marcar{background:var(--line-2)}
+  .ileyenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 3px 0 8px;vertical-align:-1px}
+  .vdia .ipila{margin:0}
   #printarea{display:none}
   @media print{
     @page{size:letter;margin:10mm}
@@ -200,6 +207,11 @@
     .pcorte{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#111;font-size:10pt} .pcorte h1{font-size:14pt;margin:0 0 2mm} .pcorte h2{font-size:11pt;margin:6mm 0 2mm}
     .pcorte table{width:100%;border-collapse:collapse} .pcorte th,.pcorte td{border-bottom:.2mm solid #bbb;padding:1.5mm 2mm;text-align:left} .pcorte .num{text-align:right}
     .pfirma{display:flex;justify-content:space-around;margin-top:22mm} .pfirma span{border-top:.3mm solid #333;padding-top:1.5mm;width:60mm;text-align:center}
+    .phojadoc,.plista{break-after:page;page-break-after:always} .phojadoc:last-child,.plista:last-child{break-after:auto;page-break-after:auto}
+    .phojadoc td{vertical-align:top;font-size:9pt}
+    @page lista{size:letter landscape;margin:8mm} .plista{page:lista}
+    .ptabla{table-layout:fixed} .ptabla th,.ptabla td{border:.2mm solid #999!important;padding:1mm!important;font-size:8pt;height:6.5mm} .ptabla .pnomb{width:58mm;text-align:left} .ptabla th.pcel{text-align:center;font-size:7pt;line-height:1.1} .ptabla td.pno{background:#ddd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pconst{font-size:11.5pt;line-height:1.6;max-width:170mm;margin:0 auto} .pconst p{margin:0 0 5mm;text-align:justify} .pconst td{padding:2.5mm 2mm}
   }
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
@@ -319,15 +331,15 @@ function loginScreen(msg){
 
 /* ---------- shell de 3 paneles ---------- */
 const NAV=[
-  {id:'home', icon:'ti-home', label:'Panel de control', ready:true},
-  {id:'checkin', icon:'ti-scan', label:'Check-in', ready:true},
-  {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:true},
-  {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true},
+  {id:'home', icon:'ti-home', label:'Panel de control', ready:true, movil:true},
+  {id:'checkin', icon:'ti-scan', label:'Check-in', ready:true, movil:true},
+  {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:true, movil:true},
+  {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true, movil:true},
   {id:'ventas', icon:'ti-cash', label:'Ventas', ready:true},
   {id:'eventos', icon:'ti-confetti', label:'Eventos', ready:true},
-  {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:false},
-  {id:'marketing', icon:'ti-speakerphone', label:'Marketing', ready:false},
-  {id:'informes', icon:'ti-chart-bar', label:'Informes', ready:false}
+  {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:true},
+  {id:'marketing', icon:'ti-speakerphone', label:'Marketing', ready:true},
+  {id:'informes', icon:'ti-chart-bar', label:'Informes', ready:true}
 ];
 
 function shell(){
@@ -342,13 +354,16 @@ function shell(){
   h+='<aside class="rightcol" id="rightpane" aria-label="Detalle"><div class="sheetbar"><button type="button" data-act="cerrar-panel"><i class="ti ti-x" aria-hidden="true"></i> Cerrar</button></div><div id="rightcol"></div></aside>';
   h+='</div>';
   h+='<div class="sheetback" data-act="cerrar-panel"></div>';
-  h+='<nav class="tabbar" aria-label="Secciones">'+NAV.filter(n=>n.ready).map(n=>'<button data-nav="'+n.id+'" class="'+(SECCION===n.id?'on':'')+'"><i class="ti '+n.icon+'" aria-hidden="true"></i>'+n.label+'</button>').join('')+'</nav>';
+  /* En celular caben 5 botones: las 4 secciones del día a día y "Más" con el resto. */
+  const enMas=NAV.some(n=>!n.movil&&n.id===SECCION);
+  h+='<nav class="tabbar" aria-label="Secciones">'+NAV.filter(n=>n.ready&&n.movil).map(n=>'<button data-nav="'+n.id+'" class="'+(SECCION===n.id?'on':'')+'"><i class="ti '+n.icon+'" aria-hidden="true"></i>'+n.label+'</button>').join('')+'<button type="button" data-act="mas" class="'+(enMas?'on':'')+'"><i class="ti ti-dots" aria-hidden="true"></i>'+(enMas?esc(NAV.find(n=>n.id===SECCION).label):'Más')+'</button></nav>';
   fk.innerHTML=h;
   fk.querySelectorAll('[data-act="cerrar-panel"]').forEach(b=>b.onclick=cerrarPanel);
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
-  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else if(SECCION==='ventas')ventas(); else if(SECCION==='eventos')eventos(); else placeholder();
+  const mas=fk.querySelector('[data-act="mas"]'); if(mas)mas.onclick=()=>{ const right=document.getElementById('rightcol'); right.innerHTML='<h2>Más secciones</h2>'+NAV.filter(n=>n.ready&&!n.movil).map(n=>'<button type="button" class="venc docpick" data-nav2="'+n.id+'"><span class="nm"><i class="ti '+n.icon+'" aria-hidden="true"></i> '+esc(n.label)+'</span></button>').join(''); right.querySelectorAll('[data-nav2]').forEach(b=>b.onclick=()=>{ cerrarPanel(); SECCION=b.dataset.nav2; shell(); }); abrirPanel(); };
+  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else if(SECCION==='ventas')ventas(); else if(SECCION==='eventos')eventos(); else if(SECCION==='documentos')documentos(); else if(SECCION==='marketing')marketing(); else if(SECCION==='informes')informes(); else placeholder();
 }
 
 /* En tablet/celular el panel derecho es una hoja: se abre solo por una acción del usuario
@@ -523,9 +538,10 @@ function drawFicha(){
   if(mem){ h+='<h2>Membresía</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div>Plan '+esc(mem.plan||'—')+' · '+esc(mem.restantes!=null?mem.restantes:'—')+' de '+esc(mem.creditos!=null?mem.creditos:'—')+' créditos</div><div class="mut" style="margin-top:4px">'+esc(mem.estado||'—')+(mem.mes?' · cubre '+esc(nombreMes(mem.mes)):'')+'</div></div>'; }
   if(tutor){ const wa=waLink(tutor.whatsapp); h+='<h2>Tutor</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div class="nm" style="font-size:13px">'+esc(tutor.nombre)+(tutor.parentesco?' <span class="mut">('+esc(tutor.parentesco)+')</span>':'')+'</div><div class="mut" style="margin-top:2px">'+(wa?'<a href="'+wa+'" target="_blank" rel="noopener">'+esc(tutor.whatsapp)+'</a>':esc(tutor.whatsapp||''))+(tutor.email?' · <a href="mailto:'+esc(tutor.email)+'">'+esc(tutor.email)+'</a>':'')+'</div>'+(tutor.contacto_emergencia?'<div class="mut" style="margin-top:2px">Emergencia: '+esc(tutor.contacto_emergencia)+' '+esc(tutor.telefono_emergencia||'')+'</div>':'')+'</div>'; }
   if(prox.length){ h+='<h2>Próximas clases</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px">'+prox.slice(0,5).map(p=>'<div>'+esc(fmtFecha(p.fecha))+(p.fecha===r.hoy?' · <b>hoy</b>':'')+'</div>').join('')+'</div>'; }
-  if(pagos.length){ h+='<h2>Últimos pagos</h2><div class="card" style="padding:12px;font-size:12.5px">'+pagos.slice(0,5).map(p=>'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(p.concepto||'')+' · '+esc(p.fecha||'')+'</span><span>$'+esc(p.monto||0)+'</span></div>').join('')+'</div>'; }
+  if(pagos.length){ h+='<h2>Últimos pagos</h2><div class="card" style="padding:12px;font-size:12.5px">'+pagos.slice(0,5).map((p,i)=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0"><span>'+esc(p.concepto||'')+' · '+esc(String(p.fecha||'').slice(0,10))+(p.estado&&p.estado!=='Completado'?' <span class="pill warn">'+esc(p.estado)+'</span>':'')+'</span><span style="display:flex;align-items:center;gap:6px">'+$$(p.monto)+(p.estado==='Completado'?'<button type="button" class="btn" style="padding:4px 8px;min-height:0" data-comp="'+i+'" aria-label="Imprimir comprobante" title="Imprimir comprobante"><i class="ti ti-printer" aria-hidden="true"></i></button>':'')+'</span></div>').join('')+'</div>'; }
   right.innerHTML=h;
   right.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>ejecutarAccion(b.dataset.acc,b.dataset.asis));
+  right.querySelectorAll('[data-comp]').forEach(b=>b.onclick=()=>imprimirComprobante(pagos[+b.dataset.comp]));
 }
 async function recargarFicha(msg){ if(msg)toast(msg,'ok'); DIRECTORIO=null; await verFichaAlumno(FICHA.id); }
 function panelAccion(titulo,cuerpo){ const right=document.getElementById('rightcol'); right.innerHTML=volverFicha()+'<h2>'+esc(titulo)+'</h2>'+cuerpo+'<div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>'; right.querySelector('[data-acc="volver"]').onclick=drawFicha; const p=document.getElementById('rightpane'); if(p)p.scrollTop=0; return right; }
@@ -1195,6 +1211,282 @@ function verTutor(id){
   right.innerHTML=h;
   right.querySelector('#tutalta').onclick=()=>altaAlumno({tutor:t});
   right.querySelectorAll('[data-alumno2]').forEach(el=>el.onclick=()=>verFichaAlumno(el.dataset.alumno2));
+}
+
+/* ---------- Utilidades compartidas: CSV e impresión ---------- */
+function descargarCSV(nombre,cols,filas){
+  /* Sin prefijo, Excel ejecuta como fórmula un texto que empiece con = o @. Los teléfonos (+52…) se dejan tal cual. */
+  const q=v=>{ let s=String(v==null?'':v); if(/^[=@]|^[+\-](?!\d)/.test(s))s="'"+s; return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const txt='﻿'+[cols].concat(filas).map(f=>f.map(q).join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'})); a.download=nombre.replace(/[^\w\-áéíóúñÁÉÍÓÚÑ ]+/g,'').trim().replace(/\s+/g,'_')+'.csv';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+}
+function imprimirDoc(html){
+  let pa=document.getElementById('printarea'); if(!pa){pa=document.createElement('div');pa.id='printarea';document.body.appendChild(pa);}
+  pa.innerHTML=html; document.body.classList.add('imprimiendo');
+  const fin=()=>{document.body.classList.remove('imprimiendo');window.removeEventListener('afterprint',fin);}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),60);
+}
+function fechaLargaDoc(f){ return new Date((f||new Date().toLocaleDateString('en-CA'))+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'}); }
+const SIN_ALERGIA=/^\s*(ningun[ao]?s?|nada|no|n\/?a|-+|sin alergias?|ninguna alergia|no tiene|no\.)\s*\.?\s*$/i;
+function tieneAlergia(t){ return !!(t&&String(t).trim()&&!SIN_ALERGIA.test(t)); }
+function primerNombre(n){ return String(n||'').trim().split(/\s+/)[0]||''; }
+function unirNombres(arr){ const a=arr.filter(Boolean); return a.length<=1?(a[0]||''):a.slice(0,-1).join(', ')+' y '+a[a.length-1]; }
+
+/* ---------- Base de familias (Documentos y Marketing) ----------
+   UNA llamada (base_familias, ~17 s en producción) que se guarda en memoria y comparten ambas secciones.
+   "Actualizar" es explícito: cada consulta es una ejecución de n8n. */
+let BASE=null;
+async function cargarBase(sec,titulo,forzar){
+  if(BASE&&!forzar)return BASE;
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  center.innerHTML='<div class="pagehead"><h1>'+titulo+'</h1></div><div class="mut">Cargando alumnos, tutores y horarios… (unos 15-20 segundos)</div>'; right.innerHTML='';
+  const r=await call('base_familias'); if(SECCION!==sec)return null;
+  if(!r||r.ok===false){ center.innerHTML='<div class="pagehead"><h1>'+titulo+'</h1></div><div class="placeholder">No se pudo cargar: '+esc((r&&r.error)||'error de red')+'</div>'; return null; }
+  const tu={},ho={},al={}; r.tutores.forEach(t=>{tu[t.id]=t;}); r.horarios.forEach(h=>{ho[h.id]=h;}); r.alumnos.forEach(a=>{al[a.id]=a;});
+  BASE={r:r,tu:tu,ho:ho,al:al,cargado:new Date(),activos:r.alumnos.filter(a=>a.estatus!=='Suspendido'&&a.estatus!=='Baja')};
+  return BASE;
+}
+function horariosOrdenados(){ return BASE.r.horarios.slice().sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre))); }
+function selectorGrupo(id,conTodos){ return '<label class="mut" for="'+id+'">Grupo</label><select class="field" id="'+id+'">'+(conTodos?'<option value="*">Todos los grupos</option>':'')+horariosOrdenados().map(h=>'<option value="'+esc(h.id)+'">'+esc(nombreSinGenero(h.nombre))+(h.genero?' · '+(h.genero==='Niña'?'Niñas':'Niños'):'')+'</option>').join('')+'<option value="sin">Sin horario asignado</option></select>'; }
+function alumnosDeGrupo(hid){ return BASE.activos.filter(a=>hid==='*'?true:(hid==='sin'?(!a.horario_id||!BASE.ho[a.horario_id]):a.horario_id===hid)); }
+function tituloGrupo(hid){ if(hid==='sin')return 'Sin horario asignado'; const h=BASE.ho[hid]; return h?nombreSinGenero(h.nombre)+(h.genero?' · '+(h.genero==='Niña'?'Niñas':'Niños'):''):''; }
+function cabeceraBase(titulo,idAct){ return '<div class="pagehead"><h1>'+titulo+'</h1><button type="button" class="btn" id="'+idAct+'"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button></div><div class="mut" style="font-size:12px;margin:-10px 0 14px">Datos de las '+BASE.cargado.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' · no se actualiza solo</div>'; }
+function buscadorAlumno(right,alElegir){
+  right.insertAdjacentHTML('beforeend','<label class="mut" for="docq">Alumno</label><input class="field" id="docq" placeholder="Nombre o código" autocomplete="off"><div id="docres"></div>');
+  const q=right.querySelector('#docq'), res=right.querySelector('#docres');
+  const pinta=()=>{ const t=q.value.trim().toLowerCase(); if(t.length<2){res.innerHTML='<div class="mut" style="font-size:12.5px">Escribe al menos 2 letras.</div>';return;}
+    const m=BASE.r.alumnos.filter(a=>String(a.nombre).toLowerCase().includes(t)||String(a.cod).toLowerCase().includes(t)).slice(0,8);
+    res.innerHTML=m.length?m.map(a=>'<button type="button" class="venc docpick" data-aid="'+esc(a.id)+'"><span class="nm">'+esc(a.nombre)+'</span><span class="mut"> · '+esc(a.cod||'sin código')+(a.estatus==='Suspendido'?' · suspendido':'')+'</span></button>').join(''):'<div class="mut" style="font-size:12.5px">Sin resultados.</div>';
+    res.querySelectorAll('[data-aid]').forEach(b=>b.onclick=()=>alElegir(BASE.al[b.dataset.aid])); };
+  q.oninput=pinta; pinta(); setTimeout(()=>{ if(!esMovil())q.focus(); },30);
+}
+
+/* ---------- Documentos ----------
+   Todo se genera en el navegador con la base ya cargada; imprimir no cuesta ejecuciones. */
+let DOC_SEL=null;
+const DOCS=[
+  {id:'medica',ic:'ti-first-aid-kit',t:'Lista médica y de emergencia',d:'Por grupo: alergias, tutor y contacto de emergencia. Para el entrenador.'},
+  {id:'asistencia',ic:'ti-list-check',t:'Lista de asistencia en papel',d:'Por grupo y mes, para cuando no hay tablet.'},
+  {id:'constancia',ic:'ti-certificate',t:'Constancia de inscripción',d:'Para la escuela o el trabajo del tutor.'},
+  {id:'comprobante',ic:'ti-receipt',t:'Comprobante de pago',d:'Sale de los pagos en la ficha del alumno. No es factura.'},
+  {id:'responsiva',ic:'ti-file-alert',t:'Responsivas pendientes',d:'Quién no la tiene firmada y no puede entrar a clase.'}
+];
+async function documentos(forzar){ const B=await cargarBase('documentos','Documentos',forzar); if(!B||SECCION!=='documentos')return; drawDocumentos(); }
+function drawDocumentos(){
+  const center=document.getElementById('centercol'); if(!center||!BASE)return;
+  const sinResp=BASE.activos.filter(a=>!a.responsiva).length;
+  let h=cabeceraBase('Documentos','docact');
+  h+='<div class="evgrid">'+DOCS.map(d=>'<button type="button" class="evcard'+(DOC_SEL===d.id?' on':'')+'" data-doc="'+d.id+'"><div class="nm"><i class="ti '+d.ic+'" aria-hidden="true"></i> '+esc(d.t)+(d.id==='responsiva'&&sinResp?' <span class="pill warn">'+sinResp+'</span>':'')+'</div><div class="mut" style="font-size:12.5px;margin-top:4px">'+esc(d.d)+'</div></button>').join('')+'</div>';
+  center.innerHTML=h;
+  document.getElementById('docact').onclick=()=>documentos(true);
+  center.querySelectorAll('[data-doc]').forEach(b=>b.onclick=()=>{ DOC_SEL=b.dataset.doc; center.querySelectorAll('[data-doc]').forEach(x=>x.classList.toggle('on',x===b)); drawDocPanel(); abrirPanel(); });
+  drawDocPanel();
+}
+function drawDocPanel(){
+  const right=document.getElementById('rightcol'); if(!right)return;
+  if(!DOC_SEL){ right.innerHTML='<h2>Documentos</h2><div class="mut">Elige un documento para ver sus opciones e imprimirlo.</div>'; return; }
+  const d=DOCS.find(x=>x.id===DOC_SEL); right.innerHTML='<h2>'+esc(d.t)+'</h2>';
+  if(DOC_SEL==='medica'){
+    right.insertAdjacentHTML('beforeend',selectorGrupo('docg',true)+'<label class="chk"><input type="checkbox" id="docsolo"> Solo alumnos con alergias o notas médicas</label><div id="docres" class="mut" style="font-size:12.5px;margin-bottom:10px"></div><button type="button" class="btn pri acbig" id="docimp"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir</button>');
+    const g=right.querySelector('#docg'), solo=right.querySelector('#docsolo'), res=right.querySelector('#docres');
+    const cuenta=()=>{ const l=alumnosDeGrupo(g.value); const n=l.filter(a=>tieneAlergia(a.alergias)).length; res.innerHTML=l.length+' alumnos · <b>'+n+' con alergias o notas</b>'+(l.some(a=>!a.tutor_id)?' · '+l.filter(a=>!a.tutor_id).length+' sin tutor':''); };
+    g.onchange=cuenta; cuenta(); right.querySelector('#docimp').onclick=()=>imprimirListaMedica(g.value,solo.checked);
+  } else if(DOC_SEL==='asistencia'){
+    const mes=new Date().toLocaleDateString('en-CA').slice(0,7);
+    right.insertAdjacentHTML('beforeend',selectorGrupo('docg',true)+'<label class="mut" for="docm">Mes</label><input type="month" class="field" id="docm" value="'+mes+'"><div class="mut" style="font-size:12.5px;margin-bottom:10px">Una hoja horizontal por grupo. Las casillas grises son días en que el alumno no tiene clase.</div><button type="button" class="btn pri acbig" id="docimp"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir</button>');
+    right.querySelector('#docimp').onclick=()=>{ const m=right.querySelector('#docm').value; if(!/^\d{4}-\d{2}$/.test(m)){toast('Elige el mes','');return;} imprimirListaPapel(right.querySelector('#docg').value,m); };
+  } else if(DOC_SEL==='constancia'){
+    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">Dice que el alumno está inscrito, en qué grupo y horario. Se firma a mano.</div>');
+    buscadorAlumno(right,a=>{
+      if(a.estatus==='Suspendido'){ toast(a.nombre+' está suspendido: no se puede hacer constancia de inscripción',''); return; }
+      imprimirConstancia(a);
+    });
+  } else if(DOC_SEL==='comprobante'){
+    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">Abre la ficha del alumno; en "Últimos pagos" cada pago completado tiene su botón de imprimir.</div>');
+    buscadorAlumno(right,a=>verFichaAlumno(a.id));
+  } else if(DOC_SEL==='responsiva'){
+    const l=BASE.activos.filter(a=>!a.responsiva);
+    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">Sin responsiva firmada no pueden entrar a clase: el kiosco los manda a recepción.</div>'+(l.length?l.map(a=>{ const t=BASE.tu[a.tutor_id]; const wa=t&&waLink(t.whatsapp,'Hola '+primerNombre(t.nombre)+', para que '+primerNombre(a.nombre)+' pueda entrar a clase en FitKid Gymnastic necesitamos la responsiva firmada. ¿Nos la puede traer en su próxima visita?'); return '<div class="venc" style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(t?t.nombre:'sin tutor')+'</div></div><button type="button" class="btn" data-vficha="'+esc(a.id)+'">Ficha</button>'+(wa?'<a class="btn" target="_blank" rel="noopener" href="'+esc(wa)+'" aria-label="WhatsApp"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></a>':'')+'</div>'; }).join('')+'<button type="button" class="btn acbig" id="docimp" style="margin-top:12px"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir lista</button>':'<div class="placeholder">Todos los alumnos activos tienen la responsiva firmada.</div>')
+      +'<div class="mut" style="font-size:12px;margin-top:14px">El formato de responsiva para firmar se agrega cuando tengamos el texto oficial.</div>');
+    right.querySelectorAll('[data-vficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.vficha));
+    const bi=right.querySelector('#docimp'); if(bi)bi.onclick=()=>imprimirDoc('<div class="pcorte"><h1>FitKid Gymnastic · Responsivas pendientes</h1><div>'+esc(fechaLargaDoc())+' · '+l.length+' alumnos</div><table style="margin-top:4mm"><tr><th>Alumno</th><th>Código</th><th>Grupo</th><th>Tutor</th><th>WhatsApp</th></tr>'+l.map(a=>{const t=BASE.tu[a.tutor_id];return '<tr><td>'+esc(a.nombre)+'</td><td>'+esc(a.cod)+'</td><td>'+esc(tituloGrupo(a.horario_id||'sin'))+'</td><td>'+esc(t?t.nombre:'—')+'</td><td>'+esc(t?t.whatsapp:'')+'</td></tr>';}).join('')+'</table></div>');
+  }
+}
+function imprimirListaMedica(hid,solo){
+  const grupos=hid==='*'?horariosOrdenados().map(h=>h.id).concat(['sin']):[hid];
+  const hojas=grupos.map(g=>{ let l=alumnosDeGrupo(g); if(solo)l=l.filter(a=>tieneAlergia(a.alergias)); if(!l.length)return '';
+    return '<div class="pcorte phojadoc"><h1>Lista médica y de emergencia · '+esc(tituloGrupo(g))+'</h1><div>'+esc(fechaLargaDoc())+' · '+l.length+' alumno'+(l.length===1?'':'s')+' · confidencial: solo para el entrenador</div><table style="margin-top:4mm"><tr><th>Alumno</th><th>Edad</th><th>Alergias / notas médicas</th><th>Tutor</th><th>Contacto de emergencia</th><th>Resp.</th></tr>'
+      +l.map(a=>{ const t=BASE.tu[a.tutor_id]; const al=tieneAlergia(a.alergias); return '<tr><td><b>'+esc(a.nombre)+'</b></td><td>'+esc(a.edad!=null?a.edad:'—')+'</td><td'+(al?' style="font-weight:700"':'')+'>'+(al?esc(a.alergias):'—')+'</td><td>'+(t?esc(t.nombre)+'<br>'+esc(t.whatsapp||''):'<b>SIN TUTOR</b>')+'</td><td>'+(t&&(t.emergencia||t.tel_emergencia)?esc(t.emergencia||'')+'<br>'+esc(t.tel_emergencia||''):'—')+'</td><td>'+(a.responsiva?'Sí':'<b>NO</b>')+'</td></tr>'; }).join('')+'</table></div>'; }).filter(Boolean);
+  if(!hojas.length){ toast(solo?'Nadie en ese grupo tiene alergias registradas':'No hay alumnos en ese grupo',''); return; }
+  imprimirDoc(hojas.join(''));
+}
+function imprimirListaPapel(hid,mes){
+  const y=+mes.slice(0,4), m=+mes.slice(5,7); const DN=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'], DC=['D','L','M','M','J','V','S'];
+  const grupos=hid==='*'?horariosOrdenados().map(h=>h.id).concat(['sin']):[hid];
+  const hojas=grupos.map(g=>{ const l=alumnosDeGrupo(g); if(!l.length)return ''; const h=BASE.ho[g]; const diasG=h&&h.dias&&h.dias.length?h.dias:['Lunes','Martes','Miércoles','Jueves','Viernes'];
+    const fechas=[]; for(let d=1;d<=31;d++){ const f=new Date(y,m-1,d); if(f.getMonth()!==m-1)break; if(diasG.includes(DN[f.getDay()]))fechas.push({d:d,dn:DN[f.getDay()],c:DC[f.getDay()]}); }
+    const fila=a=>'<tr><td class="pnomb">'+(a?esc(a.nombre):'&nbsp;')+'</td>'+fechas.map(f=>'<td class="pcel'+(a&&a.dias.length&&!a.dias.includes(f.dn)?' pno':'')+'"></td>').join('')+'</tr>';
+    return '<div class="pcorte plista"><h1>Asistencia · '+esc(tituloGrupo(g))+' · '+esc(MESES[m-1])+' '+y+'</h1><div>Marca: ✓ asistió · F falta · J justificada. Casilla gris: ese día no tiene clase.</div><table class="ptabla" style="margin-top:3mm"><tr><th class="pnomb">Alumno</th>'+fechas.map(f=>'<th class="pcel">'+f.c+'<br>'+f.d+'</th>').join('')+'</tr>'+l.map(fila).join('')+fila(null)+fila(null)+fila(null)+'</table><div style="margin-top:4mm">Entrenador: ______________________________</div></div>'; }).filter(Boolean);
+  if(!hojas.length){ toast('No hay alumnos en ese grupo',''); return; }
+  imprimirDoc(hojas.join(''));
+}
+function imprimirConstancia(a){
+  const h=BASE.ho[a.horario_id];
+  const grupo=h?String(h.nombre).split(' · ')[0]:''; const prog=grupo==='Iniciación'?'Iniciación Deportiva':(grupo==='Olímpica'?'Gimnasia Olímpica':(a.programa||grupo));
+  const dias=a.dias&&a.dias.length?unirNombres(a.dias.map(d=>d.toLowerCase())):'';
+  imprimirDoc('<div class="pcorte pconst"><h1>FitKid Gymnastic</h1><div style="text-align:right;margin-top:8mm">'+esc(fechaLargaDoc())+'</div><h2 style="margin-top:14mm">A quien corresponda:</h2>'
+    +'<p>Por medio de la presente se hace constar que <b>'+esc(a.nombre)+'</b>'+(a.cod?' (código '+esc(a.cod)+')':'')+' está inscrito(a) en FitKid Gymnastic'+(prog?' en el programa de <b>'+esc(prog)+'</b>':'')+(h&&h.bloque?', en el horario de '+esc(h.bloque):'')+(dias?', los días '+esc(dias):'')+'.</p>'
+    +(a.fecha_inscripcion?'<p>Su fecha de inscripción es el '+esc(fechaLargaDoc(a.fecha_inscripcion))+'.</p>':'')
+    +'<p>Se extiende la presente a petición del interesado para los fines que convengan.</p><div class="pfirma" style="justify-content:center;margin-top:30mm"><span>Nombre y firma<br>FitKid Gymnastic</span></div></div>');
+}
+function imprimirComprobante(p){
+  if(!FICHA||!FICHA.r)return; const al=FICHA.r.al||{}, t=FICHA.r.tutor;
+  const fila=(a,b)=>'<tr><td>'+a+'</td><td>'+b+'</td></tr>';
+  imprimirDoc('<div class="pcorte pconst"><h1>FitKid Gymnastic · Comprobante de pago</h1><div>Este documento no es un comprobante fiscal (CFDI).</div><table style="margin-top:8mm">'
+    +fila('Folio','<b>'+esc(p.folio||'—')+'</b>')+fila('Fecha',esc(fechaLargaDoc(String(p.fecha||'').slice(0,10))))+fila('Alumno',esc(al.nombre||'')+(al.cod?' ('+esc(al.cod)+')':''))+(t?fila('Tutor',esc(t.nombre)):'')
+    +fila('Concepto',esc(p.concepto||''))+fila('Método',esc(METODO_CORTO[p.metodo]||p.metodo||''))+fila('<b>Monto</b>','<b>'+$$(p.monto)+'</b>')+'</table>'
+    +'<div style="margin-top:6mm">Impreso el '+esc(new Date().toLocaleString('es-MX'))+' por '+esc(AUTH.nombre||'')+'.</div><div class="pfirma" style="justify-content:center"><span>Recibió</span></div></div>');
+}
+
+/* ---------- Marketing ----------
+   Segmentos calculados en el navegador con la base ya cargada. WhatsApp no permite envío masivo desde una página:
+   cada mensaje se abre en WhatsApp y se envía a mano. Lo "enviado" se recuerda solo en este dispositivo. */
+let MKT_SEG='cumple', MKT_MES=null; const MKT_TXT={};
+const MKT_SEGS=[
+  {id:'cumple',ic:'ti-cake',t:'Cumpleaños',d:'Alumnos que cumplen años en el mes elegido.',tpl:'¡Hola {tutor}! En FitKid Gymnastic le deseamos un muy feliz cumpleaños a {alumno} 🎉 ¡Que disfrute mucho sus {edad} años!'},
+  {id:'renovar',ic:'ti-calendar-dollar',t:'Renovar mensualidad',d:'Activos sin membresía del mes en curso.',tpl:'Hola {tutor}, le escribimos de FitKid Gymnastic para recordarle la mensualidad de {mes} de {alumno}. Puede pagar en recepción o pedirnos su link de pago.'},
+  {id:'inscripcion',ic:'ti-id-badge',t:'Inscripción anual',d:'Vencida o que vence en los próximos 30 días.',tpl:'Hola {tutor}, la inscripción anual de {alumno} en FitKid Gymnastic {vence}. Le esperamos en recepción para renovarla.'},
+  {id:'responsiva',ic:'ti-file-alert',t:'Responsiva pendiente',d:'Sin responsiva firmada: no pueden entrar a clase.',tpl:'Hola {tutor}, para que {alumno} pueda entrar a clase en FitKid Gymnastic necesitamos la responsiva firmada. ¿Nos la puede traer en su próxima visita?'},
+  {id:'espera',ic:'ti-hourglass',t:'Lista de espera',d:'Familias esperando lugar.',tpl:'Hola {tutor}, le escribimos de FitKid Gymnastic sobre la lista de espera de {alumno}.'},
+  {id:'hermanos',ic:'ti-users-group',t:'Familias con 2 o más hijos',d:'Para promociones familiares.',tpl:'Hola {tutor}, gracias por confiar en FitKid Gymnastic con {alumno}.'},
+  {id:'todos',ic:'ti-speakerphone',t:'Todas las familias',d:'Avisos generales: un mensaje por tutor.',tpl:'Hola {tutor}, le escribimos de FitKid Gymnastic: '}
+];
+function mktPeriodo(seg){ return (seg||MKT_SEG)==='cumple'?(MKT_MES||new Date().toLocaleDateString('en-CA').slice(0,7)):new Date().toLocaleDateString('en-CA').slice(0,7); }
+function mktClave(){ return 'fk_mkt_'+MKT_SEG+'_'+mktPeriodo(); }
+function mktEnviados(){ try{ return new Set(JSON.parse(localStorage.getItem(mktClave())||'[]')); }catch(e){ return new Set(); } }
+function mktMarcar(id){ try{ const s=mktEnviados(); s.add(id); localStorage.setItem(mktClave(),JSON.stringify([...s])); }catch(e){} }
+function mktLimpiar(){ try{ localStorage.removeItem(mktClave()); }catch(e){} }
+/* Destinatarios del segmento: uno por tutor (con todos sus hijos del segmento), salvo cumpleaños, que es uno por niño. */
+function mktDestinatarios(seg){
+  const S=seg||MKT_SEG, B=BASE, hoyS=new Date().toLocaleDateString('en-CA'), mesAct=hoyS.slice(0,7);
+  const porTutor=(lista,extra)=>{ const g={}; lista.forEach(a=>{ const k=a.tutor_id&&B.tu[a.tutor_id]?a.tutor_id:'al:'+a.id; (g[k]=g[k]||[]).push(a); }); return Object.keys(g).map(k=>{ const t=B.tu[k]||null, als=g[k]; return Object.assign({id:k,tutor:t,alumnos:als,vars:{tutor:t?primerNombre(t.nombre):'',alumno:unirNombres(als.map(a=>primerNombre(a.nombre))),mes:MESES[+mesAct.slice(5,7)-1]}},extra?extra(als):{}); }); };
+  if(S==='cumple'){ const mm=mktPeriodo(S).slice(5,7), yy=+mktPeriodo(S).slice(0,4);
+    /* Un 1 de enero casi siempre es una fecha capturada solo con el año: no se felicita a nadie con eso. */
+    return B.activos.filter(a=>a.fecha_nacimiento&&a.fecha_nacimiento.slice(5,10)!=='01-01'&&a.fecha_nacimiento.slice(5,7)===mm).sort((a,b)=>a.fecha_nacimiento.slice(8,10).localeCompare(b.fecha_nacimiento.slice(8,10))).map(a=>{ const t=B.tu[a.tutor_id]||null; const edad=yy-(+a.fecha_nacimiento.slice(0,4)); return {id:a.id,tutor:t,alumnos:[a],detalle:'Cumple '+edad+' el '+(+a.fecha_nacimiento.slice(8,10))+' de '+MESES[+mm-1],vars:{tutor:t?primerNombre(t.nombre):'',alumno:primerNombre(a.nombre),edad:edad,mes:MESES[+mm-1]}}; }); }
+  if(S==='renovar')return porTutor(B.activos.filter(a=>!a.mem||a.mem.mes.slice(0,7)<mesAct),als=>({detalle:'Última membresía: '+unirNombres(als.map(a=>a.mem?nombreMes(a.mem.mes):'nunca'))}));
+  if(S==='inscripcion'){ const lim=new Date(hoyS+'T12:00:00'); lim.setDate(lim.getDate()+30); const limS=lim.toLocaleDateString('en-CA');
+    const vence=a=>{ if(!a.fecha_inscripcion)return ''; const v=new Date(a.fecha_inscripcion+'T12:00:00'); v.setFullYear(v.getFullYear()+1); return v.toLocaleDateString('en-CA'); };
+    const l=B.activos.filter(a=>{ const v=vence(a); return v&&v<=limS; });
+    return porTutor(l,als=>{ const v=als.map(vence).sort()[0]; const txt=(v<hoyS?'venció el ':'vence el ')+fechaLargaDoc(v); return {detalle:txt[0].toUpperCase()+txt.slice(1),vars_extra:{vence:txt}}; }).map(d=>{ if(d.vars_extra)Object.assign(d.vars,d.vars_extra); return d; }); }
+  if(S==='responsiva')return porTutor(B.activos.filter(a=>!a.responsiva));
+  if(S==='espera')return B.r.espera.filter(e=>e.estatus==='En espera'||e.estatus==='Avisado').map(e=>{ const a=B.al[e.alumno_id]||null; const t=B.tu[e.tutor_id]||(a&&B.tu[a.tutor_id])||null; return {id:e.id,tutor:t,alumnos:a?[a]:[],detalle:e.estatus+' desde '+fmtFecha(e.fecha)+(e.notas?' · '+e.notas:''),vars:{tutor:t?primerNombre(t.nombre):'',alumno:a?primerNombre(a.nombre):e.solicitud,mes:''}}; });
+  if(S==='hermanos')return porTutor(B.activos.filter(a=>a.tutor_id)).filter(d=>d.alumnos.length>1);
+  return porTutor(B.activos);
+}
+function mktMensaje(tpl,v){ return String(tpl||'').replace(/\{(tutor|alumno|edad|mes|vence)\}/g,(m,k)=>v[k]!=null&&v[k]!==''?String(v[k]):m); }
+async function marketing(forzar){ const B=await cargarBase('marketing','Marketing',forzar); if(!B||SECCION!=='marketing')return; drawMarketing(); }
+function drawMarketing(){
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol'); if(!center||!BASE)return;
+  const seg=MKT_SEGS.find(s=>s.id===MKT_SEG); const tpl=MKT_TXT[MKT_SEG]!=null?MKT_TXT[MKT_SEG]:seg.tpl;
+  const dest=mktDestinatarios(), env=mktEnviados(); const conWa=dest.filter(d=>d.tutor&&waLink(d.tutor.whatsapp));
+  let h=cabeceraBase('Marketing','mktact');
+  h+='<div class="dirtabs">'+MKT_SEGS.map(s=>'<button type="button" class="dirtab'+(MKT_SEG===s.id?' on':'')+'" data-mseg="'+s.id+'">'+esc(s.t)+'</button>').join('')+'</div>';
+  h+='<div class="card altasec"><div class="mut" style="font-size:12.5px;margin-bottom:8px">'+esc(seg.d)+(MKT_SEG==='renovar'?' Si no se registran los pagos en el CRM, aquí sale casi todo el mundo.':'')+(MKT_SEG==='cumple'?(()=>{ const n=BASE.activos.filter(a=>a.fecha_nacimiento&&a.fecha_nacimiento.slice(5,10)==='01-01').length; return n?' <b>'+n+' alumnos tienen fecha 1 de enero</b> (seguramente solo se capturó el año) y no se incluyen: corrígela en su ficha.':''; })():'')+'</div>'
+    +(MKT_SEG==='cumple'?'<label class="mut" for="mktmes">Mes</label><input type="month" class="field" id="mktmes" value="'+esc(mktPeriodo())+'" style="max-width:220px">':'')
+    +'<label class="mut" for="mkttpl">Mensaje · variables: {tutor} {alumno}'+(MKT_SEG==='cumple'?' {edad}':'')+(MKT_SEG==='inscripcion'?' {vence}':'')+(MKT_SEG==='renovar'?' {mes}':'')+'</label><textarea class="field" id="mkttpl" rows="3">'+esc(tpl)+'</textarea>'
+    +'<div class="mut" style="font-size:12px" id="mktprev"></div></div>';
+  h+='<div class="lotesum"><span><b>'+dest.length+'</b> '+(MKT_SEG==='cumple'||MKT_SEG==='espera'?'alumnos':'familias')+' · '+conWa.length+' con WhatsApp · '+dest.filter(d=>env.has(d.id)).length+' enviados</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn" id="mktcsv"'+(dest.length?'':' disabled')+'><i class="ti ti-download" aria-hidden="true"></i> CSV</button>'+(env.size?'<button type="button" class="btn" id="mktreset">Reiniciar enviados</button>':'')+'</span></div>';
+  h+=dest.length?'<div class="card vtabla"><table><tbody>'+dest.map(d=>{ const t=d.tutor; const wa=t&&waLink(t.whatsapp,mktMensaje(tpl,d.vars)); const ya=env.has(d.id);
+    return '<tr'+(ya?' class="pend"':'')+'><td><div class="nm">'+esc(t?t.nombre:'Sin tutor registrado')+'</div><div class="mut">'+esc(d.alumnos.map(a=>a.nombre).join(' · ')||'—')+'</div>'+(d.detalle?'<div class="mut" style="font-size:12px">'+esc(d.detalle)+'</div>':'')+'</td><td>'+(ya?'<span class="pill ok">enviado</span>':'')+'</td><td><div class="vacc">'+(d.alumnos[0]?'<button type="button" class="btn" data-vficha="'+esc(d.alumnos[0].id)+'">Ficha</button>':'')+(wa?'<a class="btn'+(ya?'':' pri')+'" target="_blank" rel="noopener" data-menv="'+esc(d.id)+'" href="'+esc(wa)+'"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> '+(ya?'Otra vez':'Enviar')+'</a>':'<span class="pill warn">sin WhatsApp</span>')+'</div></td></tr>'; }).join('')+'</tbody></table></div>':'<div class="placeholder">Nadie en este segmento.</div>';
+  center.innerHTML=h;
+  document.getElementById('mktact').onclick=()=>marketing(true);
+  center.querySelectorAll('[data-mseg]').forEach(b=>b.onclick=()=>{ MKT_SEG=b.dataset.mseg; drawMarketing(); });
+  const ta=document.getElementById('mkttpl'), prev=document.getElementById('mktprev');
+  const pintaPrev=()=>{ prev.textContent=dest[0]?'Vista previa: '+mktMensaje(ta.value,dest[0].vars):''; };
+  pintaPrev(); ta.oninput=()=>{ MKT_TXT[MKT_SEG]=ta.value; pintaPrev(); };
+  const mm=document.getElementById('mktmes'); if(mm)mm.onchange=()=>{ if(mm.value){MKT_MES=mm.value;drawMarketing();} };
+  /* El link se arma al tocar "Enviar" con el texto actual del cuadro (se pudo editar después de dibujar la lista). */
+  center.querySelectorAll('[data-menv]').forEach(a=>a.addEventListener('click',()=>{ const d=dest.find(x=>x.id===a.dataset.menv); const u=d&&d.tutor&&waLink(d.tutor.whatsapp,mktMensaje(ta.value,d.vars)); if(u)a.href=u; mktMarcar(a.dataset.menv); setTimeout(drawMarketing,400); }));
+  center.querySelectorAll('[data-vficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.vficha));
+  const rs=document.getElementById('mktreset'); if(rs)rs.onclick=()=>{ if(confirm('¿Quitar las marcas de enviado de este segmento en este dispositivo?')){ mktLimpiar(); drawMarketing(); } };
+  const cv=document.getElementById('mktcsv'); if(cv)cv.onclick=()=>descargarCSV('FitKid '+seg.t+' '+mktPeriodo(),['Tutor','WhatsApp','Email','Alumnos','Detalle','Mensaje','Enviado'],dest.map(d=>[d.tutor?d.tutor.nombre:'',d.tutor?d.tutor.whatsapp:'',d.tutor?d.tutor.email:'',d.alumnos.map(a=>a.nombre).join(' / '),d.detalle||'',mktMensaje(ta.value,d.vars),env.has(d.id)?'sí':'']));
+  right.innerHTML='<h2>Cómo funciona</h2><div class="mut" style="font-size:12.5px;line-height:1.5">'
+    +'<p style="margin-top:0">"Enviar" abre WhatsApp con el mensaje ya escrito; tú lo mandas. WhatsApp no permite envío masivo desde aquí: para eso hace falta WhatsApp Business API (costo por mensaje y plantillas aprobadas por Meta).</p>'
+    +'<p>La marca de <b>enviado</b> se guarda solo en este dispositivo y se reinicia cada mes.</p><p>El CSV sirve para Excel o para importar la lista en otra herramienta.</p></div>'
+    +'<h2 style="margin-top:16px">Segmentos</h2>'+MKT_SEGS.map(s=>{ const n=mktDestinatarios(s.id).length; return '<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(s.t)+'</span><b>'+n+'</b></div>'; }).join('');
+}
+
+/* ---------- Informes ----------
+   UNA llamada (informes, ~35 s en producción: revisa 8 semanas de asistencia) guardada en memoria. Cuando los datos de origen
+   no son confiables (sin pagos recientes, clases sin pasar lista) el informe lo dice arriba en vez de mostrar ceros como si fueran reales. */
+let INF=null, INF_TAB='alumnos';
+async function informes(forzar){
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  if(!INF||forzar){
+    center.innerHTML='<div class="pagehead"><h1>Informes</h1></div><div class="mut">Calculando informes… tarda unos 35-40 segundos porque revisa 8 semanas de asistencia.</div>'; right.innerHTML='';
+    const r=await call('informes'); if(SECCION!=='informes')return;
+    if(!r||r.ok===false){ center.innerHTML='<div class="pagehead"><h1>Informes</h1></div><div class="placeholder">No se pudo cargar: '+esc((r&&r.error)||'error de red')+'</div>'; return; }
+    INF=r; INF.cargado=new Date();
+  }
+  drawInformes();
+}
+function barras(obj,orden,fmt){ const ks=orden||Object.keys(obj).sort((a,b)=>obj[b]-obj[a]); const max=Math.max(1,...ks.map(k=>Math.abs(obj[k]||0))); return ks.length?ks.map(k=>'<div class="vdia"><span class="mut">'+esc(k)+'</span><div class="vbar"><i style="width:'+Math.max(obj[k]?2:0,Math.round(Math.abs(obj[k]||0)/max*100))+'%"></i></div><b>'+(fmt?fmt(obj[k]||0):(obj[k]||0))+'</b></div>').join(''):'<div class="mut">Sin datos.</div>'; }
+function drawInformes(){
+  const I=INF, center=document.getElementById('centercol'), right=document.getElementById('rightcol'); if(!I||!center)return;
+  const mesAct=I.meses[I.meses.length-1], ingAct=I.ingresos[I.ingresos.length-1], ingAnt=I.ingresos[I.ingresos.length-2], cobAct=I.cobertura[I.cobertura.length-1];
+  const tot=I.asistencia.semanas.reduce((s,w)=>({r:s.r+w.reservadas,a:s.a+w.asistio,f:s.f+w.falta,s:s.s+w.sin_marcar}),{r:0,a:0,f:0,s:0});
+  const pctSin=tot.r?Math.round(tot.s/tot.r*100):0; const marcadas=tot.a+tot.f; const pctAsis=marcadas?Math.round(tot.a/marcadas*100):null;
+  const diasSinPago=I.ultimo_pago?Math.round((new Date(I.hoy+'T12:00:00')-new Date(I.ultimo_pago+'T12:00:00'))/864e5):null;
+  const mesTxt=m=>MESES[+m.slice(5,7)-1].slice(0,3)+' '+m.slice(2,4);
+  let h='<div class="pagehead"><h1>Informes</h1><button type="button" class="btn" id="infact"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button></div><div class="mut" style="font-size:12px;margin:-10px 0 14px">Datos de las '+I.cargado.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' · no se actualiza solo</div>';
+  const avisos=[];
+  if(diasSinPago==null||diasSinPago>30)avisos.push('<b>Ingresos:</b> '+(I.ultimo_pago?'el último pago registrado es del '+esc(fechaLargaDoc(I.ultimo_pago))+' ('+diasSinPago+' días).':'no hay pagos registrados.')+' Si se está cobrando, se anota en otro lado y este informe no lo ve.');
+  if(pctSin>=50)avisos.push('<b>Asistencia:</b> '+pctSin+'% de las clases de las últimas 8 semanas siguen en "Reservado": nadie pasó lista. Las faltas y el % de asistencia no son reales hasta que se use el check-in o Pasar lista.');
+  if(cobAct.pagadas<I.alumnos.activos/2)avisos.push('<b>Membresías:</b> solo '+cobAct.pagadas+' de '+I.alumnos.activos+' activos tienen membresía pagada de '+esc(MESES[+mesAct.slice(5,7)-1])+'.');
+  if(avisos.length)h+='<div class="card infaviso"><div class="nm" style="margin-bottom:6px"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Estos números no reflejan la operación real</div>'+avisos.map(a=>'<div style="margin-top:4px">'+a+'</div>').join('')+'</div>';
+  h+='<div class="statgrid"><div class="statcard"><div class="v">'+I.alumnos.activos+'</div><div class="l">Alumnos activos'+(I.alumnos.suspendidos?' · '+I.alumnos.suspendidos+' suspendidos':'')+'</div></div>'
+    +'<div class="statcard"><div class="v">'+$$(ingAct.total)+'</div><div class="l">Ingresos de '+esc(MESES[+mesAct.slice(5,7)-1])+' · anterior '+$$(ingAnt.total)+'</div></div>'
+    +'<div class="statcard"><div class="v">'+cobAct.pagadas+' <span style="font-size:13px;color:var(--muted);font-weight:500">de '+I.alumnos.activos+'</span></div><div class="l">Con membresía pagada del mes</div></div>'
+    +'<div class="statcard"><div class="v">'+(pctAsis==null?'—':pctAsis+'%')+'</div><div class="l">Asistencia (8 semanas) · '+pctSin+'% sin pasar lista</div></div></div>';
+  const tabs=[['alumnos','Alumnos'],['ocupacion','Ocupación'],['ingresos','Ingresos'],['asistencia','Asistencia'],['calidad','Calidad de datos ('+I.calidad.reduce((s,c)=>s+(c.items.length?1:0),0)+')']];
+  h+='<div class="dirtabs">'+tabs.map(t=>'<button type="button" class="dirtab'+(INF_TAB===t[0]?' on':'')+'" data-itab="'+t[0]+'">'+t[1]+'</button>').join('')+'</div><div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="btn" id="infcsv"><i class="ti ti-download" aria-hidden="true"></i> Exportar CSV</button></div><div id="icuerpo"></div>';
+  center.innerHTML=h;
+  document.getElementById('infact').onclick=()=>informes(true);
+  center.querySelectorAll('[data-itab]').forEach(b=>b.onclick=()=>{INF_TAB=b.dataset.itab;drawInformes();});
+  const cu=document.getElementById('icuerpo'); let csv=null;
+  const caja=(t,c)=>'<div class="card" style="padding:14px 16px"><h2 class="vh2">'+t+'</h2>'+c+'</div>';
+  if(INF_TAB==='alumnos'){
+    const edades=Object.keys(I.alumnos.por_edad).sort((a,b)=>(a==='(vacío)')-(b==='(vacío)')||(parseInt(a)||99)-(parseInt(b)||99));
+    const altas=Object.keys(I.alumnos.altas_por_mes).sort(); const altasO={}; altas.forEach(k=>{altasO[mesTxt(k)]=I.alumnos.altas_por_mes[k];});
+    cu.innerHTML='<div class="vgrid">'+caja('Por grupo',barras(I.alumnos.por_programa))+caja('Por género',barras(I.alumnos.por_genero))+'</div><div class="vgrid" style="margin-top:12px">'+caja('Por edad',barras(I.alumnos.por_edad,edades))+caja('Altas por mes (fecha de inscripción)',barras(altasO,altas.map(mesTxt)))+'</div>';
+    csv=['Alumnos',['Categoría','Valor','Alumnos'],[].concat(Object.keys(I.alumnos.por_programa).map(k=>['Grupo',k,I.alumnos.por_programa[k]]),Object.keys(I.alumnos.por_genero).map(k=>['Género',k,I.alumnos.por_genero[k]]),edades.map(k=>['Edad',k,I.alumnos.por_edad[k]]),altas.map(k=>['Altas',k,I.alumnos.altas_por_mes[k]]))];
+  } else if(INF_TAB==='ocupacion'){
+    const o=I.ocupacion.slice().sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre)));
+    cu.innerHTML='<div class="mut" style="font-size:12.5px;margin-bottom:8px">Alumnos activos con ese horario asignado. La barra es el día con más alumnos contra el cupo del bloque.'+(I.sin_horario?' Hay <b>'+I.sin_horario+'</b> activos sin horario.':'')+'</div><div class="card" style="padding:4px 16px">'+o.map(b=>{ const pc=b.cupo?Math.min(100,Math.round(b.max_dia/b.cupo*100)):0; return '<div class="vaforo"><div class="vaforo-t"><span class="nm">'+esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)+'</span><span><b>'+b.max_dia+'</b> / '+b.cupo+'</span></div><div class="vbar"><i style="width:'+pc+'%"'+(pc>=100?' class="lleno"':'')+'></i></div><div class="mut" style="font-size:12px">'+b.alumnos+' alumnos · '+Object.keys(b.por_dia).map(d=>d.slice(0,2)+' '+b.por_dia[d]).join(' · ')+'</div></div>'; }).join('')+'</div>';
+    csv=['Ocupación',['Grupo','Bloque','Género','Cupo','Alumnos','Máximo por día'].concat(['Lunes','Martes','Miércoles','Jueves','Viernes']),o.map(b=>[b.nombre,b.bloque,b.genero||'',b.cupo,b.alumnos,b.max_dia].concat(['Lunes','Martes','Miércoles','Jueves','Viernes'].map(d=>b.por_dia[d]!=null?b.por_dia[d]:'')))];
+  } else if(INF_TAB==='ingresos'){
+    const o={}; I.ingresos.forEach(m=>{o[mesTxt(m.mes)]=m.total;});
+    const conc={}, met={}; I.ingresos.forEach(m=>{ for(const k in m.por_concepto)conc[k]=(conc[k]||0)+m.por_concepto[k]; for(const k in m.por_metodo){const kk=METODO_CORTO[k]||k; met[kk]=(met[kk]||0)+m.por_metodo[k];} });
+    cu.innerHTML=caja('Ingresos por mes (completados y reembolsos)',barras(o,I.ingresos.map(m=>mesTxt(m.mes)),$$)+(I.ingresos.some(m=>m.pendiente)?'<div class="mut" style="font-size:12px;margin-top:6px">Pendiente de cobro: '+I.ingresos.filter(m=>m.pendiente).map(m=>mesTxt(m.mes)+' '+$$(m.pendiente)).join(' · ')+'</div>':''))
+      +'<div class="vgrid" style="margin-top:12px">'+caja('Por concepto · 6 meses',barras(conc,null,$$))+caja('Por método · 6 meses',barras(met,null,$$))+'</div>'
+      +'<div style="margin-top:12px">'+caja('Membresías por mes que cubren',barras(Object.fromEntries(I.cobertura.map(m=>[mesTxt(m.mes),m.pagadas])),I.cobertura.map(m=>mesTxt(m.mes)))+'<div class="mut" style="font-size:12px;margin-top:6px">Pagadas, de '+I.alumnos.activos+' activos hoy. '+(I.cobertura.some(m=>m.pendientes)?'Pendientes: '+I.cobertura.filter(m=>m.pendientes).map(m=>mesTxt(m.mes)+' '+m.pendientes).join(' · '):'')+'</div>')+'</div>';
+    csv=['Ingresos',['Mes','Ingresos','Pagos','Pendiente','Membresías pagadas','Membresías pendientes'],I.ingresos.map((m,i)=>[m.mes,m.total,m.n,m.pendiente,I.cobertura[i].pagadas,I.cobertura[i].pendientes])];
+  } else if(INF_TAB==='asistencia'){
+    const A=I.asistencia; const max=Math.max(1,...A.semanas.map(w=>w.reservadas));
+    const pila=w=>'<div class="ipila" style="width:'+Math.round(w.reservadas/max*100)+'%">'+['asistio','falta','sin_marcar'].map(k=>w[k]?'<i class="'+k+'" style="flex:'+w[k]+'"></i>':'').join('')+'</div>';
+    cu.innerHTML='<div class="mut" style="font-size:12.5px;margin-bottom:8px">Del '+esc(fmtFecha(A.desde))+' a ayer. <span class="ileyenda"><i class="asistio"></i> asistió <i class="falta"></i> falta <i class="sin_marcar"></i> sin pasar lista</span></div>'
+      +caja('Por semana',A.semanas.map(w=>'<div class="vdia"><span class="mut">'+esc(fmtFecha(w.semana))+'</span>'+pila(w)+'<b>'+w.reservadas+'</b></div>').join('')||'<div class="mut">Sin clases.</div>')
+      +'<div style="margin-top:12px">'+caja('Por grupo',A.por_bloque.map(b=>{ const m=b.asistio+b.falta; return '<div class="venc" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>'+esc(nombreSinGenero(b.nombre))+chipGenero(/·\s*Niñas/i.test(b.nombre)?'Niñas':(/·\s*Niños/i.test(b.nombre)?'Niños':null))+'</span><span class="mut">'+b.reservadas+' clase'+(b.reservadas===1?'':'s')+(m?' · '+Math.round(b.asistio/m*100)+'% asistencia':'')+' · '+b.sin_marcar+' sin pasar lista</span></div>'; }).join('')||'<div class="mut">Sin clases.</div>')+'</div>'
+      +'<div style="margin-top:12px">'+caja('Más faltas',A.mas_faltas.length?A.mas_faltas.map(f=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="nm">'+esc(f.alumno)+'</span><span style="display:flex;gap:6px;align-items:center"><b>'+f.faltas+'</b><button type="button" class="btn" data-vficha="'+esc(f.aid)+'">Ficha</button></span></div>').join(''):'<div class="mut">Nadie tiene faltas registradas'+(pctSin>=50?' (porque casi no se ha pasado lista).':'.')+'</div>')+'</div>';
+    csv=['Asistencia',['Semana','Clases','Asistió','Falta','Sin pasar lista'],A.semanas.map(w=>[w.semana,w.reservadas,w.asistio,w.falta,w.sin_marcar])];
+  } else {
+    cu.innerHTML='<div class="mut" style="font-size:12.5px;margin-bottom:8px">Alumnos activos con datos incompletos o inconsistentes. Toca uno para abrir su ficha.</div>'+I.calidad.map(c=>'<details class="card infcal"'+(c.items.length&&c.items.length<=12?' open':'')+'><summary><span>'+esc(c.t)+'</span><b class="'+(c.items.length?'':'ok')+'">'+c.items.length+'</b></summary>'+(c.items.length?'<div>'+c.items.slice(0,60).map(x=>'<button type="button" class="venc docpick" data-vficha="'+esc(x.aid)+'"><span class="nm">'+esc(x.alumno)+'</span><span class="mut"> · '+esc(x.cod||'sin código')+'</span></button>').join('')+(c.items.length>60?'<div class="mut">…y '+(c.items.length-60)+' más (ver CSV)</div>':'')+'</div>':'')+'</details>').join('');
+    csv=['Calidad de datos',['Problema','Alumno','Código'],[].concat(...I.calidad.map(c=>c.items.map(x=>[c.t,x.alumno,x.cod])))];
+  }
+  cu.querySelectorAll('[data-vficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.vficha));
+  document.getElementById('infcsv').onclick=()=>{ if(csv)descargarCSV('FitKid Informe '+csv[0]+' '+I.hoy,csv[1],csv[2]); };
+  right.innerHTML='<h2>Calidad de datos</h2>'+I.calidad.map(c=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(c.t)+'</span><b style="color:'+(c.items.length?'var(--danger)':'var(--ok)')+'">'+c.items.length+'</b></div>').join('')+'<button type="button" class="btn acbig" id="infcal" style="margin-top:12px">Ver detalle</button>';
+  document.getElementById('infcal').onclick=()=>{ INF_TAB='calidad'; drawInformes(); cerrarPanel(); };
 }
 
 /* ---------- Calendario (agenda semanal + pasar lista) ---------- */
