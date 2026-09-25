@@ -86,6 +86,21 @@
   .nm{font-weight:600;font-size:14px}
   .pill{font-size:10px;padding:2px 7px;border-radius:var(--r-pill);margin-left:6px;font-weight:600}
   .pill.warn{background:var(--amber-bg);color:var(--amber)}
+  .weeknav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .cal{border-collapse:separate;border-spacing:4px;width:100%;min-width:520px}
+  .cal th{font-size:11px;color:var(--muted);font-weight:600;padding:2px 4px;text-align:center}
+  .cal .calb{font-size:11px;color:var(--muted);white-space:nowrap;padding-right:6px}
+  .calc{width:100%;min-width:54px;padding:8px 4px;border:1px solid var(--line);border-radius:9px;background:var(--brand-bg);color:var(--brand-600);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+  .calc:hover{border-color:var(--brand-500)}
+  .calc.full{background:var(--danger-bg);color:var(--danger)}
+  .calc .ok2{display:block;font-size:10px;font-weight:500;color:var(--ok)}
+  .rosterrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .rosterrow:last-child{border-bottom:none}
+  .rosterrow .nm{font-size:13px}
+  .miniavatar{width:28px;height:28px;border-radius:50%;background:var(--brand-bg);color:var(--brand-600);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;flex:0 0 auto}
+  .mkbtn{padding:5px 9px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font-size:11px;cursor:pointer}
+  .mkbtn.on-ok{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok)}
+  .mkbtn.on-dng{background:var(--danger-bg);border-color:#f0c7c7;color:var(--danger)}
 
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
@@ -173,7 +188,7 @@ function loginScreen(msg){
 /* ---------- shell de 3 paneles ---------- */
 const NAV=[
   {id:'home', icon:'ti-home', label:'Panel de control', ready:true},
-  {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:false},
+  {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:true},
   {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true},
   {id:'ventas', icon:'ti-cash', label:'Ventas', ready:false},
   {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:false},
@@ -195,7 +210,7 @@ function shell(){
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
-  if(SECCION==='home')home(); else if(SECCION==='estudiantes')estudiantes(); else placeholder();
+  if(SECCION==='home')home(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else placeholder();
 }
 
 function placeholder(){
@@ -304,6 +319,82 @@ function verTutor(id){
   h+=hijos.length? hijos.map(a=>'<div class="venc" style="cursor:pointer" data-alumno2="'+a.id+'"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.programa||'')+'</div></div>').join('') : '<div class="mut">Sin alumnos vinculados en el directorio.</div>';
   right.innerHTML=h;
   right.querySelectorAll('[data-alumno2]').forEach(el=>el.onclick=()=>verFichaAlumno(el.dataset.alumno2));
+}
+
+/* ---------- Calendario (agenda semanal + pasar lista) ---------- */
+const DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
+let CAL_DESDE=null;
+function lunesDeHoy(){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return d.toISOString().slice(0,10);}
+
+async function calendario(){
+  if(!CAL_DESDE)CAL_DESDE=lunesDeHoy();
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  right.innerHTML='<h2>Pasar lista</h2><div class="mut">Toca una celda del calendario para ver el roster de esa clase.</div>';
+  center.innerHTML='<div class="pagehead"><h1>Calendario</h1></div><div class="weeknav"><button class="btn" id="calprev"><i class="ti ti-chevron-left" aria-hidden="true"></i></button><span class="mut" id="calrango">Cargando…</span><button class="btn" id="calnext"><i class="ti ti-chevron-right" aria-hidden="true"></i></button><button class="btn" id="calhoy" style="margin-left:auto">Esta semana</button></div><div id="calbody" class="mut">Cargando agenda…</div>';
+  document.getElementById('calprev').onclick=()=>{const d=new Date(CAL_DESDE+'T12:00:00');d.setDate(d.getDate()-7);CAL_DESDE=d.toISOString().slice(0,10);calendario();};
+  document.getElementById('calnext').onclick=()=>{const d=new Date(CAL_DESDE+'T12:00:00');d.setDate(d.getDate()+7);CAL_DESDE=d.toISOString().slice(0,10);calendario();};
+  document.getElementById('calhoy').onclick=()=>{CAL_DESDE=lunesDeHoy();calendario();};
+
+  const r=await call('agenda_semana',{desde:CAL_DESDE});
+  const body=document.getElementById('calbody');
+  if(!r||r.ok===false){ body.innerHTML='<div class="placeholder">No se pudo cargar la agenda.</div>'; return; }
+  const dias=r.dias||[], bloques=(r.bloques||[]).slice().sort((a,b)=>a.bloque<b.bloque?-1:1), cel=r.celdas||{};
+  document.getElementById('calrango').textContent='Semana del '+CAL_DESDE;
+  let h='<div style="overflow:auto"><table class="cal"><thead><tr><th></th>'+dias.map((f,i)=>'<th>'+DN[i]+'<div class="mut" style="font-weight:400">'+f.slice(8)+'</div></th>').join('')+'</tr></thead><tbody>';
+  let alguno=false;
+  bloques.forEach(b=>{
+    let fila='',tieneFila=false;
+    dias.forEach(f=>{
+      const c=cel[f+'|'+b.id];
+      if(!c){fila+='<td></td>';return;}
+      tieneFila=true;alguno=true;
+      const full=c.total>=b.cupo;
+      fila+='<td><button class="calc'+(full?' full':'')+'" data-cell="'+f+'|'+b.id+'">'+c.total+(c.asistio?'<span class="ok2">✓'+c.asistio+'</span>':'')+'</button></td>';
+    });
+    if(tieneFila)h+='<tr><td class="calb">'+esc((b.nombre||'').replace(' (Lun-Vie)',''))+'</td>'+fila+'</tr>';
+  });
+  h+='</tbody></table></div>';
+  if(!alguno)h='<div class="placeholder">No hay clases agendadas esta semana.</div>';
+  body.innerHTML=h;
+  body.querySelectorAll('[data-cell]').forEach(btn=>btn.onclick=()=>{
+    const p=btn.dataset.cell.split('|'); const b=bloques.find(x=>x.id===p[1]);
+    verRoster(p[0],p[1],b?b.nombre:'Clase');
+  });
+}
+
+async function verRoster(fecha,hid,label){
+  const right=document.getElementById('rightcol');
+  right.innerHTML='<h2>Pasar lista</h2><div class="mut">Cargando '+esc(label)+'…</div>';
+  const r=await call('clases_hoy',{fecha:fecha,horario_id:hid});
+  const rows=(r&&r.data||[]).map(x=>({id:x.id,n:x.n,cod:x.cod,e:x.e||null}));
+  drawRoster(fecha,label,rows);
+}
+
+function drawRoster(fecha,label,rows){
+  const right=document.getElementById('rightcol');
+  const done=rows.filter(c=>c.e).length;
+  let h='<h2>Pasar lista</h2><div class="mut" style="margin-bottom:10px">'+esc(label)+' · '+esc(fecha)+' · '+done+'/'+rows.length+'</div>';
+  h+=rows.length? rows.map((c,idx)=>'<div class="rosterrow"><div class="miniavatar">'+esc(ini(c.n))+'</div><div style="flex:1;min-width:0"><div class="nm">'+esc(c.n)+'</div><div class="mut">'+esc(c.cod||'')+'</div></div><button class="mkbtn'+(c.e==='Asistió'?' on-ok':'')+'" data-mk="'+idx+'|Asistió"><i class="ti ti-check" aria-hidden="true"></i></button><button class="mkbtn'+(c.e==='Falta'?' on-dng':'')+'" data-mk="'+idx+'|Falta"><i class="ti ti-x" aria-hidden="true"></i></button></div>').join('')
+    : '<div class="mut">Sin alumnos en esta clase.</div>';
+  if(rows.length)h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:14px" id="guardarlista"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar asistencia ('+done+')</button>';
+  h+='<div id="rostermsg" class="mut" style="margin-top:10px"></div>';
+  right.innerHTML=h;
+  right.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{
+    const p=b.dataset.mk.split('|'); const idx=+p[0];
+    rows[idx].e=rows[idx].e===p[1]?null:p[1];
+    drawRoster(fecha,label,rows);
+  });
+  const gb=document.getElementById('guardarlista');
+  if(gb)gb.onclick=async()=>{
+    const items=rows.filter(c=>c.e).map(c=>({id:c.id,estatus:c.e}));
+    gb.disabled=true;
+    const r=await call('guardar_asistencias',{items:items});
+    gb.disabled=false;
+    const msg=document.getElementById('rostermsg');
+    if(!r||r.ok!==true){ msg.style.color='var(--danger)'; msg.textContent='Error: '+((r&&r.error)||'no se pudo guardar'); return; }
+    msg.style.color='var(--ok)';
+    msg.textContent='✓ '+(r.actualizadas!=null?r.actualizadas:items.length)+' asistencia(s) guardada(s)'+(r.rechazados&&r.rechazados.length?(' · '+r.rechazados.length+' rechazadas'):'');
+  };
 }
 
 if(!AUTH.token)loginScreen();
