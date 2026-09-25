@@ -159,6 +159,12 @@
   .kiorow span{flex:1} .kiorow.hecho{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok);cursor:default} .kiorow.hecho i{font-size:22px}
   @media (max-width:760px){ .kiobody{grid-template-columns:1fr} }
   .kiosel{display:block}
+  .evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:18px}
+  button.evcard{display:block;width:100%;text-align:left;font-family:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh-sm);cursor:pointer} button.evcard.on{border-color:var(--brand-600);box-shadow:0 0 0 2px var(--brand-bg)}
+  .evtop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px} .evtop .pill{margin-left:0;white-space:nowrap}
+  .evins{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)} .evins .pill{margin-left:4px}
+  .evpas summary{cursor:pointer;margin-bottom:10px}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.info{background:var(--brand-bg);color:var(--brand-700)} .pill.gris{background:var(--line);color:var(--muted)}
   .vtabla{padding:0;overflow-x:auto} .vtabla table{width:100%;border-collapse:collapse;font-size:13.5px} .vtabla th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)} .vtabla td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top} .vtabla tr:last-child td{border-bottom:0} .vtabla .num{text-align:right;white-space:nowrap} .vtabla tr.pend td{opacity:.7}
   .vacc{display:flex;gap:6px;justify-content:flex-end} .vacc .btn{padding:6px 10px;min-height:0}
   .vaforo{padding:12px 0;border-bottom:1px solid var(--line)} .vaforo:last-child{border-bottom:0} .vaforo-t{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
@@ -317,6 +323,7 @@ const NAV=[
   {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:true},
   {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true},
   {id:'ventas', icon:'ti-cash', label:'Ventas', ready:true},
+  {id:'eventos', icon:'ti-confetti', label:'Eventos', ready:true},
   {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:false},
   {id:'marketing', icon:'ti-speakerphone', label:'Marketing', ready:false},
   {id:'informes', icon:'ti-chart-bar', label:'Informes', ready:false}
@@ -340,7 +347,7 @@ function shell(){
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
-  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else if(SECCION==='ventas')ventas(); else placeholder();
+  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else if(SECCION==='ventas')ventas(); else if(SECCION==='eventos')eventos(); else placeholder();
 }
 
 /* En tablet/celular el panel derecho es una hoja: se abre solo por una acción del usuario
@@ -1050,6 +1057,116 @@ function imprimirCorte(){
    +'<h2>Por método</h2><table>'+Object.keys(V.corte.por_metodo).map(k=>fila(esc(METODO_CORTO[k]||k),$$(V.corte.por_metodo[k]))).join('')+fila('<b>Total cobrado</b>','<b>'+$$(V.corte.total)+'</b>')+'</table>'
    +'<h2>Pagos ('+V.corte.pagos.length+')</h2><table><tr><th>Folio</th><th>Alumno</th><th>Concepto</th><th>Método</th><th>Estado</th><th class="num">Monto</th></tr>'+V.corte.pagos.map(p=>'<tr><td>'+esc(p.folio)+'</td><td>'+esc(p.alumno)+'</td><td>'+esc(p.concepto)+'</td><td>'+esc(METODO_CORTO[p.metodo]||p.metodo)+'</td><td>'+esc(p.estado)+'</td><td class="num">'+$$(p.monto)+'</td></tr>').join('')+'</table>'
    +'<div class="pfirma"><span>Entregó</span><span>Recibió</span></div></div>';
+  document.body.classList.add('imprimiendo'); const fin=()=>{document.body.classList.remove('imprimiendo');window.removeEventListener('afterprint',fin);}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),60);
+}
+
+/* ---------- Eventos ----------
+   El panel carga todo en una llamada (eventos_panel). Cada acción cuesta una llamada y actualiza la pantalla
+   localmente, sin recargar el panel completo. */
+let EVENTOS=null, EV_SEL=null;
+const EV_TONO={'Abierto a inscripción':'ok','Planeado':'gris','Lleno':'warn','Realizado':'info'};
+function evFechas(e){ return e.fecha?(fmtFecha(e.fecha)+(e.fecha_fin?' – '+fmtFecha(e.fecha_fin):'')):'Sin fecha'; }
+function evCobros(e){ let c=0,p=0; e.inscritos.forEach(i=>{ if(i.pago){ if(i.pago.estado==='Completado')c+=i.pago.monto; else if(i.pago.estado==='Pendiente')p+=i.pago.monto; } }); return {c,p}; }
+async function eventos(forzar){
+  const center=document.getElementById('centercol');
+  if(!EVENTOS||forzar){ center.innerHTML='<div class="pagehead"><h1>Eventos</h1></div><div class="mut">Cargando eventos…</div>'; document.getElementById('rightcol').innerHTML='';
+    const r=await call('eventos_panel',{}); if(SECCION!=='eventos')return;
+    if(!r||r.ok===false){ center.innerHTML='<div class="pagehead"><h1>Eventos</h1></div><div class="placeholder">No se pudieron cargar los eventos: '+esc((r&&r.error)||'error de red')+'</div>'; return; }
+    EVENTOS=r; }
+  drawEventos(); if(EV_SEL&&EVENTOS.data.find(e=>e.id===EV_SEL))verEvento(EV_SEL,true); else document.getElementById('rightcol').innerHTML='<div class="mut">Elige un evento para ver inscritos y cobros.</div>';
+}
+function drawEventos(){
+  const center=document.getElementById('centercol'); if(!EVENTOS||!center)return; const hoy=EVENTOS.hoy;
+  const vivos=EVENTOS.data.filter(e=>e.estatus!=='Realizado').sort((a,b)=>(a.fecha||'9').localeCompare(b.fecha||'9')); const pasados=EVENTOS.data.filter(e=>e.estatus==='Realizado');
+  const card=e=>{ const n=e.inscritos.length, pc=e.cupo?Math.min(100,Math.round(n/e.cupo*100)):0, k=evCobros(e); const vencido=e.estatus!=='Realizado'&&e.fecha&&(e.fecha_fin||e.fecha)<hoy;
+    return '<button type="button" class="evcard'+(EV_SEL===e.id?' on':'')+'" data-ev="'+esc(e.id)+'"><div class="evtop"><span class="nm">'+esc(e.nombre)+'</span><span class="pill '+(EV_TONO[e.estatus]||'gris')+'">'+esc(e.estatus||'Sin estatus')+'</span></div><div class="mut">'+esc(e.tipo||'Sin tipo')+' · '+esc(evFechas(e))+' · '+(e.costo?$$(e.costo):'gratis')+'</div>'+(vencido?'<div class="mut" style="color:var(--amber);font-size:12px">Ya pasó la fecha: márcalo como Realizado.</div>':'')+'<div class="vbar" style="margin:8px 0 4px"><i style="width:'+pc+'%"'+(pc>=100?' class="lleno"':'')+'></i></div><div class="mut" style="font-size:12px">'+n+(e.cupo?' / '+e.cupo:'')+' inscritos · cobrado '+$$(k.c)+(k.p?' · pendiente '+$$(k.p):'')+'</div></button>'; };
+  center.innerHTML='<div class="pagehead"><h1>Eventos</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="evact"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button><button type="button" class="btn pri" id="evnuevo"><i class="ti ti-plus" aria-hidden="true"></i> Nuevo evento</button></div></div>'
+   +'<h2 class="vh2">Próximos y abiertos ('+vivos.length+')</h2>'+(vivos.length?'<div class="evgrid">'+vivos.map(card).join('')+'</div>':'<div class="placeholder">No hay eventos abiertos. Crea uno con "Nuevo evento".</div>')
+   +(pasados.length?'<details class="evpas"><summary class="vh2">Realizados ('+pasados.length+')</summary><div class="evgrid">'+pasados.map(card).join('')+'</div></details>':'');
+  document.getElementById('evact').onclick=()=>eventos(true); document.getElementById('evnuevo').onclick=()=>formEvento(null);
+  center.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>verEvento(b.dataset.ev));
+}
+function evPanel(e,cuerpo){ const right=document.getElementById('rightcol'); right.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><button type="button" class="btn" id="evvolver"><i class="ti ti-arrow-left" aria-hidden="true"></i> '+esc(e?e.nombre:'Eventos')+'</button></div>'+cuerpo+'<div id="everr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>'; const v=document.getElementById('evvolver'); if(v)v.onclick=()=>e?verEvento(e.id):drawEventos(); return right; }
+function verEvento(id,sinAbrir){
+  const e=EVENTOS.data.find(x=>x.id===id); if(!e)return; EV_SEL=id; if(!sinAbrir)abrirPanel(); drawEventos();
+  const right=document.getElementById('rightcol'); const k=evCobros(e); const cerrado=e.estatus==='Realizado';
+  const fila=(a,b)=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span class="mut">'+a+'</span><span>'+b+'</span></div>';
+  let h='<h2 style="margin-bottom:4px">'+esc(e.nombre)+'</h2><div class="mut" style="margin-bottom:10px">'+esc(e.tipo||'Sin tipo')+' · '+esc(evFechas(e))+'</div>';
+  h+=fila('Costo',(e.costo?$$(e.costo):'gratis')+(e.descuento?' · '+e.descuento+'% menos a alumnos activos':''))+fila('Edades',(e.edad_min!=null||e.edad_max!=null)?((e.edad_min!=null?e.edad_min:'—')+' a '+(e.edad_max!=null?e.edad_max:'—')+' años'):'todas')+fila('Inscritos','<b>'+e.inscritos.length+'</b>'+(e.cupo?' / '+e.cupo:''))+fila('Cobrado','<b>'+$$(k.c)+'</b>'+(k.p?' · pendiente '+$$(k.p):''));
+  h+='<label class="mut" style="display:block;margin-top:12px">Estatus</label>'+chips('evest',EVENTOS.estatus.map(s=>[s,s]),e.estatus);
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" class="btn pri" id="evins"'+(cerrado?' disabled':'')+'><i class="ti ti-user-plus" aria-hidden="true"></i> Inscribir</button><button type="button" class="btn" id="eved"><i class="ti ti-pencil" aria-hidden="true"></i> Editar</button><button type="button" class="btn" id="evimp"'+(e.inscritos.length?'':' disabled')+'><i class="ti ti-printer" aria-hidden="true"></i> Lista</button></div>';
+  h+='<h2>Inscritos ('+e.inscritos.length+')</h2>'+(e.inscritos.length?e.inscritos.map(i=>{ const p=i.pago; const est=!p?'<span class="pill gris">sin cobro</span>':p.estado==='Completado'?'<span class="pill ok">pagó '+$$(p.monto)+'</span>':'<span class="pill warn">debe '+$$(p.monto)+'</span>';
+    return '<div class="evins"><div style="flex:1;min-width:0"><div class="nm">'+esc(i.nombre)+'</div><div class="mut">'+esc(i.cod||'')+' '+est+'</div></div><div class="vacc">'+(p&&p.estado==='Pendiente'?'<button type="button" class="btn" data-evcob="'+esc(i.aid)+'">Cobrar</button>':'')+(cerrado?'':'<button type="button" class="btn" data-evbaja="'+esc(i.aid)+'" aria-label="Quitar a '+esc(i.nombre)+'"><i class="ti ti-user-minus" aria-hidden="true"></i></button>')+'</div></div>'; }).join(''):'<div class="mut">Nadie inscrito todavía.</div>');
+  h+='<div id="everr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
+  right.innerHTML=h;
+  bindChips(right,'evest',async v=>{ if(v===e.estatus)return; const r=await call('actualizar_evento',{evento_id:e.id,campos:{estatus:v}}); if(!r||r.ok===false){ document.getElementById('everr').textContent='No se pudo: '+((r&&r.error)||'error'); verEvento(e.id,true); return; } e.estatus=v; toast('✓ '+e.nombre+': '+v,'ok'); verEvento(e.id,true); });
+  const bi=document.getElementById('evins'); if(bi)bi.onclick=()=>inscribirEvento(e);
+  document.getElementById('eved').onclick=()=>formEvento(e);
+  const bp=document.getElementById('evimp'); if(bp)bp.onclick=()=>imprimirListaEvento(e);
+  right.querySelectorAll('[data-evcob]').forEach(b=>b.onclick=()=>cobrarEvento(e,e.inscritos.find(i=>i.aid===b.dataset.evcob)));
+  right.querySelectorAll('[data-evbaja]').forEach(b=>b.onclick=()=>bajaEvento(e,e.inscritos.find(i=>i.aid===b.dataset.evbaja)));
+}
+function inscribirEvento(e){
+  const ya={}; e.inscritos.forEach(i=>ya[i.aid]=1); let sel=null;
+  const right=evPanel(e,'<h2>Inscribir a '+esc(e.nombre)+'</h2><input class="field" id="evbus" placeholder="Buscar alumno por nombre o código" autocomplete="off"><div id="evres" class="dirlist" style="margin-top:6px"></div><div id="evsel"></div>');
+  const bus=document.getElementById('evbus'), res=document.getElementById('evres'), zona=document.getElementById('evsel');
+  const fuera=a=>a.edad!=null&&((e.edad_min!=null&&a.edad<e.edad_min)||(e.edad_max!=null&&a.edad>e.edad_max));
+  bus.oninput=()=>{ const q=bus.value.trim().toLowerCase(); if(q.length<2){res.innerHTML='';return;} const arr=EVENTOS.alumnos.filter(a=>!ya[a.id]&&(String(a.nombre).toLowerCase().indexOf(q)!==-1||String(a.cod||'').toLowerCase().indexOf(q)!==-1)).slice(0,8);
+    res.innerHTML=arr.length?arr.map(a=>'<button type="button" class="dirrow" data-evel="'+esc(a.id)+'"'+(fuera(a)?' disabled title="Fuera del rango de edad"':'')+'><div class="avatar">'+esc(ini(a.nombre))+'</div><div style="text-align:left;flex:1"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.cod||'')+(a.edad!=null?' · '+a.edad+' años':'')+(fuera(a)?' · fuera del rango de edad':'')+(a.activo?'':' · suspendido')+'</div></div></button>').join(''):'<div class="mut">Sin resultados (los ya inscritos no aparecen).</div>';
+    res.querySelectorAll('[data-evel]').forEach(b=>b.onclick=()=>{ sel=EVENTOS.alumnos.find(a=>a.id===b.dataset.evel); pintarSel(); }); };
+  function pintarSel(){ if(!sel){zona.innerHTML='';return;} const precio=(sel.activo&&e.descuento)?Math.round(e.costo*(1-e.descuento/100)):e.costo;
+    zona.innerHTML='<div class="card" style="padding:12px;margin-top:10px"><div class="nm">'+esc(sel.nombre)+'</div><div class="mut">Precio: <b>'+(precio?$$(precio):'gratis')+'</b>'+(precio!==e.costo?' (con '+e.descuento+'% de descuento)':'')+'</div></div>'+(e.costo?'<label class="mut" style="display:block;margin-top:10px">Cobro</label>'+chips('evpm',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['pendiente','Paga después'],['sin','Sin cobro (cortesía)']],'Efectivo'):'')+'<button type="button" class="btn pri acbig" id="evok"><i class="ti ti-check" aria-hidden="true"></i> Inscribir</button>';
+    if(e.costo)bindChips(zona,'evpm');
+    document.getElementById('evok').onclick=async ev=>{ const pm=e.costo?valChip(zona,'evpm'):'sin'; const p={evento_id:e.id,alumno_id:sel.id}; if(pm==='sin')p.sin_pago=true; else if(pm!=='pendiente')p.metodo=pm;
+      const btn=ev.currentTarget; btn.disabled=true; btn.textContent='Inscribiendo…'; const r=await call('inscribir_a_evento',p); btn.disabled=false; btn.textContent='Inscribir';
+      if(!r||r.ok===false){ document.getElementById('everr').textContent='No se pudo: '+((r&&r.error)||'error'); return; }
+      e.inscritos.push({aid:sel.id,nombre:sel.nombre,cod:sel.cod,pago:r.pago?{id:r.pago.id,folio:r.pago.folio,estado:r.pago.estado,monto:r.pago.monto}:null}); e.inscritos.sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre))); if(r.lleno)e.estatus='Lleno';
+      toast('✓ '+sel.nombre+' inscrito'+(r.pago?' · '+$$(r.pago.monto)+' '+r.pago.estado.toLowerCase():''),'ok'); verEvento(e.id,true); }; }
+  setTimeout(()=>bus.focus(),30);
+}
+function cobrarEvento(e,i){ if(!i||!i.pago)return;
+  const right=evPanel(e,'<h2>Cobrar evento</h2><div class="card" style="padding:12px"><div class="nm">'+esc(i.nombre)+'</div><div class="mut">'+esc(i.pago.folio||'')+' · <b>'+$$(i.pago.monto)+'</b></div></div><label class="mut" style="display:block;margin-top:10px">Método</label>'+chips('evcm',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta']],'Efectivo')+'<button type="button" class="btn pri acbig" id="evcok"><i class="ti ti-cash" aria-hidden="true"></i> Cobrar '+$$(i.pago.monto)+'</button>');
+  bindChips(right,'evcm');
+  document.getElementById('evcok').onclick=async ev=>{ const btn=ev.currentTarget; btn.disabled=true; const r=await call('cobrar_pago',{pago_id:i.pago.id,metodo:valChip(right,'evcm')}); btn.disabled=false; if(!r||r.ok===false){ document.getElementById('everr').textContent='No se pudo: '+((r&&r.error)||'error'); return; } i.pago.estado='Completado'; i.pago.metodo=r.metodo; VENTAS=null; toast('✓ Cobrado '+$$(r.monto)+' · '+i.nombre,'ok'); verEvento(e.id,true); };
+}
+function bajaEvento(e,i){ if(!i)return; const pagado=i.pago&&i.pago.estado==='Completado';
+  const right=evPanel(e,'<h2>Quitar del evento</h2><div class="card" style="padding:12px"><div class="nm">'+esc(i.nombre)+'</div><div class="mut">'+(pagado?'Ya pagó '+$$(i.pago.monto)+'. Después podrás registrar el reembolso.':i.pago?'Su pago pendiente de '+$$(i.pago.monto)+' se cancela.':'No tiene cobro registrado.')+'</div></div><button type="button" class="btn acbig" id="evbok" style="color:var(--danger)"><i class="ti ti-user-minus" aria-hidden="true"></i> Quitar a '+esc(i.nombre)+'</button>');
+  document.getElementById('evbok').onclick=async ev=>{ const btn=ev.currentTarget; btn.disabled=true; const r=await call('baja_evento',{evento_id:e.id,alumno_id:i.aid}); btn.disabled=false; if(!r||r.ok===false){ document.getElementById('everr').textContent='No se pudo: '+((r&&r.error)||'error'); return; }
+    e.inscritos=e.inscritos.filter(x=>x.aid!==i.aid); if(r.reabierto)e.estatus='Abierto a inscripción'; VENTAS=null;
+    if(!r.requiere_reembolso){ toast('✓ '+i.nombre+' fuera del evento','ok'); verEvento(e.id,true); return; }
+    const rr=evPanel(e,'<h2>¿Reembolsar?</h2><div class="mut" style="margin-bottom:8px">'+esc(i.nombre)+' ya había pagado '+$$(r.pagado)+'. Si le devuelves el dinero, regístralo para que el corte cuadre.</div><label class="mut" for="evrm">Monto a devolver</label><input class="field" id="evrm" type="number" min="0" step="10" value="'+esc(r.pagado)+'">'+chips('evrmet',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta']],'Efectivo')+'<button type="button" class="btn pri acbig" id="evrok">Registrar reembolso</button><button type="button" class="btn acbig" id="evrno">No devolver</button>');
+    bindChips(rr,'evrmet'); document.getElementById('evrno').onclick=()=>verEvento(e.id,true);
+    document.getElementById('evrok').onclick=async()=>{ const m=Number(document.getElementById('evrm').value)||0; if(m<=0){document.getElementById('everr').textContent='Monto inválido';return;} const x=await call('registrar_reembolso',{alumno_id:i.aid,monto:m,concepto:'EVNT',metodo:valChip(rr,'evrmet')}); if(!x||x.ok===false){ document.getElementById('everr').textContent='No se pudo: '+((x&&x.error)||'error'); return; } toast('✓ Reembolso '+$$(m)+' registrado','ok'); verEvento(e.id,true); }; };
+}
+function formEvento(e){
+  const nuevo=!e; const v=e||{nombre:'',tipo:'',fecha:'',fecha_fin:'',costo:'',cupo:'',edad_min:'',edad_max:'',descuento:'',estatus:'Abierto a inscripción'};
+  const campo=(id,l,val,extra)=>'<div><label class="mut" for="'+id+'">'+l+'</label><input class="field" id="'+id+'" value="'+esc(val==null?'':val)+'" '+(extra||'')+'></div>';
+  const html='<h2>'+(nuevo?'Nuevo evento':'Editar evento')+'</h2>'+campo('efn','Nombre',v.nombre,'autocomplete="off"')+'<label class="mut">Tipo</label>'+chips('eft',EVENTOS.tipos.map(t=>[t,t]),v.tipo)
+   +'<div class="altagrid">'+campo('eff','Fecha (inicio)',v.fecha,'type="date"')+campo('efe','Fecha final (si dura varios días)',v.fecha_fin,'type="date"')+campo('efc','Costo ($)',v.costo,'type="number" min="0" step="50" inputmode="numeric"')+campo('efcu','Cupo',v.cupo,'type="number" min="0" step="1" inputmode="numeric"')+campo('efmi','Edad mínima',v.edad_min,'type="number" min="0" inputmode="numeric"')+campo('efma','Edad máxima',v.edad_max,'type="number" min="0" inputmode="numeric"')+campo('efd','Descuento a alumnos activos (%)',v.descuento,'type="number" min="0" max="100" inputmode="numeric"')+'</div>'
+   +(nuevo?'<label class="mut">Publicar como</label>'+chips('efs',[['Abierto a inscripción','Abierto a inscripción'],['Planeado','Planeado (aún no se inscribe)']],'Abierto a inscripción'):'')
+   +'<button type="button" class="btn pri acbig" id="efok"><i class="ti ti-device-floppy" aria-hidden="true"></i> '+(nuevo?'Crear evento':'Guardar cambios')+'</button>';
+  let root; if(nuevo){ const center=document.getElementById('centercol'); center.innerHTML='<div class="pagehead"><h1>Eventos</h1><button type="button" class="btn" id="efcan"><i class="ti ti-x" aria-hidden="true"></i> Cancelar</button></div><div class="card altasec">'+html+'<div id="everr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div></div>'; document.getElementById('efcan').onclick=drawEventos; root=center; }
+  else root=evPanel(e,html);
+  bindChips(root,'eft'); if(nuevo)bindChips(root,'efs');
+  document.getElementById('efok').onclick=async ev=>{ const g=id=>document.getElementById(id).value.trim(); const err=document.getElementById('everr');
+    const d={nombre:g('efn'),tipo:valChip(root,'eft')||'',fecha:g('eff'),fecha_fin:g('efe'),costo:g('efc'),cupo:g('efcu'),edad_min:g('efmi'),edad_max:g('efma'),descuento:g('efd')};
+    const faltas=[[!d.nombre,'el nombre'],[!d.tipo,'el tipo'],[!d.fecha,'la fecha'],[d.fecha_fin&&d.fecha&&d.fecha_fin<d.fecha,'una fecha final posterior a la inicial'],[d.cupo===''||!(Number(d.cupo)>0),'el cupo'],[d.descuento!==''&&!(Number(d.descuento)>=0&&Number(d.descuento)<=100),'un descuento entre 0 y 100'],[d.edad_min!==''&&d.edad_max!==''&&Number(d.edad_min)>Number(d.edad_max),'edades en orden']].filter(x=>x[0]);
+    if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
+    const btn=ev.currentTarget; btn.disabled=true; let r;
+    if(nuevo){ r=await call('crear_evento',Object.assign({},d,{estatus:valChip(root,'efs')})); btn.disabled=false; if(!r||r.ok===false){ err.textContent='No se pudo: '+((r&&r.error)||'error'); return; }
+      const nv={id:r.id,nombre:d.nombre,tipo:d.tipo,estatus:valChip(root,'efs'),fecha:d.fecha,fecha_fin:d.fecha_fin&&d.fecha_fin!==d.fecha?d.fecha_fin:'',costo:Number(d.costo)||0,cupo:Number(d.cupo)||0,edad_min:d.edad_min===''?null:Number(d.edad_min),edad_max:d.edad_max===''?null:Number(d.edad_max),descuento:Number(d.descuento)||0,inscritos:[]};
+      EVENTOS.data.unshift(nv); toast('✓ Evento creado','ok'); verEvento(nv.id); return; }
+    const campos={}; const num=x=>x===''?null:Number(x);
+    if(d.nombre!==e.nombre)campos.nombre=d.nombre; if(d.tipo!==e.tipo)campos.tipo=d.tipo; if(d.fecha!==e.fecha||(d.fecha_fin||'')!==(e.fecha_fin||'')){campos.fecha=d.fecha;campos.fecha_fin=d.fecha_fin;}
+    [['costo','costo'],['cupo','cupo'],['edad_min','edad_min'],['edad_max','edad_max'],['descuento','descuento']].forEach(([k])=>{ const nv=num(d[k]); if(nv!==(e[k]==null||e[k]===''?null:Number(e[k])))campos[k]=d[k]; });
+    if(!Object.keys(campos).length){ btn.disabled=false; err.textContent='No cambiaste nada.'; return; }
+    r=await call('actualizar_evento',{evento_id:e.id,campos:campos}); btn.disabled=false; if(!r||r.ok===false){ err.textContent='No se pudo: '+((r&&r.error)||'error'); return; }
+    Object.assign(e,{nombre:d.nombre,tipo:d.tipo,fecha:d.fecha,fecha_fin:d.fecha_fin&&d.fecha_fin!==d.fecha?d.fecha_fin:'',costo:Number(d.costo)||0,cupo:Number(d.cupo)||0,edad_min:num(d.edad_min),edad_max:num(d.edad_max),descuento:Number(d.descuento)||0});
+    toast('✓ Evento actualizado','ok'); verEvento(e.id,true); };
+}
+function imprimirListaEvento(e){
+  let pa=document.getElementById('printarea'); if(!pa){pa=document.createElement('div');pa.id='printarea';document.body.appendChild(pa);}
+  pa.innerHTML='<div class="pcorte"><h1>FitKid Gymnastic · '+esc(e.nombre)+'</h1><div>'+esc(e.tipo||'')+' · '+esc(evFechas(e))+' · '+e.inscritos.length+' inscritos</div><table style="margin-top:5mm"><tr><th>#</th><th>Alumno</th><th>Código</th><th>Pago</th><th>Llegó</th></tr>'+e.inscritos.map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(i.nombre)+'</td><td>'+esc(i.cod||'')+'</td><td>'+(!i.pago?'—':i.pago.estado==='Completado'?'Pagado':'Debe '+$$(i.pago.monto))+'</td><td style="width:18mm">☐</td></tr>').join('')+'</table></div>';
   document.body.classList.add('imprimiendo'); const fin=()=>{document.body.classList.remove('imprimiendo');window.removeEventListener('afterprint',fin);}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),60);
 }
 
