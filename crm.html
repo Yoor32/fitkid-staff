@@ -90,6 +90,8 @@
   .cal{border-collapse:separate;border-spacing:4px;width:100%;min-width:520px}
   .cal th{font-size:11px;color:var(--muted);font-weight:600;padding:2px 4px;text-align:center}
   .cal .calb{font-size:11px;color:var(--muted);white-space:nowrap;padding-right:6px}
+  .gchip{display:inline-block;margin-left:5px;padding:1px 7px;border-radius:var(--r-pill);font-size:10px;font-weight:600}
+  .gchip.nina{background:var(--pink-bg);color:var(--pink)} .gchip.nino{background:var(--blue-bg);color:var(--blue)}
   .calc{width:100%;min-width:54px;padding:8px 4px;border:1px solid var(--line);border-radius:9px;background:var(--brand-bg);color:var(--brand-600);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
   .calc:hover{border-color:var(--brand-500)}
   .calc.full{background:var(--danger-bg);color:var(--danger)}
@@ -325,6 +327,13 @@ function verTutor(id){
 const DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
 let CAL_DESDE=null;
 function lunesDeHoy(){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return d.toISOString().slice(0,10);}
+/* Los grupos de niños van separados por género: el nombre del horario termina en "· Niñas" / "· Niños".
+   FitParents no lleva género. */
+function generoDeHorario(nombre){ const n=String(nombre||''); if(/·\s*Niñas/i.test(n))return 'Niñas'; if(/·\s*Niños/i.test(n))return 'Niños'; return null; }
+function chipGenero(g){ return g?'<span class="gchip '+(g==='Niñas'?'nina':'nino')+'">'+g+'</span>':''; }
+function nombreSinGenero(nombre){ return String(nombre||'').replace(' (Lun-Vie)','').replace(/\s*·\s*Niñ[ao]s/i,''); }
+/* "4:00-5:00 PM" → minutos desde medianoche de la hora de inicio; el AM/PM va al final del rango. */
+function minutosBloque(bloque){ const m=String(bloque||'').match(/^(\d{1,2}):(\d{2}).*?(AM|PM)\s*$/i); if(!m)return 9999; let h=+m[1]%12; if(m[3].toUpperCase()==='PM')h+=12; return h*60+(+m[2]); }
 
 async function calendario(){
   if(!CAL_DESDE)CAL_DESDE=lunesDeHoy();
@@ -338,7 +347,7 @@ async function calendario(){
   const r=await call('agenda_semana',{desde:CAL_DESDE});
   const body=document.getElementById('calbody');
   if(!r||r.ok===false){ body.innerHTML='<div class="placeholder">No se pudo cargar la agenda.</div>'; return; }
-  const dias=r.dias||[], bloques=(r.bloques||[]).slice().sort((a,b)=>a.bloque<b.bloque?-1:1), cel=r.celdas||{};
+  const dias=r.dias||[], bloques=(r.bloques||[]).slice().sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre))), cel=r.celdas||{};
   document.getElementById('calrango').textContent='Semana del '+CAL_DESDE;
   let h='<div style="overflow:auto"><table class="cal"><thead><tr><th></th>'+dias.map((f,i)=>'<th>'+DN[i]+'<div class="mut" style="font-weight:400">'+f.slice(8)+'</div></th>').join('')+'</tr></thead><tbody>';
   let alguno=false;
@@ -351,7 +360,7 @@ async function calendario(){
       const full=c.total>=b.cupo;
       fila+='<td><button class="calc'+(full?' full':'')+'" data-cell="'+f+'|'+b.id+'">'+c.total+(c.asistio?'<span class="ok2">✓'+c.asistio+'</span>':'')+'</button></td>';
     });
-    if(tieneFila)h+='<tr><td class="calb">'+esc((b.nombre||'').replace(' (Lun-Vie)',''))+'</td>'+fila+'</tr>';
+    if(tieneFila)h+='<tr><td class="calb">'+esc(nombreSinGenero(b.nombre))+chipGenero(generoDeHorario(b.nombre))+'</td>'+fila+'</tr>';
   });
   h+='</tbody></table></div>';
   if(!alguno)h='<div class="placeholder">No hay clases agendadas esta semana.</div>';
