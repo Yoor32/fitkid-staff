@@ -110,10 +110,9 @@ const CONFIG = {
   VERIFY_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-verify",
   PORTAL_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-portal-acciones"
 };
-/* MOCK_PORTAL: true = el portal NO llama al backend (fitkid-portal-otp, -verify y
-   -acciones todavía no existen en n8n). Con cualquier correo y cualquier código de 6
-   dígitos entra y muestra datos de ejemplo. Cámbialo a false cuando estén publicados. */
-const MOCK_PORTAL=true;
+/* MOCK_PORTAL: false = el portal llama a los webhooks reales de n8n
+   (fitkid-portal-otp, -verify, -acciones), ya probados de punta a punta. */
+const MOCK_PORTAL=false;
 const fk=document.getElementById('fk');
 /* Sesión del tutor: SOLO en memoria. Nunca localStorage/sessionStorage/cookies. Se pierde al recargar. */
 const AUTH={token:null};
