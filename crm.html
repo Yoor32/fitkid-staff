@@ -129,6 +129,35 @@
   .chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:10px 0}
   .crmtoast{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));z-index:50;background:var(--text);color:#fff;padding:11px 16px;border-radius:var(--r-pill);font-size:13px;box-shadow:var(--sh-lg);max-width:calc(100% - 32px)}
   .crmtoast.ok{background:var(--ok)} .crmtoast.dng{background:var(--danger)}
+  .chkcard{padding:16px}
+  .camwrap{position:relative;border-radius:var(--r);overflow:hidden;background:#000;max-width:520px;aspect-ratio:4/3}
+  .camwrap video{width:100%;height:100%;object-fit:cover;display:block}
+  .cammark{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.85);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.25)}
+  .chkres{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);font-size:14px}
+  .chkres>i{font-size:28px;flex:0 0 auto} .chkres b{font-size:16px}
+  .chkres.ok{background:var(--ok-bg);border-color:#bfe3d5} .chkres.ok>i{color:var(--ok)}
+  .chkres.warn{background:var(--amber-bg);border-color:#f1d9b0} .chkres.warn>i{color:var(--amber)}
+  .chkres.dng{background:var(--danger-bg);border-color:#f0c7c7} .chkres.dng>i{color:var(--danger)}
+  .chkres.info{background:var(--brand-bg);border-color:#c9dcf1} .chkres.info>i{color:var(--brand-600)}
+  .chkalert{margin:6px 0 0;padding-left:18px;color:var(--amber);font-size:13px}
+  button.dirrow{width:100%;font-family:inherit;color:inherit}
+  .qrcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+  .qrcard img{width:220px;height:220px;image-rendering:pixelated}
+  body.kiosk-on{overflow:hidden}
+  body.kiosk-on #fk{display:none}
+  #kiosco{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column}
+  .kiohead{display:flex;align-items:center;justify-content:space-between;background:var(--brand-700);color:#fff;padding:14px 18px}
+  .kiohead b{font-size:17px} .kioclock{font-size:13px;opacity:.85}
+  .kiounlock{position:absolute;inset:0;z-index:5;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+  .kiounlock .card{width:100%;max-width:360px;padding:18px}
+  .kiolock{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:22px;cursor:pointer}
+  .kiobody{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:16px;overflow:auto}
+  .kioscan .camwrap{max-width:none}
+  .kioroster h2{font-size:14px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
+  #kiolista{display:flex;flex-direction:column;gap:8px}
+  .kiorow{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font-size:16px;font-family:inherit;text-align:left;cursor:pointer;color:var(--text)}
+  .kiorow span{flex:1} .kiorow.hecho{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok);cursor:default} .kiorow.hecho i{font-size:22px}
+  @media (max-width:760px){ .kiobody{grid-template-columns:1fr} }
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
   .venc{padding:10px 0;border-bottom:1px solid var(--line)}
@@ -247,6 +276,7 @@ function loginScreen(msg){
 /* ---------- shell de 3 paneles ---------- */
 const NAV=[
   {id:'home', icon:'ti-home', label:'Panel de control', ready:true},
+  {id:'checkin', icon:'ti-scan', label:'Check-in', ready:true},
   {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:true},
   {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true},
   {id:'ventas', icon:'ti-cash', label:'Ventas', ready:false},
@@ -256,6 +286,7 @@ const NAV=[
 ];
 
 function shell(){
+  detenerEscaner();
   let h='<div class="mobilebar"><b>FitKid CRM</b><a href="index.html">Check-in</a><button data-act="logout-m">Salir</button></div>';
   h+='<div class="shell">';
   h+='<nav class="navcol"><div class="navbrand"><div class="hlogo" role="img" aria-label="FitKid"></div><b>FitKid CRM</b></div>';
@@ -272,7 +303,7 @@ function shell(){
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
-  if(SECCION==='home')home(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else placeholder();
+  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else placeholder();
 }
 
 /* En tablet/celular el panel derecho es una hoja: se abre solo por una acción del usuario
@@ -413,6 +444,7 @@ function masAcciones(r,ya){
   add({id:'renovar',ic:'ti-refresh',t:'Renovar mensualidad',d:'Nueva membresía'});
   add({id:'otro_pago',ic:'ti-receipt',t:'Registrar otro cobro',d:'Inscripción, clase privada…'});
   add({id:'evento',ic:'ti-confetti',t:'Inscribir a evento',d:'Con o sin cobro'});
+  add({id:'tarjeta',ic:'ti-qrcode',t:'Tarjeta QR',d:'Imprimir o descargar su código'});
   if(al.verificado)add({id:'verificar',ic:'ti-shield-check',t:'Editar datos',d:'Volver a verificar'});
   if(al.estatus!=='Suspendido')add({id:'suspender',ic:'ti-player-pause',t:'Suspender',d:'Pausa al alumno'});
   if(waLink(t.whatsapp))add({id:'whatsapp',ic:'ti-brand-whatsapp',t:'WhatsApp al tutor',d:t.nombre||''});
@@ -517,6 +549,7 @@ async function ejecutarAccion(acc,asis){
     root.querySelector('#accok').onclick=async e=>{ const pm=valChip(root,'pm'); const p={evento_id:valChip(root,'evt'),alumno_id:FICHA.id}; if(pm==='sin')p.sin_pago=true; else if(pm!=='pendiente')p.metodo=pm; const res=await enviar(e.currentTarget,()=>call('inscribir_a_evento',p)); if(res)recargarFicha('✓ Inscrito'+(res.pago?' · $'+res.pago.monto+' '+res.pago.estado.toLowerCase():'')); }; return;
   }
   if(acc==='verificar'){ return formVerificar(vigente); }
+  if(acc==='tarjeta'){ return tarjetaQR(false); }
 }
 
 /* Verificación en recepción: mismos campos y reglas que el panel clásico. Las fechas AAAA-01-01 son relleno
@@ -562,6 +595,146 @@ async function formVerificar(vigente){
     if(res)recargarFicha('✓ Verificado'+(res.alerta_edad_horario?' · revisa: la edad no coincide con el programa':''));
   }
   draw();
+}
+
+/* ---------- Check-in (QR, lector USB, código o nombre) y modo kiosco ----------
+   El QR de cada alumno lleva un token aleatorio (FK1-…) guardado en Notion; el backend (checkin_qr) marca
+   Asistió en su clase de hoy y devuelve alertas. La cámara usa BarcodeDetector si existe y, si no (Safari en
+   iPad/iPhone), jsQR. Los lectores USB/Bluetooth escriben el código como teclado + Enter en el campo. */
+const JSQR_URL='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+const QRGEN_URL='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+const _libs={};
+function cargarScript(url){ if(_libs[url])return _libs[url]; _libs[url]=new Promise((ok,err)=>{const s=document.createElement('script');s.src=url;s.onload=ok;s.onerror=()=>{delete _libs[url];err(new Error('no se pudo cargar '+url));};document.head.appendChild(s);}); return _libs[url]; }
+let ESCANER=null; let CHECKINS=[]; let KIOSCO=null;
+function detenerEscaner(){ if(!ESCANER)return; ESCANER.vivo=false; try{ESCANER.stream.getTracks().forEach(t=>t.stop());}catch(e){} ESCANER=null; }
+/* Abre la cámara trasera dentro de `cont` y llama onCode(texto) por cada QR leído (ignora el mismo código 20 s). */
+async function iniciarEscaner(cont,onCode){
+  detenerEscaner();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ cont.innerHTML='<div class="mut">Este dispositivo no da acceso a la cámara aquí. Usa un lector USB o escribe el código.</div>'; return false; }
+  cont.innerHTML='<div class="camwrap"><video playsinline muted></video><div class="cammark"></div></div><div class="mut" style="margin-top:6px">Apunta al código QR de la tarjeta.</div>';
+  const video=cont.querySelector('video'); let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}); }
+  catch(e){ cont.innerHTML='<div class="mut" style="color:var(--danger)">No se pudo abrir la cámara ('+esc(e.name||e.message||e)+'). Si estás dentro de Duda, el iframe necesita <code>allow="camera"</code>.</div>'; return false; }
+  video.srcObject=stream; await video.play().catch(()=>{});
+  const st={vivo:true,stream:stream,ultimo:'',ultimoT:0}; ESCANER=st;
+  let detector=null; if('BarcodeDetector' in window){ try{ const f=await BarcodeDetector.getSupportedFormats(); if(f.indexOf('qr_code')!==-1)detector=new BarcodeDetector({formats:['qr_code']}); }catch(e){} }
+  if(!detector){ try{ await cargarScript(JSQR_URL); }catch(e){ cont.insertAdjacentHTML('beforeend','<div class="mut" style="color:var(--danger)">No se pudo cargar el lector de QR.</div>'); return false; } }
+  const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const emitir=txt=>{ const now=Date.now(); if(txt===st.ultimo&&now-st.ultimoT<20000)return; st.ultimo=txt; st.ultimoT=now; if(navigator.vibrate)navigator.vibrate(60); onCode(txt); };
+  const tick=async()=>{ if(!st.vivo)return; try{ if(video.readyState>=2){ if(detector){ const r=await detector.detect(video); if(r&&r[0]&&r[0].rawValue)emitir(r[0].rawValue); } else { const w=video.videoWidth,h=video.videoHeight; if(w&&h){ const k=Math.min(1,640/w); canvas.width=w*k; canvas.height=h*k; ctx.drawImage(video,0,0,canvas.width,canvas.height); const img=ctx.getImageData(0,0,canvas.width,canvas.height); const q=window.jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'}); if(q&&q.data)emitir(q.data); } } } }catch(e){} setTimeout(tick,220); };
+  tick(); return true;
+}
+function tarjetaResultado(r){
+  if(!r||r.ok===false)return '<div class="chkres dng"><b>No se pudo registrar</b><div>'+esc((r&&r.error)||'error de red')+'</div></div>';
+  const al=r.alumno||{}; const nom=esc(al.nombre||''); const cls=r.clase?esc(nombreSinGenero(r.clase)):'';
+  const alertas=(r.alertas||[]).length?'<ul class="chkalert">'+r.alertas.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul>':'';
+  /* En kiosco no se ofrece abrir la ficha ni crear clases: la tablet la usan alumnos y tutores. */
+  const enKiosco=!!KIOSCO;
+  const ficha=(al.id&&!enKiosco)?'<button type="button" class="btn" data-verficha="'+esc(al.id)+'" style="margin-top:8px">Abrir ficha</button>':'';
+  if(r.resultado==='registrado')return '<div class="chkres ok"><i class="ti ti-circle-check" aria-hidden="true"></i><div><b>'+nom+'</b><div>'+(r.era_falta?'Llegó tarde · ':'')+'Asistencia registrada'+(cls?' · '+cls:'')+'</div>'+(enKiosco?'':alertas)+ficha+'</div></div>';
+  if(r.resultado==='ya_registrado')return '<div class="chkres info"><i class="ti ti-info-circle" aria-hidden="true"></i><div><b>'+nom+'</b><div>Ya estaba registrado hoy'+(cls?' · '+cls:'')+'</div>'+alertas+ficha+'</div></div>';
+  if(r.resultado==='sin_clase')return '<div class="chkres warn"><i class="ti ti-calendar-off" aria-hidden="true"></i><div><b>'+nom+'</b><div>No tiene clase reservada hoy</div>'+alertas+(enKiosco?'<div style="margin-top:6px">Pasa con el staff de recepción.</div>':'<button type="button" class="btn pri" data-reponer="'+esc(al.id)+'" style="margin-top:8px">Registrar clase de reposición hoy</button> ')+ficha+'</div></div>';
+  if(r.resultado==='suspendido')return '<div class="chkres dng"><i class="ti ti-ban" aria-hidden="true"></i><div><b>'+nom+'</b><div>Alumno suspendido: no se registró la asistencia</div>'+alertas+ficha+'</div></div>';
+  return '<div class="chkres dng"><i class="ti ti-help-circle" aria-hidden="true"></i><div><b>Código no reconocido</b><div>Revisa la tarjeta o busca al alumno por nombre.</div></div></div>';
+}
+function bindResultado(box,alRegistrar){
+  box.querySelectorAll('[data-verficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.verficha));
+  box.querySelectorAll('[data-reponer]').forEach(b=>b.onclick=async()=>{ b.disabled=true; b.textContent='Registrando…'; const rp=await call('reponer_clase',{alumno_id:b.dataset.reponer,fecha:new Date().toLocaleDateString('en-CA')}); if(!rp||rp.ok===false){b.textContent='No se pudo: '+((rp&&rp.error)||'error');return;} const r=await call('checkin_qr',{alumno_id:b.dataset.reponer}); alRegistrar(r); });
+}
+async function registrarCheckin(payload,box,extra){
+  box.innerHTML='<div class="mut">Registrando…</div>';
+  const r=await call('checkin_qr',Object.assign({},payload,extra||{}));
+  box.innerHTML=tarjetaResultado(r); bindResultado(box,rr=>{box.innerHTML=tarjetaResultado(rr);bindResultado(box,()=>{});anotar(rr);});
+  anotar(r); return r;
+}
+function anotar(r){ if(!r||!r.alumno)return; CHECKINS.unshift({t:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),n:r.alumno.nombre,id:r.alumno.id,res:r.resultado}); CHECKINS=CHECKINS.slice(0,40); const l=document.getElementById('llegadas'); if(l)l.innerHTML=listaLlegadas(); }
+function listaLlegadas(){ if(!CHECKINS.length)return '<div class="mut">Aún no hay registros en este dispositivo.</div>'; const et={registrado:'✓',ya_registrado:'↺',sin_clase:'sin clase',suspendido:'suspendido'}; return CHECKINS.map(c=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span class="nm">'+esc(c.n)+'</span><span class="mut">'+esc(c.t)+' · '+esc(et[c.res]||c.res)+'</span></div>').join(''); }
+
+function checkin(){
+  detenerEscaner();
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  right.innerHTML='<h2>Llegadas en este dispositivo</h2><div id="llegadas">'+listaLlegadas()+'</div>';
+  center.innerHTML='<div class="pagehead"><h1>Check-in</h1><button type="button" class="btn" id="abrirkiosco"><i class="ti ti-device-tablet" aria-hidden="true"></i> Modo kiosco</button></div>'
+   +'<div class="card chkcard"><label class="mut" for="chkcod">Escanea con lector o escribe el código del alumno (ej. 26-ADN-101)</label><div style="display:flex;gap:8px"><input class="field" id="chkcod" autocomplete="off" autocapitalize="characters" placeholder="Código o QR" style="margin:0"><button type="button" class="btn pri" id="chkok">Registrar</button></div>'
+   +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn" id="chkcam"><i class="ti ti-camera" aria-hidden="true"></i> Usar cámara</button><input class="field" id="chkbus" placeholder="…o busca por nombre" autocomplete="off" style="margin:0;flex:1;min-width:180px"></div>'
+   +'<div id="chkbusres" class="dirlist"></div><div id="chkcamcont" style="margin-top:10px"></div></div>'
+   +'<div id="chkres" aria-live="polite" style="margin-top:14px"></div>';
+  const cod=document.getElementById('chkcod'), box=document.getElementById('chkres');
+  const enviarCod=()=>{ const v=cod.value.trim(); if(!v)return; cod.value=''; registrarCheckin({token:v},box); cod.focus(); };
+  document.getElementById('chkok').onclick=enviarCod; cod.addEventListener('keydown',e=>{if(e.key==='Enter')enviarCod();});
+  document.getElementById('chkcam').onclick=async e=>{ const b=e.currentTarget; if(ESCANER){detenerEscaner();document.getElementById('chkcamcont').innerHTML='';b.innerHTML='<i class="ti ti-camera" aria-hidden="true"></i> Usar cámara';return;} b.innerHTML='<i class="ti ti-camera-off" aria-hidden="true"></i> Cerrar cámara'; await iniciarEscaner(document.getElementById('chkcamcont'),txt=>registrarCheckin({token:txt},box)); };
+  const bus=document.getElementById('chkbus'), busres=document.getElementById('chkbusres'); let tb=null;
+  bus.oninput=()=>{ clearTimeout(tb); tb=setTimeout(async()=>{ const q=bus.value.trim().toLowerCase(); if(q.length<2){busres.innerHTML='';return;} if(!DIRECTORIO){busres.innerHTML='<div class="mut">Cargando…</div>'; const r=await call('directorio',{}); if(r&&r.ok!==false)DIRECTORIO=r;} const arr=((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(a=>String(a.nombre).toLowerCase().indexOf(q)!==-1).slice(0,6); busres.innerHTML=arr.length?arr.map(a=>'<button type="button" class="dirrow" data-chkal="'+esc(a.id)+'"><div class="avatar">'+esc(ini(a.nombre))+'</div><div style="text-align:left"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.cod||'')+'</div></div></button>').join(''):'<div class="mut">Sin resultados.</div>'; busres.querySelectorAll('[data-chkal]').forEach(b=>b.onclick=()=>{bus.value='';busres.innerHTML='';registrarCheckin({alumno_id:b.dataset.chkal},box);}); },250); };
+  document.getElementById('abrirkiosco').onclick=elegirBloqueKiosco;
+  setTimeout(()=>cod.focus(),50);
+}
+
+/* Modo kiosco: pantalla completa en la tablet de recepción. Cámara siempre encendida + roster del bloque para
+   tocar el nombre. Para salir se pide usuario y contraseña de staff (no cierra la sesión actual). */
+async function elegirBloqueKiosco(){
+  detenerEscaner(); const center=document.getElementById('centercol');
+  center.innerHTML='<div class="pagehead"><h1>Modo kiosco</h1></div><div class="mut">Cargando bloques…</div>';
+  const bl=await horariosLista(); if(SECCION!=='checkin')return;
+  center.innerHTML='<div class="pagehead"><h1>Modo kiosco</h1></div><div class="mut" style="margin-bottom:12px">Elige el bloque que atiende este kiosco. La pantalla quedará bloqueada hasta que un staff la desbloquee.</div><div class="acts"><button type="button" class="actbtn prim" data-kb=""><i class="ti ti-clock" aria-hidden="true"></i><span><b>Todos los bloques de hoy</b><small>Solo cámara y búsqueda</small></span></button>'+bl.map(b=>'<button type="button" class="actbtn" data-kb="'+esc(b.id)+'" data-kn="'+esc(b.nombre)+'"><i class="ti ti-users" aria-hidden="true"></i><span><b>'+esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)+'</b><small>Cupo '+esc(b.cupo)+'</small></span></button>').join('')+'</div>';
+  center.querySelectorAll('[data-kb]').forEach(b=>b.onclick=()=>iniciarKiosco(b.dataset.kb||null,b.dataset.kn||'Todos los bloques'));
+}
+function iniciarKiosco(hid,nombre){
+  KIOSCO={hid:hid,nombre:nombre,timer:null};
+  document.body.classList.add('kiosk-on'); const el=document.documentElement; if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
+  let k=document.getElementById('kiosco'); if(!k){k=document.createElement('div');k.id='kiosco';document.body.appendChild(k);}
+  k.innerHTML='<header class="kiohead"><div><b>Check-in · '+esc(nombreSinGenero(nombre))+'</b><div class="kioclock" id="kioclock"></div></div><button type="button" class="kiolock" id="kiolock" aria-label="Salir del kiosco"><i class="ti ti-lock" aria-hidden="true"></i></button></header>'
+   +'<div class="kiobody"><section class="kioscan"><div id="kiocam"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="field" id="kiocod" placeholder="Código o QR" autocomplete="off" autocapitalize="characters" style="margin:0"><button type="button" class="btn pri" id="kiook">OK</button></div><div id="kiores" aria-live="polite" style="margin-top:12px"></div></section>'
+   +'<section class="kioroster"><h2>'+(hid?'Toca tu nombre':'Registros recientes')+'</h2><div id="kiolista" class="mut">Cargando…</div></section></div>';
+  const box=document.getElementById('kiores'); const extra=hid?{horario_id:hid}:{};
+  const tras=r=>{ if(hid)cargarRosterKiosco(); clearTimeout(KIOSCO&&KIOSCO.limpiar); if(KIOSCO)KIOSCO.limpiar=setTimeout(()=>{if(box)box.innerHTML='';},8000); };
+  const cod=document.getElementById('kiocod'); const env=async()=>{const v=cod.value.trim(); if(!v)return; cod.value=''; tras(await registrarCheckin({token:v},box,extra));};
+  document.getElementById('kiook').onclick=env; cod.addEventListener('keydown',e=>{if(e.key==='Enter')env();});
+  iniciarEscaner(document.getElementById('kiocam'),async txt=>{ if(KIOSCO&&KIOSCO.pausa)return; tras(await registrarCheckin({token:txt},box,extra)); });
+  document.getElementById('kiolock').onclick=salirKiosco;
+  const reloj=()=>{const c=document.getElementById('kioclock'); if(c)c.textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}; reloj();
+  KIOSCO.timer=setInterval(()=>{reloj(); if(hid)cargarRosterKiosco();},60000);
+  if(hid)cargarRosterKiosco(); else document.getElementById('kiolista').innerHTML=listaLlegadas();
+}
+async function cargarRosterKiosco(){
+  if(!KIOSCO||!KIOSCO.hid)return; const r=await call('clases_hoy',{fecha:'hoy',horario_id:KIOSCO.hid}); const l=document.getElementById('kiolista'); if(!l||!KIOSCO)return;
+  const rows=((r&&r.data)||[]).slice().sort((a,b)=>String(a.n).localeCompare(String(b.n)));
+  if(!rows.length){l.innerHTML='<div class="mut">No hay alumnos reservados en este bloque hoy.</div>';return;}
+  l.className=''; l.innerHTML=rows.map(x=>{ const hecho=x.e==='Asistió'; return '<button type="button" class="kiorow'+(hecho?' hecho':'')+'" data-kal="'+esc(x.id)+'" data-kn="'+esc(x.n)+'"'+(hecho?' disabled':'')+'><div class="avatar">'+esc(ini(x.n))+'</div><span>'+esc(x.n)+'</span>'+(hecho?'<i class="ti ti-circle-check" aria-hidden="true"></i>':'')+'</button>'; }).join('');
+  l.querySelectorAll('[data-kal]').forEach(b=>b.onclick=()=>confirmarKiosco(b));
+}
+function confirmarKiosco(btn){
+  const box=document.getElementById('kiores'); const nom=btn.dataset.kn; const asisId=btn.dataset.kal;
+  box.innerHTML='<div class="chkres info"><div><b>¿Eres '+esc(nom)+'?</b><div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn pri" id="kiosi">Sí, registrar</button><button type="button" class="btn" id="kiono">No</button></div></div></div>';
+  document.getElementById('kiono').onclick=()=>{box.innerHTML='';};
+  document.getElementById('kiosi').onclick=async()=>{ box.innerHTML='<div class="mut">Registrando…</div>'; const r=await call('guardar_asistencias',{items:[{id:asisId,estatus:'Asistió'}]}); box.innerHTML=(r&&r.ok&&r.actualizadas)?'<div class="chkres ok"><i class="ti ti-circle-check" aria-hidden="true"></i><div><b>'+esc(nom)+'</b><div>Asistencia registrada. ¡Bienvenido!</div></div></div>':'<div class="chkres dng"><div><b>No se pudo registrar</b><div>Avisa al staff.</div></div></div>'; if(r&&r.ok&&r.actualizadas){CHECKINS.unshift({t:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),n:nom,res:'registrado'});} cargarRosterKiosco(); setTimeout(()=>{if(box)box.innerHTML='';},6000); };
+}
+/* El desbloqueo va en su propia capa y pausa el escáner: si no, un QR leído mientras tanto borra el formulario. */
+function salirKiosco(){
+  const k=document.getElementById('kiosco'); if(!k||!KIOSCO||document.getElementById('kiounlock'))return;
+  KIOSCO.pausa=true;
+  k.insertAdjacentHTML('beforeend','<div class="kiounlock" id="kiounlock" role="dialog" aria-modal="true" aria-labelledby="kxtit"><form class="card" id="kxform"><b id="kxtit">Salir del kiosco</b><div class="mut" style="margin:4px 0 8px">Usuario y contraseña de staff</div><input class="field" id="kxu" autocomplete="username" autocapitalize="none" placeholder="Usuario"><input class="field" id="kxp" type="password" autocomplete="current-password" placeholder="Contraseña"><div style="display:flex;gap:8px"><button type="submit" class="btn pri" id="kxok">Desbloquear</button><button type="button" class="btn" id="kxno">Cancelar</button></div><div id="kxerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:6px"></div></form></div>');
+  const cerrar=()=>{ const o=document.getElementById('kiounlock'); if(o)o.remove(); if(KIOSCO)KIOSCO.pausa=false; };
+  document.getElementById('kxno').onclick=cerrar;
+  document.getElementById('kxform').onsubmit=async e=>{ e.preventDefault(); const u=document.getElementById('kxu').value.trim(), p=document.getElementById('kxp').value, err=document.getElementById('kxerr'), ok=document.getElementById('kxok'); if(!u||!p){err.textContent='Escribe usuario y contraseña';return;} ok.disabled=true; err.textContent=''; const r=await callAuth(u,p); ok.disabled=false; if(r&&r.ok&&r.rol==='staff'){ cerrarKiosco(); } else { err.textContent='Usuario o contraseña incorrectos'; document.getElementById('kxp').value=''; } };
+  setTimeout(()=>{const u=document.getElementById('kxu'); if(u)u.focus();},30);
+}
+function cerrarKiosco(){ detenerEscaner(); if(KIOSCO&&KIOSCO.timer)clearInterval(KIOSCO.timer); KIOSCO=null; document.body.classList.remove('kiosk-on'); const k=document.getElementById('kiosco'); if(k)k.remove(); if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{}); shell(); }
+
+/* Tarjeta QR del alumno (desde la ficha): imprimir o descargar; regenerar invalida la anterior. */
+async function tarjetaQR(regenerar){
+  const r=FICHA.r, al=r.al||{}; const root=panelAccion('Tarjeta QR','<div class="mut">Generando…</div>');
+  const res=await call('qr_alumno',{alumno_id:FICHA.id,regenerar:!!regenerar});
+  if(!res||res.ok===false){ root.querySelector('#accerr').textContent='No se pudo: '+((res&&res.error)||'error'); return; }
+  try{ await cargarScript(QRGEN_URL); }catch(e){ root.querySelector('#accerr').textContent='No se pudo cargar el generador de QR'; return; }
+  const q=window.qrcode(0,'M'); q.addData(res.token); q.make(); const gif=q.createDataURL(8,4);
+  /* qrcode-generator solo produce GIF: se pasa por canvas para que la descarga sea un PNG real. */
+  const url=await new Promise(ok=>{ const im=new Image(); im.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; c.getContext('2d').drawImage(im,0,0); ok(c.toDataURL('image/png')); }catch(e){ ok(gif); } }; im.onerror=()=>ok(gif); im.src=gif; });
+  root.innerHTML=volverFicha()+'<h2>Tarjeta QR</h2><div class="qrcard" id="qrcard"><img src="'+url+'" alt="Código QR de '+esc(res.nombre)+'"><div class="nm">'+esc(res.nombre)+'</div><div class="mut">'+esc(res.cod||'')+' · FitKid Gymnastic</div></div>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="qrprint"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir</button><a class="btn" id="qrdl" download="QR-'+esc((res.cod||'alumno').replace(/[^A-Za-z0-9-]/g,''))+'.png" href="'+url+'"><i class="ti ti-download" aria-hidden="true"></i> Descargar</a><button type="button" class="btn" id="qrregen"><i class="ti ti-refresh" aria-hidden="true"></i> Regenerar</button></div>'
+   +'<div class="mut" style="font-size:12px;margin-top:8px">Regenerar invalida la tarjeta anterior (úsalo si se perdió).</div><div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
+  root.querySelector('[data-acc="volver"]').onclick=drawFicha;
+  root.querySelector('#qrprint').onclick=()=>{ const w=window.open('','_blank'); if(!w){root.querySelector('#accerr').textContent='El navegador bloqueó la ventana de impresión';return;} w.document.write('<!doctype html><title>QR '+esc(res.nombre)+'</title><body style="font-family:system-ui;text-align:center;padding:24px"><div style="display:inline-block;border:1px solid #ccc;border-radius:14px;padding:18px 22px"><img src="'+url+'" style="width:220px;height:220px"><div style="font-weight:700;margin-top:6px">'+esc(res.nombre)+'</div><div style="color:#667085;font-size:13px">'+esc(res.cod||'')+' · FitKid Gymnastic</div></div><script>onload=()=>{print();}<\/script></body>'); w.document.close(); };
+  root.querySelector('#qrregen').onclick=()=>{ if(confirm('¿Regenerar? La tarjeta actual dejará de funcionar.'))tarjetaQR(true); };
 }
 
 function verTutor(id){
