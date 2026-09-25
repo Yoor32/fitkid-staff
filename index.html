@@ -324,7 +324,7 @@ function altaAlumno(){const F={dias:new Set(),hora:null};draw();
     fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{F.nombre=nm.value;const d=b.dataset.dia;F.dias.has(d)?F.dias.delete(d):F.dias.add(d);draw();});
     fk.querySelector('[data-act="crear-alumno"]').onclick=async()=>{F.nombre=nm.value.trim();if(!F.nombre){toast('Escribe el nombre del alumno','');return;}const r=await call('alta_alumno',{nombre:F.nombre,hora:F.hora||undefined,dias:[...F.dias]});if(r&&r.ok){home();toast('✓ Alumno creado · '+(r.codigo||''),'ok');}else{toast('Error: '+((r&&r.error)||'no se pudo'),'');}};}}
 function renovarMensualidad(){const R={agendar:true,keep:true};pickAlumno('Renovar mensualidad',a=>{R.al=a;cargar();});
-  async function cargar(){fk.innerHTML=back('Renovar mensualidad')+'<div class="mut">Cargando datos del alumno…</div>';bindNav();const f=await call('ficha_alumno',{alumno_id:R.al.id});const fi=(f&&f.ok)?f:{};R.horario=fi.horario||null;R.hora=(fi.al&&fi.al.hora)||null;R.dias=(fi.al&&fi.al.dias)||[];stepHorario();}
+  async function cargar(){fk.innerHTML=back('Renovar mensualidad')+'<div class="mut">Cargando datos del alumno…</div>';bindNav();const f=await call('ficha_alumno',{alumno_id:R.al.id});const fi=(f&&f.ok)?f:{};R.horario=fi.horario||null;R.hora=(fi.al&&fi.al.hora)||null;R.dias=(fi.al&&fi.al.dias)||[];R.genero=generoOk(fi.al&&fi.al.genero);stepHorario();}
   function stepHorario(){let h=back('Renovar mensualidad');
     h+='<div class="mut" style="margin-bottom:10px">'+R.al.nombre+' · '+R.al.cod+'</div>';
     h+='<div class="card" style="padding:14px 15px;margin-bottom:12px"><div class="mut" style="font-size:11px">Horario actual</div><div class="nm" style="margin-top:3px">'+(R.horario?R.horario.nombre:(R.hora||'Sin horario asignado'))+'</div><div class="mut">'+(R.dias.length?R.dias.join(', '):'sin días definidos')+(R.horario?(' · cupo '+R.horario.cupo):'')+'</div></div>';
@@ -332,8 +332,9 @@ function renovarMensualidad(){const R={agendar:true,keep:true};pickAlumno('Renov
     fk.innerHTML=h;bindNav();
     fk.querySelector('[data-hk="keep"]').onclick=()=>{R.keep=true;stepPlan();};
     fk.querySelector('[data-hk="change"]').onclick=()=>{R.keep=false;stepCambio();};}
-  async function stepCambio(){fk.innerHTML=back('Renovar · nuevo horario')+'<div class="mut">Cargando horarios…</div>';bindNav();const hl=await call('horarios_lista',{});const bloques=hl.data||[];R.nh=R.nh||{hora:R.hora,dias:new Set(R.dias),hid:R.horario?R.horario.id:null};draw();
+  async function stepCambio(){fk.innerHTML=back('Renovar · nuevo horario')+'<div class="mut">Cargando horarios…</div>';bindNav();const hl=await call('horarios_lista',{});const bloques=ordenarBloques((hl.data||[]).filter(b=>!R.genero||bloqueParaGenero(b,R.genero)));R.nh=R.nh||{hora:R.hora,dias:new Set(R.dias),hid:R.horario?R.horario.id:null};draw();
     function draw(){let h=back('Renovar · nuevo horario');
+      if(!R.genero)h+='<div class="mut" style="font-size:12px;margin-bottom:6px;color:var(--danger)">Este alumno no tiene género capturado: los grupos de niñas o niños se rechazarán hasta verificarlo.</div>';
       h+='<div class="mut" style="margin-bottom:6px">Bloque del catálogo</div><div class="grid" style="grid-template-columns:1fr;gap:8px">'+bloques.map(b=>'<button class="btn '+(R.nh.hid===b.id?'pri':'')+'" style="justify-content:flex-start;font-size:12px" data-bk="'+b.id+'">'+b.nombre+' · cupo '+b.cupo+'</button>').join('')+'</div>';
       h+='<div class="mut" style="margin:12px 0 6px">Hora</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">'+horaChips(R.nh.hora)+'</div>';
       h+='<div class="mut" style="margin:12px 0 6px">Días</div><div class="steps">'+diaChips(R.nh.dias)+'</div>';
@@ -430,6 +431,13 @@ function horaDeBloque(nombre){
   if(/FitParents/i.test(cand[0])&&categoriaDeHorario(nombre)!=='FitParents')return null;
   return cand[0];
 }
+/* Grupos de niños separados por género. Los horarios traen genero ('Niña'|'Niño') desde el backend;
+   FitParents trae null y lo ve cualquiera. */
+function generoOk(g){return (g==='Niña'||g==='Niño')?g:'';}
+function bloqueParaGenero(b,g){return !b.genero||b.genero===g;}
+/* Ordena por hora de inicio ("4:00-5:00 PM" → 16:00); el AM/PM va al final del rango. */
+function minutosBloque(bl){const m=String(bl||'').match(/^(\d{1,2}):(\d{2}).*?(AM|PM)\s*$/i);if(!m)return 9999;let h=+m[1]%12;if(m[3].toUpperCase()==='PM')h+=12;return h*60+(+m[2]);}
+function ordenarBloques(arr){return arr.slice().sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre)));}
 function tel52(t){const d=String(t||'').replace(/\D/g,'').slice(-10);return d.length===10?('+52'+d):'';}
 /* Único punto de guardado de la verificación. Con MOCK_VERIFICAR en true no toca la red. */
 async function guardarVerificacion(payload){
@@ -449,7 +457,7 @@ function verificarAlumno(a,pre,ctx){
   const fnacPre=/^\d{4}-\d{2}-\d{2}/.test(pre.fecha_nacimiento||'')?pre.fecha_nacimiento.slice(0,10):'';
   const V={nombre:pre.nombre||a.nombre||'',fnac:fnacPre,tutor_nombre:pre.tutor_nombre||'',tutor_correo:pre.tutor_correo||'',tutor_whats:pre.tutor_whatsapp||'',
     emerg_nombre:pre.emergencia_nombre||'',emerg_tel:pre.emergencia_telefono||'',parentesco:pre.parentesco||'',alergias:pre.alergias||'',
-    horario_id:(ctx.horario&&ctx.horario.id)||pre.horario_id||null,horario_nombre:null,hora_manual:'',dias:new Set((pre.dias||[]).filter(d=>DIAS.indexOf(d)!==-1)),bloques:[]};
+    genero:generoOk(pre.genero),horario_id:(ctx.horario&&ctx.horario.id)||pre.horario_id||null,horario_nombre:null,hora_manual:'',dias:new Set((pre.dias||[]).filter(d=>DIAS.indexOf(d)!==-1)),bloques:[]};
   const hoy=new Date().toLocaleDateString('en-CA');
   const aviso=t=>'<div class="toast" role="alert" style="animation:none;background:var(--danger-bg);color:var(--danger);text-align:left;font-weight:600;margin:10px 0 0;border:1px solid #f0c7c7"><i class="ti ti-alert-triangle" aria-hidden="true"></i> '+t+'</div>';
   const campo=(id,label,val,attrs)=>'<label class="mut" for="'+id+'" style="display:block;margin:16px 0 6px">'+label+'</label><input class="field xl" style="margin-bottom:0" id="'+id+'" value="'+esc(val)+'" '+(attrs||'')+'><div class="ferr" id="e-'+id+'" role="alert"></div>';
@@ -461,7 +469,7 @@ function verificarAlumno(a,pre,ctx){
     const hl=await call('horarios_lista',{});
     V.bloques=hl.data||[];
     const b=V.bloques.filter(x=>x.id===V.horario_id)[0];
-    if(b)V.horario_nombre=b.nombre;else V.horario_id=null;
+    if(b&&bloqueParaGenero(b,V.genero))V.horario_nombre=b.nombre;else V.horario_id=null;
     draw();
   }
   function draw(){
@@ -478,8 +486,11 @@ function verificarAlumno(a,pre,ctx){
     h+=campo('ven','Contacto de emergencia',V.emerg_nombre,'autocomplete="off" placeholder="Nombre del contacto"');
     h+=campo('vet','Teléfono de emergencia',V.emerg_tel,'type="tel" inputmode="tel" autocomplete="off" placeholder="10 dígitos"');
     h+=campo('val','Alergias o condiciones médicas',V.alergias,'autocomplete="off" placeholder="Si no hay, escribe &quot;ninguna&quot;"');
+    h+='<div class="mut" style="margin:20px 0 6px">Género del alumno</div><div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">'+['Niña','Niño'].map(g=>'<button type="button" class="btn xl" style="justify-content:center" data-gen="'+g+'">'+g+'</button>').join('')+'</div><div class="ferr" id="e-gen" role="alert"></div>';
+    const visibles=ordenarBloques(V.bloques.filter(b=>bloqueParaGenero(b,V.genero)));
     h+='<div class="mut" style="margin:20px 0 6px">Bloque de clase</div>';
-    h+= V.bloques.length? '<div class="grid" style="grid-template-columns:1fr;gap:8px">'+V.bloques.map(b=>'<button type="button" class="btn xl" style="justify-content:flex-start" data-bk="'+esc(b.id)+'" data-nm="'+esc(b.nombre)+'">'+esc(b.nombre)+' · cupo '+esc(b.cupo)+'</button>').join('')+'</div>' : '<div class="card"><div class="empty"><div class="mut">No hay horarios disponibles.</div></div></div>';
+    if(!V.genero)h+='<div class="mut" style="font-size:12px;margin-bottom:8px">Elige el género para ver los grupos de niñas o niños. FitParents no lleva género.</div>';
+    h+= visibles.length? '<div class="grid" style="grid-template-columns:1fr;gap:8px">'+visibles.map(b=>'<button type="button" class="btn xl" style="justify-content:flex-start" data-bk="'+esc(b.id)+'" data-nm="'+esc(b.nombre)+'">'+esc(b.nombre)+' · cupo '+esc(b.cupo)+'</button>').join('')+'</div>' : '<div class="card"><div class="empty"><div class="mut">No hay horarios disponibles.</div></div></div>';
     h+='<div class="ferr" id="e-bloque" role="alert"></div><div id="vhora"></div>';
     h+='<div class="mut" style="margin:20px 0 6px">Días <span id="vdcnt"></span></div>';
     h+='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px">'+DIAS.map(d=>'<button type="button" class="btn xl" style="justify-content:center" data-dia="'+d+'">'+d+'</button>').join('')+'</div>';
@@ -490,6 +501,7 @@ function verificarAlumno(a,pre,ctx){
     fk.innerHTML=h;bindNav();
     [['vnm','nombre'],['vtn','tutor_nombre'],['vtc','tutor_correo'],['vtw','tutor_whats'],['vpa','parentesco'],['ven','emerg_nombre'],['vet','emerg_tel'],['val','alergias']].forEach(function(x){$(x[0]).oninput=function(){V[x[1]]=$(x[0]).value;limpiarErr('e-'+x[0]);};});
     const fn=$('vfn');fn.oninput=fn.onchange=()=>{V.fnac=fn.value;limpiarErr('e-vfn');actualizar();};
+    fk.querySelectorAll('[data-gen]').forEach(b=>b.onclick=()=>{V.genero=b.dataset.gen;const sel=V.bloques.filter(x=>x.id===V.horario_id)[0];if(sel&&!bloqueParaGenero(sel,V.genero)){V.horario_id=null;V.horario_nombre=null;V.hora_manual='';}draw();});
     fk.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>{V.horario_id=b.dataset.bk;V.horario_nombre=b.dataset.nm;V.hora_manual='';limpiarErr('e-bloque');actualizar();});
     fk.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{const d=b.dataset.dia;
       if(V.dias.has(d))V.dias.delete(d);
@@ -511,6 +523,7 @@ function verificarAlumno(a,pre,ctx){
     $('vedad').innerHTML=h;
     $('vaviso').innerHTML=txt?aviso(txt):'';
     $('verr').textContent='';
+    fk.querySelectorAll('[data-gen]').forEach(b=>{const on=b.dataset.gen===V.genero;b.classList.toggle('pri',on);b.setAttribute('aria-pressed',on);});
     fk.querySelectorAll('[data-bk]').forEach(b=>{const on=b.dataset.bk===V.horario_id;b.classList.toggle('pri',on);b.setAttribute('aria-pressed',on);});
     fk.querySelectorAll('[data-dia]').forEach(b=>{const on=V.dias.has(b.dataset.dia);b.classList.toggle('pri',on);b.setAttribute('aria-pressed',on);});
     $('vdcnt').textContent=maxDias!=null?'('+V.dias.size+' de '+maxDias+' según su plan)':'(no conocemos su plan: revisa que sean los correctos)';
@@ -539,6 +552,7 @@ function verificarAlumno(a,pre,ctx){
       [!V.emerg_nombre,'e-ven','ven','Escribe el contacto de emergencia'],
       [!tel52(V.emerg_tel),'e-vet','vet','El teléfono debe tener 10 dígitos'],
       [!V.alergias,'e-val','val','Escribe las alergias o "ninguna"'],
+      [!V.genero&&categoriaDeHorario(V.horario_nombre)!=='FitParents','e-gen',null,'Elige el género del alumno'],
       [!V.horario_id,'e-bloque',null,'Elige el bloque de clase'],
       [!horaElegida(),'e-vho','vho','Elige la hora de clase'],
       [!V.dias.size,'e-dias',null,'Elige al menos un día'],
@@ -554,7 +568,7 @@ function verificarAlumno(a,pre,ctx){
       return;
     }
     const payload={alumno_id:a.id,nombre:V.nombre,fecha_nacimiento:V.fnac,programa:programaDeHorario(V.horario_nombre),
-      horario_id:V.horario_id,dias:DIAS.filter(d=>V.dias.has(d)),hora_clase:horaElegida(),alergias:V.alergias,
+      genero:V.genero||null,horario_id:V.horario_id,dias:DIAS.filter(d=>V.dias.has(d)),hora_clase:horaElegida(),alergias:V.alergias,
       tutor:{nombre:V.tutor_nombre,email:V.tutor_correo,whatsapp:tel52(V.tutor_whats),contacto_emergencia:V.emerg_nombre,telefono_emergencia:tel52(V.emerg_tel),parentesco:V.parentesco}};
     btn.disabled=true;$('verr').textContent='Guardando…';
     const r=await guardarVerificacion(payload);
@@ -570,7 +584,7 @@ function verificarAlumno(a,pre,ctx){
 function fichaAlumno(a,avisoOk){fk.innerHTML=back('Ficha del alumno')+'<div class="mut">Cargando ficha…</div>';bindNav();
   call('ficha_alumno',{alumno_id:a.id}).then(r=>{if(!r||!r.ok){fk.innerHTML=back('Ficha del alumno')+'<div class="card"><div class="empty"><div class="mut">No se pudo cargar la ficha.</div></div></div>';bindNav();return;}
     const al=r.al||{},mem=r.mem,prox=r.prox||[],pagos=r.pagos||[];const estDng=al.estatus==='Suspendido';
-    if(!al.verificado_front_desk&&!VERIFICADOS_SIMULADOS.has(a.id)){verificarAlumno(a,al,{mem:mem,horario:r.horario});return;}
+    if(!(al.verificado_front_desk||al.verificado)&&!VERIFICADOS_SIMULADOS.has(a.id)){verificarAlumno(a,al,{mem:mem,horario:r.horario});return;}
     let h=back('Ficha del alumno');
     h+='<div class="card" style="padding:15px 16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:12px"><div class="avatar" style="width:46px;height:46px;font-size:16px">'+ini(al.nombre||a.nombre||'?')+'</div><div style="flex:1"><div class="nm" style="font-size:16px">'+(al.nombre||a.nombre)+'</div><div class="mut">'+(al.cod||a.cod||'')+(al.hora?(' · '+al.hora):'')+'</div></div><span class="btn '+(estDng?'dng':'ok')+'" style="cursor:default;padding:5px 11px;font-size:12px">'+(al.estatus||'Activo')+'</span></div>'+((al.dias&&al.dias.length)?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+al.dias.map(d=>'<span class="stp on">'+d+'</span>').join('')+'</div>':'')+'</div>';
     h+='<div class="grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">'+stat2('Plan',mem?mem.plan:'—')+stat2('Créditos',mem&&mem.restantes!=null?(mem.restantes+'/'+mem.creditos):'—')+stat2('Estado de pago',mem?(mem.estado||'—'):'—')+stat2('Inscripción',al.insc||'—')+'</div>';
