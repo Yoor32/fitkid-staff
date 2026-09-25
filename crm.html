@@ -159,6 +159,13 @@
   .kiorow span{flex:1} .kiorow.hecho{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok);cursor:default} .kiorow.hecho i{font-size:22px}
   @media (max-width:760px){ .kiobody{grid-template-columns:1fr} }
   .kiosel{display:block}
+  .vtabla{padding:0;overflow-x:auto} .vtabla table{width:100%;border-collapse:collapse;font-size:13.5px} .vtabla th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)} .vtabla td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top} .vtabla tr:last-child td{border-bottom:0} .vtabla .num{text-align:right;white-space:nowrap} .vtabla tr.pend td{opacity:.7}
+  .vacc{display:flex;gap:6px;justify-content:flex-end} .vacc .btn{padding:6px 10px;min-height:0}
+  .vaforo{padding:12px 0;border-bottom:1px solid var(--line)} .vaforo:last-child{border-bottom:0} .vaforo-t{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .vbar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:4px;flex:1} .vbar i{display:block;height:100%;background:var(--brand-600);border-radius:99px} .vbar i.lleno{background:var(--danger)}
+  .vgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px} .vh2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 6px}
+  .vdia{display:grid;grid-template-columns:110px 1fr 80px;gap:10px;align-items:center;font-size:13px;padding:3px 0} .vdia .vbar{margin:0} .vdia b{text-align:right}
+  @media (max-width:640px){ .vtabla thead{display:none} .vtabla table,.vtabla tbody{display:block} .vtabla tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 12px;border-bottom:1px solid var(--line)} .vtabla tr:last-child{border-bottom:0} .vtabla td{padding:0;border:0;font-size:13px} .vtabla td:first-child{flex-basis:100%} .vtabla td.num{margin-left:auto;font-weight:600} .vtabla td:last-child:not(.num){flex-basis:100%} .vtabla .vacc{justify-content:flex-start} .vdia{grid-template-columns:84px 1fr 70px} }
   .altasec{padding:14px 16px;margin-bottom:12px} .altasec h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
   .altagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 12px}
   .altares{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:6px;font-size:14px} .altares li{display:flex;gap:8px;align-items:center} .altares li.ok i{color:var(--ok)} .altares li.dng{color:var(--danger)}
@@ -183,6 +190,9 @@
     .pnom.largo{font-size:8.5pt;-webkit-line-clamp:4}
     .pcod{font-size:9pt;font-family:ui-monospace,Menlo,monospace}
     .pcla{font-size:7.5pt;color:#444} .pnota{font-size:6.5pt;color:#666;margin-top:1mm}
+    .pcorte{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#111;font-size:10pt} .pcorte h1{font-size:14pt;margin:0 0 2mm} .pcorte h2{font-size:11pt;margin:6mm 0 2mm}
+    .pcorte table{width:100%;border-collapse:collapse} .pcorte th,.pcorte td{border-bottom:.2mm solid #bbb;padding:1.5mm 2mm;text-align:left} .pcorte .num{text-align:right}
+    .pfirma{display:flex;justify-content:space-around;margin-top:22mm} .pfirma span{border-top:.3mm solid #333;padding-top:1.5mm;width:60mm;text-align:center}
   }
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
@@ -306,7 +316,7 @@ const NAV=[
   {id:'checkin', icon:'ti-scan', label:'Check-in', ready:true},
   {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:true},
   {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true},
-  {id:'ventas', icon:'ti-cash', label:'Ventas', ready:false},
+  {id:'ventas', icon:'ti-cash', label:'Ventas', ready:true},
   {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:false},
   {id:'marketing', icon:'ti-speakerphone', label:'Marketing', ready:false},
   {id:'informes', icon:'ti-chart-bar', label:'Informes', ready:false}
@@ -330,7 +340,7 @@ function shell(){
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
-  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else placeholder();
+  if(SECCION==='home')home(); else if(SECCION==='checkin')checkin(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else if(SECCION==='ventas')ventas(); else placeholder();
 }
 
 /* En tablet/celular el panel derecho es una hoja: se abre solo por una acción del usuario
@@ -976,6 +986,71 @@ function resultadoAlta(r){
   const q=document.getElementById('altaqr'); if(q)q.onclick=async()=>{ const st=document.getElementById('altaqrst'); st.textContent='Generando…'; const t=await call('qr_alumno',{alumno_id:r.id}); if(!t||t.ok===false){st.textContent='No se pudo: '+((t&&t.error)||'error');return;} st.textContent=''; const b=A&&A.bl.find(x=>x.id===A.hid); imprimirTarjetas([{nombre:t.nombre,cod:t.cod,token:t.token,clase:b?b.nombre:''}]).catch(()=>{st.textContent='No se pudo preparar la impresión';}); };
   const hm=document.getElementById('altaherm'); if(hm)hm.onclick=async()=>{ let t=A&&A.tutorSel; if(!t){ const d=await call('directorio',{}); if(d&&d.ok!==false)DIRECTORIO=d; t=(DIRECTORIO&&DIRECTORIO.tutores||[]).find(x=>x.id===r.tutor_id)||{id:r.tutor_id,nombre:(A&&A.t.nombre)||'Tutor'}; } altaAlumno({tutor:t}); };
   document.getElementById('altaotro').onclick=()=>altaAlumno();
+}
+
+/* ---------- Ventas y reportes ----------
+   Todo sale de UNA llamada (reporte_ventas) y se guarda en memoria: cambiar de pestaña no consulta al servidor.
+   Cada consulta es una ejecución de n8n y el plan tiene tope mensual; por eso "Actualizar" es explícito. */
+let VENTAS=null, VENTAS_TAB='corte', VENTAS_FECHA=null;
+const $$=n=>'$'+Math.round(Number(n)||0).toLocaleString('es-MX');
+const METODO_CORTO={'Efectivo (persona)':'Efectivo','Tarjeta (persona / TPV)':'Tarjeta TPV','Tarjeta (online / Stripe)':'Stripe'};
+async function ventas(forzar){
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  if(!VENTAS_FECHA)VENTAS_FECHA=new Date().toLocaleDateString('en-CA');
+  if(!VENTAS||VENTAS.fecha!==VENTAS_FECHA||forzar){
+    center.innerHTML='<div class="pagehead"><h1>Ventas</h1></div><div class="mut">Calculando corte, adeudos y aforo… (tarda unos segundos)</div>'; right.innerHTML='';
+    const r=await call('reporte_ventas',{fecha:VENTAS_FECHA}); if(SECCION!=='ventas')return;
+    if(!r||r.ok===false){ center.innerHTML='<div class="pagehead"><h1>Ventas</h1></div><div class="placeholder">No se pudo cargar el reporte: '+esc((r&&r.error)||'error de red')+'</div>'; return; }
+    VENTAS=r; VENTAS.cargado=new Date();
+  }
+  drawVentas();
+}
+function drawVentas(){
+  const V=VENTAS, center=document.getElementById('centercol'), right=document.getElementById('rightcol'); if(!V||!center)return;
+  const deuda=V.adeudos.reduce((s,a)=>s+(Number(a.monto)||0),0); const esHoy=V.fecha===V.hoy;
+  const tabs=[['corte','Corte del día'],['debe','Quién debe ('+V.adeudos.length+')'],['sinmem','Sin membresía ('+V.sin_membresia.length+')'],['aforo','Aforo'],['mes','Mes']];
+  let h='<div class="pagehead"><h1>Ventas</h1><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="date" class="field" id="vfecha" value="'+esc(V.fecha)+'" max="'+esc(V.hoy)+'" style="margin:0;width:auto"><button type="button" class="btn" id="vact"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button></div></div>';
+  h+='<div class="mut" style="font-size:12px;margin:-10px 0 14px">Datos de las '+V.cargado.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' · no se actualiza solo</div>';
+  h+='<div class="statgrid"><div class="statcard"><div class="v">'+$$(V.corte.total)+'</div><div class="l">Cobrado '+(esHoy?'hoy':fmtFecha(V.fecha))+' · '+V.corte.n+' pago'+(V.corte.n===1?'':'s')+'</div></div><div class="statcard"><div class="v">'+$$(V.mes.total)+'</div><div class="l">Cobrado en '+esc(nombreMes(V.mes.mes))+'</div></div><div class="statcard"><div class="v">'+$$(deuda)+'</div><div class="l">Por cobrar · '+V.adeudos.length+' adeudo'+(V.adeudos.length===1?'':'s')+'</div></div><div class="statcard"><div class="v">'+V.sin_membresia.length+' <span style="font-size:13px;color:var(--muted);font-weight:500">de '+V.activos+'</span></div><div class="l">Activos sin membresía de '+esc(MESES[+V.fecha.slice(5,7)-1])+'</div></div></div>';
+  h+='<div class="dirtabs">'+tabs.map(t=>'<button type="button" class="dirtab'+(VENTAS_TAB===t[0]?' on':'')+'" data-vtab="'+t[0]+'">'+t[1]+'</button>').join('')+'</div><div id="vcuerpo"></div>';
+  center.innerHTML=h;
+  center.querySelectorAll('[data-vtab]').forEach(b=>b.onclick=()=>{VENTAS_TAB=b.dataset.vtab;drawVentas();});
+  document.getElementById('vact').onclick=()=>ventas(true);
+  document.getElementById('vfecha').onchange=e=>{ if(e.target.value){VENTAS_FECHA=e.target.value;ventas();} };
+  const cuerpo=document.getElementById('vcuerpo');
+  const tabla=(cols,rows,vacio)=>rows.length?'<div class="card vtabla"><table><thead><tr>'+cols.map(c=>'<th'+(c[1]?' class="num"':'')+'>'+c[0]+'</th>').join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>':'<div class="placeholder">'+vacio+'</div>';
+  const desglose=(obj,etq)=>{ const ks=Object.keys(obj).sort((a,b)=>obj[b]-obj[a]); return ks.length?ks.map(k=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(etq?etq(k):k)+'</span><b>'+$$(obj[k])+'</b></div>').join(''):'<div class="mut">Sin movimientos.</div>'; };
+  const acciones=a=>'<div class="vacc">'+(a.aid?'<button type="button" class="btn" data-vficha="'+esc(a.aid)+'">Ficha</button>':'')+(waLink(a.whatsapp)?'<a class="btn" target="_blank" rel="noopener" href="'+esc(waLink(a.whatsapp,a.msg))+'"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></a>':'')+'</div>';
+  if(VENTAS_TAB==='corte'){
+    const rows=V.corte.pagos.map(p=>'<tr class="'+(p.estado==='Pendiente'?'pend':'')+'"><td><div class="nm">'+esc(p.alumno||'—')+'</div><div class="mut">'+esc(p.folio)+'</div></td><td>'+esc(p.concepto)+'</td><td>'+esc(METODO_CORTO[p.metodo]||p.metodo)+'</td><td>'+(p.estado==='Completado'?'':'<span class="pill '+(p.estado==='Pendiente'?'warn':'')+'">'+esc(p.estado)+'</span>')+'</td><td class="num">'+$$(p.monto)+'</td></tr>');
+    cuerpo.innerHTML='<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button type="button" class="btn" id="vimp"'+(V.corte.pagos.length?'':' disabled')+'><i class="ti ti-printer" aria-hidden="true"></i> Imprimir corte</button></div>'+tabla([['Alumno'],['Concepto'],['Método'],['Estado'],['Monto',1]],rows,'No hay pagos registrados '+(esHoy?'hoy':'ese día')+'.')+(V.corte.pagos.some(p=>p.estado==='Pendiente')?'<div class="mut" style="font-size:12px;margin-top:6px">Los pagos pendientes aparecen en la lista pero no suman al total cobrado.</div>':'');
+    const bi=document.getElementById('vimp'); if(bi)bi.onclick=imprimirCorte;
+  } else if(VENTAS_TAB==='debe'){
+    const rows=V.adeudos.map(a=>{ a.msg='Hola '+(a.tutor||'')+', le escribimos de FitKid Gymnastic: '+(a.tipo==='Mensualidad'?'la mensualidad de '+(a.alumno||'')+' de '+nombreMes(a.mes):'el pago de '+String(a.tipo).toLowerCase()+' de '+(a.alumno||''))+(a.monto?' ('+$$(a.monto)+')':'')+' está pendiente.'; return '<tr><td><div class="nm">'+esc(a.alumno)+'</div><div class="mut">'+esc(a.tutor||'sin tutor')+'</div></td><td>'+esc(a.tipo)+'</td><td>'+esc(a.tipo==='Mensualidad'?nombreMes(a.mes):fmtFecha(a.mes))+(a.plan?' · '+esc(a.plan):'')+'</td><td class="num">'+(a.monto?$$(a.monto):'—')+'</td><td>'+acciones(a)+'</td></tr>'; });
+    cuerpo.innerHTML=tabla([['Alumno'],['Concepto'],['Periodo'],['Monto',1],['']],rows,'Nadie debe nada registrado.')+'<div class="mut" style="font-size:12px;margin-top:6px">Membresías no marcadas como pagadas y pagos en estado Pendiente. El monto de mensualidad es el precio del plan.</div>';
+  } else if(VENTAS_TAB==='sinmem'){
+    const mesN=MESES[+V.fecha.slice(5,7)-1];
+    const rows=V.sin_membresia.map(a=>{ a.msg='Hola '+(a.tutor||'')+', le escribimos de FitKid Gymnastic para renovar la mensualidad de '+(a.alumno||'')+' de '+mesN+'.'; return '<tr><td><div class="nm">'+esc(a.alumno)+'</div><div class="mut">'+esc(a.cod||'')+'</div></td><td>'+(a.ultimo_mes?esc(nombreMes(a.ultimo_mes)):'<span class="pill warn">nunca</span>')+'</td><td>'+esc(a.tutor||'—')+'</td><td>'+acciones(a)+'</td></tr>'; });
+    cuerpo.innerHTML='<div class="mut" style="font-size:12.5px;margin-bottom:8px">Alumnos no suspendidos cuya última membresía es anterior a '+esc(mesN)+'. Renueva desde la ficha.</div>'+tabla([['Alumno'],['Última membresía'],['Tutor'],['']],rows,'Todos los activos tienen membresía de '+esc(mesN)+'.');
+  } else if(VENTAS_TAB==='aforo'){
+    const bl=V.aforo.filter(b=>b.reservadas||b.cupo).sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre)));
+    cuerpo.innerHTML=bl.length?'<div class="card" style="padding:4px 16px">'+bl.map(b=>{ const pc=b.cupo?Math.min(100,Math.round(b.reservadas/b.cupo*100)):0; return '<div class="vaforo"><div class="vaforo-t"><span class="nm">'+esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)+'</span><span><b>'+b.reservadas+'</b>'+(b.cupo?' / '+b.cupo:'')+'</span></div>'+(b.cupo?'<div class="vbar"><i style="width:'+pc+'%"'+(pc>=100?' class="lleno"':'')+'></i></div>':'')+'<div class="mut" style="font-size:12px">'+b.asistio+' asistieron · '+b.falta+' faltas · '+b.pendiente+' sin marcar</div></div>'; }).join('')+'</div>':'<div class="placeholder">No hay clases reservadas '+(esHoy?'hoy':'ese día')+'.</div>';
+  } else {
+    const dias=Object.keys(V.mes.por_dia).sort(); const max=Math.max(1,...dias.map(d=>V.mes.por_dia[d]));
+    cuerpo.innerHTML='<div class="vgrid"><div class="card" style="padding:14px 16px"><h2 class="vh2">Por concepto</h2>'+desglose(V.mes.por_concepto)+'</div><div class="card" style="padding:14px 16px"><h2 class="vh2">Por método</h2>'+desglose(V.mes.por_metodo,k=>METODO_CORTO[k]||k)+'</div></div>'
+      +'<div class="card" style="padding:14px 16px;margin-top:12px"><h2 class="vh2">Por día · '+esc(nombreMes(V.mes.mes))+' · '+V.mes.n+' pagos</h2>'+(dias.length?dias.map(d=>'<div class="vdia"><span class="mut">'+esc(fmtFecha(d))+'</span><div class="vbar"><i style="width:'+Math.max(2,Math.round(Math.max(0,V.mes.por_dia[d])/max*100))+'%"></i></div><b>'+$$(V.mes.por_dia[d])+'</b></div>').join(''):'<div class="mut">Sin cobros este mes.</div>')+'</div>';
+  }
+  cuerpo.querySelectorAll('[data-vficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.vficha));
+  right.innerHTML='<h2>Corte '+(esHoy?'de hoy':esc(fmtFecha(V.fecha)))+'</h2>'+desglose(V.corte.por_metodo,k=>METODO_CORTO[k]||k)+'<div class="venc" style="display:flex;justify-content:space-between"><b>Total</b><b>'+$$(V.corte.total)+'</b></div><h2 style="margin-top:18px">Por concepto</h2>'+desglose(V.corte.por_concepto);
+}
+function imprimirCorte(){
+  const V=VENTAS; if(!V)return; let pa=document.getElementById('printarea'); if(!pa){pa=document.createElement('div');pa.id='printarea';document.body.appendChild(pa);}
+  const fila=(a,b)=>'<tr><td>'+a+'</td><td class="num">'+b+'</td></tr>';
+  pa.innerHTML='<div class="pcorte"><h1>FitKid Gymnastic · Corte de caja</h1><div>'+esc(new Date(V.fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+' · impreso '+esc(new Date().toLocaleString('es-MX'))+' por '+esc(AUTH.nombre||'')+'</div>'
+   +'<h2>Por método</h2><table>'+Object.keys(V.corte.por_metodo).map(k=>fila(esc(METODO_CORTO[k]||k),$$(V.corte.por_metodo[k]))).join('')+fila('<b>Total cobrado</b>','<b>'+$$(V.corte.total)+'</b>')+'</table>'
+   +'<h2>Pagos ('+V.corte.pagos.length+')</h2><table><tr><th>Folio</th><th>Alumno</th><th>Concepto</th><th>Método</th><th>Estado</th><th class="num">Monto</th></tr>'+V.corte.pagos.map(p=>'<tr><td>'+esc(p.folio)+'</td><td>'+esc(p.alumno)+'</td><td>'+esc(p.concepto)+'</td><td>'+esc(METODO_CORTO[p.metodo]||p.metodo)+'</td><td>'+esc(p.estado)+'</td><td class="num">'+$$(p.monto)+'</td></tr>').join('')+'</table>'
+   +'<div class="pfirma"><span>Entregó</span><span>Recibió</span></div></div>';
+  document.body.classList.add('imprimiendo'); const fin=()=>{document.body.classList.remove('imprimiendo');window.removeEventListener('afterprint',fin);}; window.addEventListener('afterprint',fin); setTimeout(()=>window.print(),60);
 }
 
 function verTutor(id){
