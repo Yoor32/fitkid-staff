@@ -159,6 +159,9 @@
   .kiorow span{flex:1} .kiorow.hecho{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok);cursor:default} .kiorow.hecho i{font-size:22px}
   @media (max-width:760px){ .kiobody{grid-template-columns:1fr} }
   .kiosel{display:block}
+  .altasec{padding:14px 16px;margin-bottom:12px} .altasec h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
+  .altagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 12px}
+  .altares{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:6px;font-size:14px} .altares li{display:flex;gap:8px;align-items:center} .altares li.ok i{color:var(--ok)} .altares li.dng{color:var(--danger)}
   .lotebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px;margin-bottom:10px} .lotebar .field{flex:1;min-width:180px}
   .lotesum{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 10px;font-size:14px}
   .loterow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;flex-wrap:wrap} .loterow:last-child{border-bottom:0}
@@ -392,12 +395,13 @@ async function estudiantes(){
 function drawEstudiantes(){
   const center=document.getElementById('centercol');
   const tabs=[['todos','Todos'],['menor','Menores'],['adulto','Adultos'],['tutor','Tutores']];
-  let h='<div class="pagehead"><h1>Estudiantes</h1><span class="mut">'+DIRECTORIO.alumnos.length+' alumnos · '+DIRECTORIO.tutores.length+' tutores</span></div>';
+  let h='<div class="pagehead"><h1>Estudiantes</h1><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="mut">'+DIRECTORIO.alumnos.length+' alumnos · '+DIRECTORIO.tutores.length+' tutores</span><button type="button" class="btn pri" id="nuevoal"><i class="ti ti-user-plus" aria-hidden="true"></i> Nuevo alumno</button></div></div>';
   h+='<div class="dirtabs">'+tabs.map(t=>'<button class="dirtab'+(DIR_TAB===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   h+='<input class="field" id="dirsearch" placeholder="Buscar por nombre…" value="'+esc(DIR_Q)+'" style="max-width:340px">';
   h+='<div class="dirlist" id="dirlist"></div>';
   center.innerHTML=h;
   center.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{DIR_TAB=b.dataset.tab;drawEstudiantes();});
+  center.querySelector('#nuevoal').onclick=()=>altaAlumno();
   const sb=center.querySelector('#dirsearch');
   sb.oninput=()=>{DIR_Q=sb.value;renderDirList();};
   sb.focus(); sb.setSelectionRange(sb.value.length,sb.value.length);
@@ -734,14 +738,16 @@ function iniciarKiosco(modo){
   iniciarEscaner(document.getElementById('kiocam'),async txt=>{ if(KIOSCO&&KIOSCO.pausa)return; await registrarCheckin({token:txt},box,extra); tras(); });
   document.getElementById('kiolock').onclick=salirKiosco;
   const reloj=()=>{const c=document.getElementById('kioclock'); if(c)c.textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}; reloj();
-  KIOSCO.timer=setInterval(()=>{reloj(); cargarRosterKiosco();},60000);
+  /* Cada consulta al servidor es una ejecución de n8n (el plan tiene tope mensual): el roster solo se recarga
+     después de un check-in o cuando cambia la clase en curso, no cada minuto. */
+  KIOSCO.timer=setInterval(async()=>{ reloj(); if(!KIOSCO||KIOSCO.modo.tipo!=='auto')return; const f=bloquesActivos(await horariosLista()).map(b=>b.id).join(','); if(KIOSCO&&f!==KIOSCO.firma)cargarRosterKiosco(); },60000);
   cargarRosterKiosco();
 }
 async function cargarRosterKiosco(){
   if(!KIOSCO)return; const m=KIOSCO.modo; const l=document.getElementById('kiolista'); if(!l)return;
   if(m.tipo==='todos'){ l.className=''; l.innerHTML=listaLlegadas(); return; }
   let ids=null;
-  if(m.tipo==='auto'){ const act=bloquesActivos(await horariosLista()); if(!KIOSCO)return; ids=act.map(b=>b.id); const nombres=[...new Set(act.map(b=>nombreSinGenero(b.nombre)))]; const t=document.getElementById('kiotit'); if(t)t.textContent='Check-in · '+(nombres.join(' + ')||'sin clase en este momento'); if(!ids.length){ l.className='mut'; l.innerHTML='No hay clase en este momento. Puedes escanear tu tarjeta de todos modos.'; return; } }
+  if(m.tipo==='auto'){ const act=bloquesActivos(await horariosLista()); if(!KIOSCO)return; ids=act.map(b=>b.id); KIOSCO.firma=ids.join(','); const nombres=[...new Set(act.map(b=>nombreSinGenero(b.nombre)))]; const t=document.getElementById('kiotit'); if(t)t.textContent='Check-in · '+(nombres.join(' + ')||'sin clase en este momento'); if(!ids.length){ l.className='mut'; l.innerHTML='No hay clase en este momento. Puedes escanear tu tarjeta de todos modos.'; return; } }
   const r=await call('clases_hoy',m.tipo==='bloque'?{fecha:'hoy',horario_id:m.hid}:{fecha:'hoy'}); if(!KIOSCO||!document.body.contains(l))return;
   let rows=((r&&r.data)||[]); if(ids)rows=rows.filter(x=>ids.indexOf(x.hid)!==-1);
   rows=rows.filter(x=>x.e!=='Cancelado'&&x.e!=='Reagendado').sort((a,b)=>String(a.n).localeCompare(String(b.n)));
@@ -854,6 +860,124 @@ async function tarjetaQR(regenerar){
   root.querySelector('#qrregen').onclick=()=>{ if(confirm('¿Regenerar? La tarjeta actual dejará de funcionar.'))tarjetaQR(true); };
 }
 
+/* ---------- Alta de alumno ----------
+   Un solo formulario: tutor (existente o nuevo) → alumno → clase y plan → cobro. El servidor (alta_completa)
+   valida todo antes de escribir; el alumno queda verificado porque el staff capturó los datos en persona. */
+let ALTA=null;
+function programaPorEdad(e){ if(e==null)return ''; if(e>=18)return 'FitParents'; if(e>=7&&e<=14)return 'Gimnasia Olímpica (7-14)'; if(e>=3&&e<=6)return 'Iniciación Deportiva (3-6)'; return 'Requiere revisión'; }
+/* Fechas que quedan en el mes (desde hoy) para los días elegidos: es lo que el servidor va a reservar. */
+function clasesRestantes(mesISO,dias,max){ const idx={Lunes:1,Martes:2,'Miércoles':3,Jueves:4,Viernes:5}; const ds=dias.map(d=>idx[d]).filter(Boolean); const hoy=new Date().toLocaleDateString('en-CA'); const y=+mesISO.slice(0,4), m=+mesISO.slice(5,7)-1; const out=[]; const d=new Date(y,m,1,12); while(d.getMonth()===m){ const f=d.toLocaleDateString('en-CA'); if(ds.indexOf(d.getDay())!==-1&&f>=hoy)out.push(f); d.setDate(d.getDate()+1); } return max?out.slice(0,max):out; }
+async function altaAlumno(pre){
+  SECCION='estudiantes'; const center=document.getElementById('centercol'), right=document.getElementById('rightcol'); cerrarPanel();
+  center.innerHTML='<div class="pagehead"><h1>Nuevo alumno</h1></div><div class="mut">Cargando…</div>'; right.innerHTML='';
+  const [bl]=await Promise.all([horariosLista(), DIRECTORIO?null:call('directorio',{}).then(r=>{ if(r&&r.ok!==false)DIRECTORIO=r; })]);
+  if(SECCION!=='estudiantes'||!document.getElementById('centercol'))return;
+  const hoy=new Date().toLocaleDateString('en-CA'); const mesAct=hoy.slice(0,7)+'-01'; const dn=new Date(mesAct+'T12:00:00'); dn.setMonth(dn.getMonth()+1); const mesSig=dn.toLocaleDateString('en-CA').slice(0,7)+'-01';
+  ALTA={bl:bl,hoy:hoy,mesAct:mesAct,mesSig:mesSig,tutorSel:(pre&&pre.tutor)||null,t:{},a:{},gen:'',prog:'',progManual:false,hid:'',dias:new Set(),plan:'M2',mes:mesAct,pago:'Efectivo',montoM:'',insc:true,montoI:'500',agendar:true,forzar:false};
+  drawAlta();
+}
+function altaCampo(k,l,extra){ const [g,c]=k.split('.'); const v=(ALTA[g]||{})[c]||''; return '<div><label class="mut" for="al_'+g+'_'+c+'">'+l+'</label><input class="field" id="al_'+g+'_'+c+'" data-ak="'+k+'" value="'+esc(v)+'" '+(extra||'')+'></div>'; }
+function drawAlta(){
+  const A=ALTA, center=document.getElementById('centercol'); if(!A||!center)return;
+  const edad=edadDe(A.a.fecha_nacimiento); if(!A.progManual)A.prog=programaPorEdad(edad);
+  const esAdulto=A.prog==='FitParents';
+  const vis=!A.prog?[]:A.bl.filter(b=>(A.prog==='Requiere revisión'||programaDeNombre(b.nombre)===A.prog)&&(esAdulto?!b.genero:paraGenero(b,A.gen)));
+  if(A.hid&&!vis.find(b=>b.id===A.hid))A.hid='';
+  const plan=PLANES.find(p=>p[0]===A.plan)||PLANES[1]; const maxDias=plan[1]/4;
+  if(A.dias.size>maxDias)A.dias=new Set([...A.dias].slice(0,maxDias));
+  const restantes=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>A.dias.has(d)),plan[1]);
+  let h='<div class="pagehead"><h1>Nuevo alumno</h1><button type="button" class="btn" id="altacancel"><i class="ti ti-x" aria-hidden="true"></i> Cancelar</button></div>';
+  // Tutor
+  h+='<section class="card altasec"><h2>1 · Tutor</h2>';
+  if(A.tutorSel){ const t=A.tutorSel; const hijos=((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(x=>x.tutor_id===t.id);
+    h+='<div class="dirrow" style="cursor:default"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="flex:1"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc([t.email,t.whatsapp].filter(Boolean).join(' · ')||'sin contacto')+'</div>'+(hijos.length?'<div class="mut">Ya inscritos: '+esc(hijos.map(x=>x.nombre).join(', '))+'</div>':'')+'</div><button type="button" class="btn" id="altatcambiar">Cambiar</button></div>';
+  } else {
+    h+='<label class="mut" for="altatbus">¿Ya tiene un hermano inscrito? Busca al tutor</label><input class="field" id="altatbus" placeholder="Nombre, correo o WhatsApp del tutor" autocomplete="off"><div id="altatres" class="dirlist" style="margin:-4px 0 10px"></div>';
+    h+='<div class="altagrid">'+altaCampo('t.nombre','Nombre del tutor','autocomplete="off"')+altaCampo('t.parentesco','Parentesco','placeholder="Mamá, papá, abuela…"')+altaCampo('t.email','Correo','type="email" inputmode="email" autocomplete="off"')+altaCampo('t.whatsapp','WhatsApp (10 dígitos)','type="tel" inputmode="tel"')+altaCampo('t.contacto_emergencia','Contacto de emergencia','placeholder="Otra persona, no el tutor"')+altaCampo('t.telefono_emergencia','Teléfono de emergencia (10 dígitos)','type="tel" inputmode="tel"')+'</div>';
+  }
+  h+='</section>';
+  // Alumno
+  h+='<section class="card altasec"><h2>2 · Alumno</h2><div class="altagrid">'+altaCampo('a.nombre','Nombre completo','autocomplete="off"')+altaCampo('a.fecha_nacimiento','Fecha de nacimiento','type="date" max="'+esc(A.hoy)+'"')+'</div>';
+  h+='<div class="mut" id="altaedad" style="margin:-4px 0 8px">'+(edad!=null?(edad+' años · '+(A.prog||'')):'')+'</div>';
+  if(!esAdulto)h+='<label class="mut">Género</label>'+chips('agen',[['Niña','Niña'],['Niño','Niño']],A.gen);
+  h+=altaCampo('a.alergias','Alergias o condiciones médicas','placeholder="Si no hay, escribe ninguna"')+'</section>';
+  // Clase y plan
+  h+='<section class="card altasec"><h2>3 · Clase y plan</h2><label class="mut">Programa'+(A.progManual?'':' (según la edad)')+'</label>'+chips('aprog',[['Iniciación Deportiva (3-6)','Iniciación (3-6)'],['Gimnasia Olímpica (7-14)','Olímpica (7-14)'],['FitParents','FitParents']],A.prog);
+  if(A.prog==='Requiere revisión')h+='<div class="mut" style="color:var(--amber);font-size:12px;margin-bottom:6px">La edad no cae en ningún programa: elige uno a mano.</div>';
+  h+='<label class="mut">Bloque</label>'+(!esAdulto&&!A.gen?'<div class="mut" style="font-size:12px;margin-bottom:6px">Elige el género para ver los grupos de niñas o niños.</div>':'')+(!A.prog?'<div class="mut" style="font-size:12px">Captura la fecha de nacimiento o elige el programa.</div>':vis.length?chips('ablq',vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),A.hid):'<div class="mut" style="font-size:12px">No hay bloques para esta combinación.</div>');
+  h+='<label class="mut">Plan</label>'+chips('aplan',PLANES.map(p=>[p[0],(p[1]/4)+'/sem · $'+p[2]]),A.plan);
+  h+='<label class="mut">Días ('+maxDias+' por semana)</label><div class="chipsel" data-grp="adias">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+(A.dias.has(d)?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div>';
+  h+='<label class="mut">Empieza</label>'+chips('ames',[[A.mesAct,'Este mes ('+MESES[+A.mesAct.slice(5,7)-1]+')'],[A.mesSig,'Próximo mes ('+MESES[+A.mesSig.slice(5,7)-1]+')']],A.mes);
+  if(A.dias.size){ const aviso=A.mes===A.mesAct&&restantes.length<plan[1]; h+='<div class="mut" style="font-size:12.5px;margin:2px 0 8px'+(aviso?';color:var(--amber)':'')+'">'+(restantes.length?'Se reservan '+restantes.length+' clase'+(restantes.length===1?'':'s')+': '+restantes.slice(0,6).map(fmtFecha).join(', ')+(restantes.length>6?'…':''):'No quedan clases de esos días este mes.')+(aviso?' · El plan es de '+plan[1]+': ajusta el monto o empieza el próximo mes.':'')+'</div>'; }
+  h+='<label class="chk"><input type="checkbox" id="altaagendar"'+(A.agendar?' checked':'')+'> Reservar sus clases del mes</label></section>';
+  // Cobro
+  const montoM=A.montoM!==''?A.montoM:String(plan[2]);
+  h+='<section class="card altasec"><h2>4 · Cobro de hoy</h2>'+chips('apago',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['Pendiente','No paga hoy']],A.pago);
+  h+='<div class="altagrid"><div><label class="mut" for="altamontom">Mensualidad</label><input class="field" id="altamontom" type="number" min="0" step="50" inputmode="numeric" value="'+esc(montoM)+'"></div>';
+  h+='<div><label class="chk" style="margin:0 0 6px"><input type="checkbox" id="altainsc"'+(A.insc?' checked':'')+(A.pago==='Pendiente'?' disabled':'')+'> Inscripción anual</label><input class="field" id="altamontoi" type="number" min="0" step="50" inputmode="numeric" value="'+esc(A.montoI)+'"'+((A.insc&&A.pago!=='Pendiente')?'':' disabled')+'></div></div>';
+  if(A.pago==='Pendiente')h+='<div class="mut" style="font-size:12px">La mensualidad queda pendiente (aparece en "quién debe"). La inscripción no se registra: cóbrala después desde la ficha con "Otro pago".</div>';
+  h+='</section>';
+  h+='<div id="altaerr" role="alert" style="color:var(--danger);font-size:13px;margin:10px 0"></div><button type="button" class="btn pri acbig" id="altaok"><i class="ti ti-user-plus" aria-hidden="true"></i> Dar de alta</button>';
+  // guardar lo tecleado antes de repintar
+  center.querySelectorAll('[data-ak]').forEach(i=>{ const [g,c]=i.dataset.ak.split('.'); A[g][c]=i.value; });
+  const mm=document.getElementById('altamontom'); if(mm)A.montoM=mm.value; const mi=document.getElementById('altamontoi'); if(mi)A.montoI=mi.value;
+  center.innerHTML=h; resumenAlta();
+  document.getElementById('altacancel').onclick=()=>{ ALTA=null; estudiantes(); };
+  center.querySelectorAll('[data-ak]').forEach(i=>{ const [g,c]=i.dataset.ak.split('.'); i.oninput=()=>{ A[g][c]=i.value; resumenAlta(); }; });
+  const fn=document.getElementById('al_a_fecha_nacimiento'); fn.onchange=()=>{ A.a.fecha_nacimiento=fn.value; A.progManual=false; drawAlta(); };
+  if(A.tutorSel){ document.getElementById('altatcambiar').onclick=()=>{ A.tutorSel=null; drawAlta(); }; }
+  else { const bus=document.getElementById('altatbus'), res=document.getElementById('altatres'); bus.oninput=()=>{ const q=bus.value.trim().toLowerCase(); const qd=d10(q); if(q.length<3){res.innerHTML='';return;} const arr=((DIRECTORIO&&DIRECTORIO.tutores)||[]).filter(t=>String(t.nombre).toLowerCase().indexOf(q)!==-1||String(t.email||'').toLowerCase().indexOf(q)!==-1||(qd.length>=6&&d10(t.whatsapp).indexOf(qd)!==-1)).slice(0,5); res.innerHTML=arr.length?arr.map(t=>'<button type="button" class="dirrow" data-atut="'+esc(t.id)+'"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="text-align:left"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc(t.email||t.whatsapp||'')+'</div></div></button>').join(''):'<div class="mut">Sin coincidencias: captura al tutor abajo.</div>'; res.querySelectorAll('[data-atut]').forEach(b=>b.onclick=()=>{ A.tutorSel=DIRECTORIO.tutores.find(t=>t.id===b.dataset.atut)||null; drawAlta(); }); }; }
+  bindChips(center,'agen',v=>{A.gen=v;drawAlta();}); bindChips(center,'aprog',v=>{A.prog=v;A.progManual=true;drawAlta();}); bindChips(center,'ablq',v=>{A.hid=v;resumenAlta();});
+  bindChips(center,'aplan',v=>{A.plan=v;A.montoM='';drawAlta();}); bindChips(center,'ames',v=>{A.mes=v;drawAlta();}); bindChips(center,'apago',v=>{A.pago=v;drawAlta();});
+  center.querySelectorAll('[data-grp="adias"] .chipo').forEach(b=>b.onclick=()=>{ const d=b.dataset.v; if(A.dias.has(d))A.dias.delete(d); else { if(A.dias.size>=maxDias){ document.getElementById('altaerr').textContent='El plan permite '+maxDias+' día(s) por semana; cambia el plan para agregar más.'; return; } A.dias.add(d); } drawAlta(); });
+  document.getElementById('altaagendar').onchange=e=>{A.agendar=e.target.checked;};
+  document.getElementById('altainsc').onchange=e=>{A.insc=e.target.checked;drawAlta();};
+  const mm2=document.getElementById('altamontom'); mm2.oninput=()=>{A.montoM=mm2.value;resumenAlta();}; const mi2=document.getElementById('altamontoi'); mi2.oninput=()=>{A.montoI=mi2.value;resumenAlta();};
+  document.getElementById('altaok').onclick=e=>enviarAlta(e.currentTarget);
+}
+function resumenAlta(){
+  const A=ALTA, right=document.getElementById('rightcol'); if(!A||!right)return; const b=A.bl.find(x=>x.id===A.hid); const plan=PLANES.find(p=>p[0]===A.plan)||PLANES[1];
+  const mM=Number(A.montoM!==''?A.montoM:plan[2])||0, mI=(A.insc&&A.pago!=='Pendiente')?(Number(A.montoI)||0):0; const hoyCobra=A.pago==='Pendiente'?0:mM+mI;
+  const fila=(k,v)=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span class="mut">'+k+'</span><span style="text-align:right">'+v+'</span></div>';
+  right.innerHTML='<h2>Resumen</h2>'+fila('Alumno',esc(A.a.nombre||'—'))+fila('Tutor',esc((A.tutorSel&&A.tutorSel.nombre)||A.t.nombre||'—'))+fila('Clase',b?esc(nombreSinGenero(b.nombre)):'—')+fila('Días',A.dias.size?DIAS_CLASE.filter(d=>A.dias.has(d)).map(d=>d.slice(0,3)).join(', '):'—')+fila('Plan',plan[1]+' clases · '+MESES[+A.mes.slice(5,7)-1])+fila('Cobra hoy','<b>$'+hoyCobra.toLocaleString('es-MX')+'</b>'+(A.pago==='Pendiente'?' (pendiente $'+mM.toLocaleString('es-MX')+')':' · '+esc(A.pago==='Tarjeta TPV'?'tarjeta':'efectivo')));
+}
+async function enviarAlta(btn){
+  const A=ALTA, err=document.getElementById('altaerr'); const g=k=>String((A[k.split('.')[0]]||{})[k.split('.')[1]]||'').trim();
+  const b=A.bl.find(x=>x.id===A.hid); const plan=PLANES.find(p=>p[0]===A.plan); const edad=edadDe(g('a.fecha_nacimiento')); const esAdulto=A.prog==='FitParents';
+  const faltas=[[!A.tutorSel&&!g('t.nombre'),'el nombre del tutor'],[!A.tutorSel&&!/^\S+@\S+\.\S+$/.test(g('t.email')),'un correo válido del tutor'],[!A.tutorSel&&d10(g('t.whatsapp')).length!==10,'el WhatsApp a 10 dígitos'],[!A.tutorSel&&!g('t.contacto_emergencia'),'el contacto de emergencia'],[!A.tutorSel&&d10(g('t.telefono_emergencia')).length!==10,'el teléfono de emergencia a 10 dígitos'],
+    [!g('a.nombre'),'el nombre del alumno'],[!g('a.fecha_nacimiento'),'la fecha de nacimiento'],[edad!=null&&edad<0,'una fecha válida'],[!esAdulto&&!A.gen,'el género'],[!g('a.alergias'),'las alergias (o "ninguna")'],[!b,'el bloque'],[!A.dias.size,'los días'],[A.pago!=='Pendiente'&&!(Number(A.montoM!==''?A.montoM:plan[2])>0),'el monto de la mensualidad'],[A.insc&&A.pago!=='Pendiente'&&!(Number(A.montoI)>0),'el monto de la inscripción']].filter(x=>x[0]);
+  if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
+  const pagado=A.pago!=='Pendiente';
+  const p={alumno:{nombre:g('a.nombre'),fecha_nacimiento:g('a.fecha_nacimiento'),genero:esAdulto?null:A.gen,alergias:g('a.alergias'),programa:A.prog,horario_id:b.id,hora:horaDeNombre(b.nombre)||undefined,dias:DIAS_CLASE.filter(d=>A.dias.has(d))},
+    membresia:{plan:A.plan,mes:A.mes,estado_pago:pagado?'Pagado':'Pendiente',metodo:pagado?A.pago:undefined,monto:Number(A.montoM!==''?A.montoM:plan[2]),agendar:A.agendar},
+    inscripcion:{cobrar:pagado&&A.insc,monto:Number(A.montoI)||0,metodo:pagado?A.pago:undefined}};
+  if(A.tutorSel)p.tutor_id=A.tutorSel.id; else p.tutor={nombre:g('t.nombre'),email:g('t.email').toLowerCase(),whatsapp:'+52'+d10(g('t.whatsapp')),parentesco:g('t.parentesco'),contacto_emergencia:g('t.contacto_emergencia'),telefono_emergencia:'+52'+d10(g('t.telefono_emergencia'))};
+  if(A.forzar)p.forzar=true;
+  btn.disabled=true; const txt=btn.innerHTML; btn.innerHTML='Dando de alta… (tarda unos segundos)'; err.textContent='';
+  const r=await call('alta_completa',p); btn.disabled=false; btn.innerHTML=txt; if(ALTA!==A)return;
+  if(r&&r.duplicado){ err.innerHTML='Ya existe un alumno con ese nombre:'+r.duplicado.map(d=>'<div class="dirrow" style="margin-top:6px;cursor:default"><div style="flex:1"><div class="nm">'+esc(d.nombre)+'</div><div class="mut">'+esc(d.cod||'sin código')+(d.fecha_nacimiento?' · nació '+esc(d.fecha_nacimiento):'')+'</div></div><button type="button" class="btn" data-dupf="'+esc(d.id)+'">Abrir ficha</button></div>').join('')+'<button type="button" class="btn" id="altaforzar" style="margin-top:8px">Es otra persona: dar de alta de todos modos</button>';
+    err.querySelectorAll('[data-dupf]').forEach(x=>x.onclick=()=>{ALTA=null;verFichaAlumno(x.dataset.dupf);}); document.getElementById('altaforzar').onclick=()=>{A.forzar=true;enviarAlta(btn);}; return; }
+  if(!r||r.ok===false){ if(r&&r.parcial){ DIRECTORIO=null; resultadoAlta(r); return; } err.textContent='No se guardó nada: '+((r&&r.error)||'error de red'); return; }
+  DIRECTORIO=null; resultadoAlta(r);
+}
+function resultadoAlta(r){
+  const A=ALTA; const center=document.getElementById('centercol'); const ok=r.ok!==false;
+  const it=(b,t)=>'<li class="'+(b?'ok':'dng')+'"><i class="ti '+(b?'ti-circle-check':'ti-alert-triangle')+'" aria-hidden="true"></i> '+t+'</li>';
+  let h='<div class="pagehead"><h1>'+(ok?'Alumno dado de alta':'Alta incompleta')+'</h1></div><div class="card altasec"><div class="nm" style="font-size:17px">'+esc(r.nombre||'')+'</div><div class="mut">Código '+esc(r.codigo||'')+'</div><ul class="altares">';
+  h+=it(!!r.id,'Alumno creado'); if(r.verificado)h+=it(true,'Verificado en recepción'); if(r.tutor_id)h+=it(true,r.tutor_creado?'Tutor nuevo creado':'Vinculado a su tutor');
+  if(r.membresia)h+=it(true,'Membresía '+esc(r.membresia)+(r.membresia_pagada?' · pagada':' · pendiente de pago'));
+  if(r.membresia&&A&&A.agendar)h+=it(!r.sin_cupo,(r.agendadas||0)+' clases reservadas'+(r.sin_cupo?' · '+r.sin_cupo+' sin cupo (grupo lleno)':''));
+  if(r.pago_inscripcion)h+=it(true,'Inscripción cobrada ('+esc(r.pago_inscripcion)+')');
+  if(r.alerta_edad_horario)h+=it(false,'La edad no coincide con el programa: revísalo en la ficha');
+  if(!ok)h+=it(false,'Se detuvo en '+esc(r.error||'')+'. Termina desde la ficha (renovar o cobrar).');
+  h+='</ul><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="altaficha"><i class="ti ti-id" aria-hidden="true"></i> Abrir ficha</button>'+(r.id?'<button type="button" class="btn" id="altaqr"><i class="ti ti-qrcode" aria-hidden="true"></i> Imprimir tarjeta QR</button>':'')+(r.tutor_id?'<button type="button" class="btn" id="altaherm"><i class="ti ti-users-plus" aria-hidden="true"></i> Alta de un hermano</button>':'')+'<button type="button" class="btn" id="altaotro">Otro alumno</button></div><div class="mut" id="altaqrst" style="margin-top:8px"></div></div>';
+  center.innerHTML=h;
+  document.getElementById('altaficha').onclick=()=>{ALTA=null;verFichaAlumno(r.id);};
+  const q=document.getElementById('altaqr'); if(q)q.onclick=async()=>{ const st=document.getElementById('altaqrst'); st.textContent='Generando…'; const t=await call('qr_alumno',{alumno_id:r.id}); if(!t||t.ok===false){st.textContent='No se pudo: '+((t&&t.error)||'error');return;} st.textContent=''; const b=A&&A.bl.find(x=>x.id===A.hid); imprimirTarjetas([{nombre:t.nombre,cod:t.cod,token:t.token,clase:b?b.nombre:''}]).catch(()=>{st.textContent='No se pudo preparar la impresión';}); };
+  const hm=document.getElementById('altaherm'); if(hm)hm.onclick=async()=>{ let t=A&&A.tutorSel; if(!t){ const d=await call('directorio',{}); if(d&&d.ok!==false)DIRECTORIO=d; t=(DIRECTORIO&&DIRECTORIO.tutores||[]).find(x=>x.id===r.tutor_id)||{id:r.tutor_id,nombre:(A&&A.t.nombre)||'Tutor'}; } altaAlumno({tutor:t}); };
+  document.getElementById('altaotro').onclick=()=>altaAlumno();
+}
+
 function verTutor(id){
   const right=document.getElementById('rightcol'); abrirPanel();
   const t=DIRECTORIO.tutores.find(x=>x.id===id);
@@ -862,7 +986,9 @@ function verTutor(id){
   let h='<h2>Tutor</h2><div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(t.nombre)+'</div><div class="mut" style="margin-top:4px">'+esc(t.email||'')+'</div><div class="mut">'+esc(t.whatsapp||'')+'</div></div>';
   h+='<h2>Alumnos ('+hijos.length+')</h2>';
   h+=hijos.length? hijos.map(a=>'<div class="venc" style="cursor:pointer" data-alumno2="'+a.id+'"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.programa||'')+'</div></div>').join('') : '<div class="mut">Sin alumnos vinculados en el directorio.</div>';
+  h+='<button type="button" class="btn acbig" id="tutalta"><i class="ti ti-user-plus" aria-hidden="true"></i> Inscribir otro hijo/a</button>';
   right.innerHTML=h;
+  right.querySelector('#tutalta').onclick=()=>altaAlumno({tutor:t});
   right.querySelectorAll('[data-alumno2]').forEach(el=>el.onclick=()=>verFichaAlumno(el.dataset.alumno2));
 }
 
