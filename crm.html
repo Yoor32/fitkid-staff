@@ -105,6 +105,30 @@
   .mkbtn.on-ok{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok)}
   .mkbtn.on-dng{background:var(--danger-bg);border-color:#f0c7c7;color:var(--danger)}
 
+  .acts{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .actbtn{display:flex;align-items:center;gap:11px;width:100%;padding:11px 13px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);cursor:pointer;text-align:left;font-family:inherit;color:var(--text);min-height:48px}
+  .actbtn:hover{border-color:var(--line-2);background:var(--surface-2)}
+  .actbtn i{font-size:20px;color:var(--brand-600);flex:0 0 auto}
+  .actbtn span{display:flex;flex-direction:column;min-width:0}
+  .actbtn b{font-size:13.5px}
+  .actbtn small{font-size:11.5px;color:var(--muted)}
+  .actbtn.prim{border-color:var(--brand-500);background:var(--brand-bg)}
+  .actbtn.ok{border-color:#bfe3d5;background:var(--ok-bg)} .actbtn.ok i{color:var(--ok)}
+  .actbtn.dng{border-color:#f0c7c7;background:var(--danger-bg)} .actbtn.dng i{color:var(--danger)}
+  .actbtn.warn{border-color:#f1d9b0;background:var(--amber-bg)} .actbtn.warn i{color:var(--amber)}
+  .masacc{margin-bottom:14px} .masacc summary{cursor:pointer;font-size:13px;color:var(--brand-600);font-weight:600;padding:6px 0;list-style:none} .masacc summary::-webkit-details-marker{display:none} .masacc summary::before{content:'+ '} .masacc[open] summary::before{content:'– '}
+  .masacc .acts{margin-top:8px}
+  .chipsel{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+  .chipo{padding:9px 12px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-pill);font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--text);min-height:38px;text-align:left}
+  .chipsel[data-grp="plan"]{display:grid;grid-template-columns:1fr 1fr}
+  .chipo.on{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+  .chipo.on .gchip{background:rgba(255,255,255,.22);color:#fff}
+  .rightcol label.mut{display:block;margin:10px 0 4px}
+  .rightcol .field{width:100%;margin-bottom:8px}
+  .acbig{width:100%;justify-content:center;min-height:46px;margin-top:10px;text-decoration:none}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;margin:10px 0}
+  .crmtoast{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom));z-index:50;background:var(--text);color:#fff;padding:11px 16px;border-radius:var(--r-pill);font-size:13px;box-shadow:var(--sh-lg);max-width:calc(100% - 32px)}
+  .crmtoast.ok{background:var(--ok)} .crmtoast.dng{background:var(--danger)}
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
   .venc{padding:10px 0;border-bottom:1px solid var(--line)}
@@ -122,6 +146,7 @@
   .dayrow .nm{flex:1;font-size:13.5px}
   .dayrow .cnt{font-weight:700;color:var(--brand-600);font-size:15px}
   .dayrow.full .cnt{color:var(--danger)}
+  .dayrow.solo-movil{display:none}
 
   /* ---- responsivo: tablet/celular en la recepción ----
      El panel derecho (ficha, roster, vencimientos) no se oculta: se vuelve una hoja que se desliza
@@ -141,6 +166,7 @@
     .tabbar button i{font-size:21px}
     .tabbar button.on{color:var(--brand-600);font-weight:600;background:var(--brand-bg)}
     .solo-movil{display:block}
+    .dayrow.solo-movil{display:flex}
   }
   /* En pantallas táctiles los botones chicos se agrandan (mínimo ~40px de alto). */
   @media (pointer:coarse){
@@ -273,6 +299,7 @@ async function home(){
   const r=await call('resumen_del_dia',{});
   if(SECCION!=='home')return;
   const stats=document.getElementById('stats');
+  if(!stats)return;
   if(!r||r.ok===false){ stats.innerHTML='<div class="mut">No se pudo cargar el resumen.</div>'; }
   else{
     const data=r.data||[];
@@ -282,6 +309,7 @@ async function home(){
   const v=await call('vencimientos',{});
   if(SECCION!=='home')return;
   const vb=document.getElementById('vencbox');
+  if(!vb)return; /* el panel ya muestra otra cosa (p. ej. una ficha abierta desde el inicio) */
   if(!v||v.ok===false){ vb.innerHTML='<div class="mut">No se pudo cargar.</div>'; }
   else{
     const data=(v.data||[]).slice(0,10);
@@ -337,23 +365,203 @@ function renderDirList(){
   box.querySelectorAll('[data-tutor]').forEach(el=>el.onclick=()=>verTutor(el.dataset.tutor));
 }
 
+/* ---------- Ficha del alumno + acciones rápidas según su estado ----------
+   No hay datos de "qué hace más el staff": las acciones destacadas salen del estado del alumno
+   (clase hoy sin marcar, sin verificar, membresía sin pagar o vencida, pocos créditos, suspendido).
+   El resto queda en "Más acciones". Cada acción abre su formulario en el mismo panel. */
+const PLANES=[['M1',4,800],['M2',8,900],['M3',12,1000],['M4',16,1100],['M5',20,1200],['M6',24,1300],['M7',32,1400],['M8',40,1500]];
+const PRECIO_PLAN={}; PLANES.forEach(p=>PRECIO_PLAN[p[0]]=p[2]);
+const DIAS_CLASE=['Lunes','Martes','Miércoles','Jueves','Viernes'];
+const HORAS_CLASE=['7:00-8:00 AM (FitParents)','8:00-9:00 AM (FitParents)','9:00-10:00 AM (FitParents)','10:00-11:00 AM (FitParents)','4:00-5:00 PM','5:00-6:00 PM','6:00-7:00 PM','7:00-8:00 PM'];
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const STRIPE_URL="https://yoor32.app.n8n.cloud/webhook/fitkid-stripe-link";
+let FICHA=null;
+/* Cada acción o vuelta a la ficha invalida las cargas pendientes: si el staff pulsa "Ficha" mientras
+   un formulario todavía carga, el formulario no debe aparecer encima después. */
+let ACC_SEQ=0;
+function toast(msg,tipo){ let t=document.getElementById('crmtoast'); if(!t){t=document.createElement('div');t.id='crmtoast';t.setAttribute('role','status');document.body.appendChild(t);} t.className='crmtoast '+(tipo||''); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>{t.style.display='none';},4200); }
+function fmtFecha(f){ if(!f)return ''; const d=new Date(f+'T12:00:00'); return d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }
+function nombreMes(f){ return f?MESES[+String(f).slice(5,7)-1]+' '+String(f).slice(0,4):''; }
+function d10(t){ return String(t||'').replace(/\D/g,'').slice(-10); }
+function edadDe(f){ if(!f)return null; const b=new Date(f+'T00:00:00'); if(isNaN(b))return null; const h=new Date(); let e=h.getFullYear()-b.getFullYear(); const m=h.getMonth()-b.getMonth(); if(m<0||(m===0&&h.getDate()<b.getDate()))e--; return e; }
+function programaDeNombre(n){ n=String(n||'').toLowerCase(); if(n.indexOf('fitparent')!==-1)return 'FitParents'; if(n.indexOf('olímpic')!==-1||n.indexOf('olimpic')!==-1)return 'Gimnasia Olímpica (7-14)'; if(n.indexOf('iniciaci')!==-1)return 'Iniciación Deportiva (3-6)'; return 'Requiere revisión'; }
+function horaDeNombre(nombre){ const m=String(nombre||'').match(/(\d{1,2})(?::(\d{2}))?\s*(?:-|–|a)\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?/i); if(!m)return null; const v=m[1]+':'+(m[2]||'00')+'-'+m[3]+':'+(m[4]||'00')+' '+(m[5].toLowerCase()==='a'?'AM':'PM'); const c=HORAS_CLASE.filter(h=>h===v||h.indexOf(v+' (')===0); if(c.length!==1)return null; if(/FitParents/i.test(c[0])&&programaDeNombre(nombre)!=='FitParents')return null; return c[0]; }
+function waLink(tel,txt){ const t=d10(tel); return t.length===10?('https://wa.me/52'+t+(txt?('?text='+encodeURIComponent(txt)):'')):''; }
+let HORARIOS_CACHE=null;
+async function horariosLista(){ if(HORARIOS_CACHE)return HORARIOS_CACHE; const r=await call('horarios_lista',{}); if(r&&r.ok!==false){HORARIOS_CACHE=(r.data||[]).slice().sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre)));} return HORARIOS_CACHE||[]; }
+function paraGenero(b,g){ return !b.genero||b.genero===g; }
+
+function sugerencias(r){
+  const al=r.al||{}, mem=r.mem, prox=r.prox||[], hoy=r.hoy||new Date().toLocaleDateString('en-CA');
+  const s=[]; const claseHoy=prox.find(p=>p.fecha===hoy); const fut=prox.filter(p=>p.fecha>hoy);
+  if(al.estatus==='Suspendido') s.push({id:'reactivar',ic:'ti-player-play',t:'Reactivar',d:'El alumno está suspendido',tono:'warn'});
+  if(claseHoy){ s.push({id:'asistio',ic:'ti-check',t:'Asistió hoy',d:'Tiene clase hoy sin marcar',tono:'ok',asis:claseHoy.id}); s.push({id:'falta',ic:'ti-x',t:'Faltó hoy',d:'Consume crédito',tono:'dng',asis:claseHoy.id}); }
+  if(!al.verificado) s.push({id:'verificar',ic:'ti-shield-check',t:'Verificar datos',d:'Falta la verificación en recepción',tono:'warn'});
+  if(mem&&mem.estado&&mem.estado!=='Pagado'){ s.push({id:'cobrar',ic:'ti-cash',t:'Cobrar mensualidad',d:'Membresía '+String(mem.estado).toLowerCase()+' · $'+(r.monto||0),tono:'warn'}); s.push({id:'link',ic:'ti-link',t:'Link de pago',d:'Enviar por WhatsApp al tutor'}); }
+  if(!mem) s.push({id:'renovar',ic:'ti-refresh',t:'Crear membresía',d:'No tiene membresía registrada',tono:'warn'});
+  else if(String(mem.mes||'').slice(0,7)<hoy.slice(0,7)) s.push({id:'renovar',ic:'ti-refresh',t:'Renovar mensualidad',d:'La membresía cubre '+nombreMes(mem.mes),tono:'warn'});
+  else if(mem.restantes!=null&&mem.restantes<=2) s.push({id:'renovar',ic:'ti-refresh',t:'Renovar mensualidad',d:'Quedan '+mem.restantes+' créditos'});
+  if(fut.length&&!claseHoy) s.push({id:'reagendar',ic:'ti-calendar-event',t:'Reagendar',d:'Próxima clase: '+fmtFecha(fut[0].fecha)});
+  return s;
+}
+function masAcciones(r,ya){
+  const al=r.al||{}, t=r.tutor||{}; const out=[];
+  const add=o=>{ if(!ya[o.id])out.push(o); };
+  add({id:'reponer',ic:'ti-calendar-plus',t:'Reponer clase',d:'Clase extra sin crédito'});
+  add({id:'reagendar',ic:'ti-calendar-event',t:'Reagendar',d:'Mover una clase'});
+  add({id:'horario',ic:'ti-clock-edit',t:'Cambiar horario o plan',d:'Bloque, días y créditos'});
+  add({id:'renovar',ic:'ti-refresh',t:'Renovar mensualidad',d:'Nueva membresía'});
+  add({id:'otro_pago',ic:'ti-receipt',t:'Registrar otro cobro',d:'Inscripción, clase privada…'});
+  add({id:'evento',ic:'ti-confetti',t:'Inscribir a evento',d:'Con o sin cobro'});
+  if(al.verificado)add({id:'verificar',ic:'ti-shield-check',t:'Editar datos',d:'Volver a verificar'});
+  if(al.estatus!=='Suspendido')add({id:'suspender',ic:'ti-player-pause',t:'Suspender',d:'Pausa al alumno'});
+  if(waLink(t.whatsapp))add({id:'whatsapp',ic:'ti-brand-whatsapp',t:'WhatsApp al tutor',d:t.nombre||''});
+  return out;
+}
+function btnAccion(a,prim){ return '<button type="button" class="actbtn'+(prim?' prim':'')+(a.tono?' '+a.tono:'')+'" data-acc="'+a.id+'"'+(a.asis?' data-asis="'+esc(a.asis)+'"':'')+'><i class="ti '+a.ic+'" aria-hidden="true"></i><span><b>'+esc(a.t)+'</b><small>'+esc(a.d||'')+'</small></span></button>'; }
+function volverFicha(){ return '<button type="button" class="btn" data-acc="volver" style="margin-bottom:12px"><i class="ti ti-arrow-left" aria-hidden="true"></i> Ficha</button>'; }
+
 async function verFichaAlumno(id){
-  const right=document.getElementById('rightcol'); abrirPanel();
+  const right=document.getElementById('rightcol'); abrirPanel(); FICHA=Object.assign(FICHA||{},{pend:id}); ACC_SEQ++;
   right.innerHTML='<h2>Ficha</h2><div class="mut">Cargando…</div>';
   const r=await call('ficha_alumno',{alumno_id:id});
   if(!r||r.ok===false){ right.innerHTML='<h2>Ficha</h2><div class="mut">No se pudo cargar.</div>'; return; }
+  if(FICHA&&FICHA.pend!==id&&FICHA.id!==id&&FICHA.pend)return;
+  FICHA={id:id,r:r}; drawFicha();
+}
+function drawFicha(){
+  ACC_SEQ++; const right=document.getElementById('rightcol'); if(!right||!FICHA)return; const r=FICHA.r;
   const al=r.al||{}, mem=r.mem, tutor=r.tutor, prox=r.prox||[], pagos=r.pagos||[];
+  const sug=sugerencias(r); const ya={}; sug.forEach(a=>ya[a.id]=1); const mas=masAcciones(r,ya);
   let h='<h2>Ficha</h2>';
-  h+='<div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(al.nombre)+'</div><div class="mut">'+esc(al.cod||'')+' · '+esc(al.programa||'')+'</div>';
-  h+='<div style="margin-top:8px;font-size:12.5px" class="mut">Estatus: '+esc(al.estatus||'—')+' · Edad: '+esc(al.edad!=null?al.edad:'—')+'</div>';
-  h+='<div style="margin-top:4px;font-size:12.5px" class="mut">Verificado: '+(al.verificado?'sí':'no')+' · Inscripción: '+esc(al.insc||'—')+'</div>';
-  if(al.alergias)h+='<div style="margin-top:6px;font-size:12.5px;color:var(--danger)">Alergias: '+esc(al.alergias)+'</div>';
+  h+='<div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(al.nombre)+(al.genero?chipGenero(al.genero==='Niña'?'Niñas':'Niños'):'')+'</div><div class="mut">'+esc(al.cod||'')+(r.horario&&r.horario.nombre?' · '+esc(nombreSinGenero(r.horario.nombre)):'')+'</div>';
+  h+='<div style="margin-top:8px;font-size:12.5px" class="mut">Estatus: '+esc(al.estatus||'—')+' · Edad: '+esc(al.edad!=null&&al.edad!==''?al.edad:'—')+' · '+(al.verificado?'Verificado':'Sin verificar')+'</div>';
+  if(al.alergias&&!/^ningun/i.test(al.alergias))h+='<div style="margin-top:6px;font-size:12.5px;color:var(--danger)">Alergias: '+esc(al.alergias)+'</div>';
   h+='</div>';
-  if(mem){ h+='<h2>Membresía</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div>Plan '+esc(mem.plan||'—')+' · '+esc(mem.creditos!=null?mem.creditos:'—')+' créditos ('+esc(mem.restantes!=null?mem.restantes:'—')+' restantes)</div><div class="mut" style="margin-top:4px">'+esc(mem.estado||'—')+'</div></div>'; }
-  if(tutor){ h+='<h2>Tutor</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div class="nm" style="font-size:13px">'+esc(tutor.nombre)+'</div><div class="mut" style="margin-top:2px">'+esc(tutor.whatsapp||'')+(tutor.email?' · '+esc(tutor.email):'')+'</div></div>'; }
-  if(prox.length){ h+='<h2>Próximas clases</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px">'+prox.slice(0,5).map(p=>'<div>'+esc(p.fecha)+'</div>').join('')+'</div>'; }
-  if(pagos.length){ h+='<h2>Últimos pagos</h2><div class="card" style="padding:12px;font-size:12.5px">'+pagos.slice(0,5).map(p=>'<div style="display:flex;justify-content:space-between"><span>'+esc(p.concepto||'')+' · '+esc(p.fecha||'')+'</span><span>$'+esc(p.monto||0)+'</span></div>').join('')+'</div>'; }
+  if(sug.length){ h+='<h2>Acciones sugeridas</h2><div class="acts">'+sug.map(a=>btnAccion(a,true)).join('')+'</div>'; }
+  else h+='<div class="mut" style="margin-bottom:12px">Todo al día: sin acciones pendientes.</div>';
+  h+='<details class="masacc"'+(sug.length?'':' open')+'><summary>Más acciones</summary><div class="acts">'+mas.map(a=>btnAccion(a,false)).join('')+'</div></details>';
+  if(mem){ h+='<h2>Membresía</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div>Plan '+esc(mem.plan||'—')+' · '+esc(mem.restantes!=null?mem.restantes:'—')+' de '+esc(mem.creditos!=null?mem.creditos:'—')+' créditos</div><div class="mut" style="margin-top:4px">'+esc(mem.estado||'—')+(mem.mes?' · cubre '+esc(nombreMes(mem.mes)):'')+'</div></div>'; }
+  if(tutor){ const wa=waLink(tutor.whatsapp); h+='<h2>Tutor</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div class="nm" style="font-size:13px">'+esc(tutor.nombre)+(tutor.parentesco?' <span class="mut">('+esc(tutor.parentesco)+')</span>':'')+'</div><div class="mut" style="margin-top:2px">'+(wa?'<a href="'+wa+'" target="_blank" rel="noopener">'+esc(tutor.whatsapp)+'</a>':esc(tutor.whatsapp||''))+(tutor.email?' · <a href="mailto:'+esc(tutor.email)+'">'+esc(tutor.email)+'</a>':'')+'</div>'+(tutor.contacto_emergencia?'<div class="mut" style="margin-top:2px">Emergencia: '+esc(tutor.contacto_emergencia)+' '+esc(tutor.telefono_emergencia||'')+'</div>':'')+'</div>'; }
+  if(prox.length){ h+='<h2>Próximas clases</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px">'+prox.slice(0,5).map(p=>'<div>'+esc(fmtFecha(p.fecha))+(p.fecha===r.hoy?' · <b>hoy</b>':'')+'</div>').join('')+'</div>'; }
+  if(pagos.length){ h+='<h2>Últimos pagos</h2><div class="card" style="padding:12px;font-size:12.5px">'+pagos.slice(0,5).map(p=>'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(p.concepto||'')+' · '+esc(p.fecha||'')+'</span><span>$'+esc(p.monto||0)+'</span></div>').join('')+'</div>'; }
   right.innerHTML=h;
+  right.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>ejecutarAccion(b.dataset.acc,b.dataset.asis));
+}
+async function recargarFicha(msg){ if(msg)toast(msg,'ok'); DIRECTORIO=null; await verFichaAlumno(FICHA.id); }
+function panelAccion(titulo,cuerpo){ const right=document.getElementById('rightcol'); right.innerHTML=volverFicha()+'<h2>'+esc(titulo)+'</h2>'+cuerpo+'<div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>'; right.querySelector('[data-acc="volver"]').onclick=drawFicha; const p=document.getElementById('rightpane'); if(p)p.scrollTop=0; return right; }
+function chips(nombre,opts,sel){ return '<div class="chipsel" data-grp="'+nombre+'">'+opts.map(o=>'<button type="button" class="chipo'+(o[0]===sel?' on':'')+'" data-v="'+esc(o[0])+'">'+o[1]+'</button>').join('')+'</div>'; }
+function bindChips(root,nombre,cb,multi){ root.querySelectorAll('[data-grp="'+nombre+'"] .chipo').forEach(b=>b.onclick=()=>{ if(multi){b.classList.toggle('on');} else {root.querySelectorAll('[data-grp="'+nombre+'"] .chipo').forEach(x=>x.classList.remove('on'));b.classList.add('on');} cb&&cb(b.dataset.v,b.classList.contains('on')); }); }
+function valChip(root,nombre){ const b=root.querySelector('[data-grp="'+nombre+'"] .chipo.on'); return b?b.dataset.v:null; }
+function valsChip(root,nombre){ return [...root.querySelectorAll('[data-grp="'+nombre+'"] .chipo.on')].map(b=>b.dataset.v); }
+async function enviar(btn,fn){ const err=document.getElementById('accerr'); btn.disabled=true; const txt=btn.innerHTML; btn.innerHTML='Guardando…'; if(err)err.textContent=''; try{ const r=await fn(); if(!r||r.ok===false){ if(err)err.textContent='No se guardó: '+((r&&r.error)||'error de red'); btn.disabled=false; btn.innerHTML=txt; return null; } return r; }catch(e){ if(err)err.textContent='No se guardó: '+e; btn.disabled=false; btn.innerHTML=txt; return null; } }
+const METODOS=[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta (terminal)']];
+
+async function ejecutarAccion(acc,asis){
+  const seq=++ACC_SEQ; const vigente=()=>seq===ACC_SEQ;
+  const r=FICHA.r, al=r.al||{}, mem=r.mem, tu=r.tutor||{};
+  if(acc==='asistio'||acc==='falta'){
+    const est=acc==='asistio'?'Asistió':'Falta';
+    const res=await call('guardar_asistencias',{items:[{id:asis,estatus:est}]});
+    if(res&&res.ok&&res.actualizadas)return recargarFicha('✓ Marcado: '+est); toast('No se pudo marcar','dng'); return;
+  }
+  if(acc==='whatsapp'){ window.open(waLink(tu.whatsapp,'Hola '+(tu.nombre||'')+', le escribimos de FitKid Gymnastic sobre '+(al.nombre||'')+'.'),'_blank','noopener'); return; }
+  if(acc==='reactivar'||acc==='suspender'){
+    const est=acc==='reactivar'?'Activo':'Suspendido';
+    const root=panelAccion(acc==='reactivar'?'Reactivar alumno':'Suspender alumno','<div class="mut" style="margin-bottom:12px">'+esc(al.nombre)+' quedará como <b>'+est+'</b>.</div><button type="button" class="btn pri acbig" id="accok">Confirmar</button>');
+    root.querySelector('#accok').onclick=async e=>{ const res=await enviar(e.currentTarget,()=>call('suspender_reactivar',{alumno_id:FICHA.id,estado:est})); if(res)recargarFicha('✓ Alumno '+est.toLowerCase()); }; return;
+  }
+  if(acc==='cobrar'||acc==='otro_pago'){
+    const esMens=acc==='cobrar';
+    const cons=esMens?[['MENS','Mensualidad']]:[['INSC','Inscripción anual'],['PRIV','Clase privada'],['MENS','Mensualidad'],['OTRO','Otro']];
+    const root=panelAccion(esMens?'Cobrar mensualidad':'Registrar cobro','<label class="mut">Concepto</label>'+chips('con',cons,cons[0][0])+'<label class="mut" for="accmonto">Monto</label><input class="field" id="accmonto" type="number" inputmode="numeric" min="1" value="'+(esMens?(r.monto||''):'')+'"><label class="mut">Método</label>'+chips('met',METODOS,'Efectivo')+'<button type="button" class="btn pri acbig" id="accok"><i class="ti ti-cash" aria-hidden="true"></i> Registrar pago</button>');
+    bindChips(root,'con',v=>{ if(v==='MENS')root.querySelector('#accmonto').value=r.monto||''; else if(v==='INSC')root.querySelector('#accmonto').value=600; }); bindChips(root,'met');
+    root.querySelector('#accok').onclick=async e=>{ const con=valChip(root,'con'), met=valChip(root,'met'), monto=Number(root.querySelector('#accmonto').value)||0; if(monto<=0){document.getElementById('accerr').textContent='Escribe el monto';return;} const folio='PAG-'+con+'-'+(al.cod||'SINCOD')+'-'+(r.hoy||'').slice(2).replace(/-/g,''); const p={alumno_id:FICHA.id,concepto:con,monto:monto,metodo:met,folio:folio}; if(con==='MENS'&&mem)p.membresia_id=mem.id; const res=await enviar(e.currentTarget,()=>call('registrar_pago',p)); if(res)recargarFicha('✓ Pago registrado · '+folio); }; return;
+  }
+  if(acc==='link'){
+    const root=panelAccion('Link de pago','<label class="mut" for="accmonto">Monto</label><input class="field" id="accmonto" type="number" inputmode="numeric" min="1" value="'+(r.monto||'')+'"><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-link" aria-hidden="true"></i> Generar link</button><div id="acclink"></div>');
+    root.querySelector('#accok').onclick=async e=>{ const monto=Number(root.querySelector('#accmonto').value)||0; if(monto<=0){document.getElementById('accerr').textContent='Escribe el monto';return;} const res=await enviar(e.currentTarget,()=>callUrl(STRIPE_URL,{monto:monto,concepto:'Mensualidad '+(mem&&mem.plan?mem.plan:''),nombre:al.nombre})); if(!res)return; if(!res.url){document.getElementById('accerr').textContent='Stripe no devolvió un link (revisa la credencial de Stripe en n8n)';return;} const wa=waLink(tu.whatsapp,'Hola '+(tu.nombre||'')+', este es el link para pagar la mensualidad de '+al.nombre+': '+res.url); root.querySelector('#acclink').innerHTML='<div class="card" style="padding:12px;margin-top:12px;font-size:12.5px;word-break:break-all"><a href="'+esc(res.url)+'" target="_blank" rel="noopener">'+esc(res.url)+'</a></div>'+(wa?'<a class="btn pri acbig" href="'+esc(wa)+'" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Enviar por WhatsApp</a>':'<div class="mut" style="margin-top:8px">El tutor no tiene WhatsApp registrado: copia el link.</div>'); e.currentTarget.disabled=false; e.currentTarget.innerHTML='Generar otro'; }; return;
+  }
+  if(acc==='renovar'){
+    const hoy=r.hoy||''; const mesAct=hoy.slice(0,7)+'-01'; const d=new Date(mesAct+'T12:00:00'); d.setMonth(d.getMonth()+1); const mesSig=d.toISOString().slice(0,7)+'-01';
+    const cubreEste=mem&&String(mem.mes||'').slice(0,7)===hoy.slice(0,7);
+    const planAct=(mem&&PRECIO_PLAN[mem.plan])?mem.plan:'M2';
+    const root=panelAccion(mem?'Renovar mensualidad':'Crear membresía','<label class="mut">Plan</label>'+chips('plan',PLANES.map(p=>[p[0],p[0]+' · '+(p[1]/4)+'/sem · $'+p[2]]),planAct)+'<label class="mut">Mes</label>'+chips('mes',[[mesAct,'Este mes ('+MESES[+mesAct.slice(5,7)-1]+')'],[mesSig,'Próximo ('+MESES[+mesSig.slice(5,7)-1]+')']],cubreEste?mesSig:mesAct)+'<label class="mut">Pago</label>'+chips('pago',[['Efectivo','Pagado · efectivo'],['Tarjeta TPV','Pagado · tarjeta'],['Pendiente','Pendiente']],'Efectivo')+'<label class="chk"><input type="checkbox" id="accagendar" checked> Agendar sus clases del mes en su horario ('+esc(r.horario&&r.horario.nombre?nombreSinGenero(r.horario.nombre):'sin horario')+')</label><div class="mut" id="accres" style="margin:8px 0"></div><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-refresh" aria-hidden="true"></i> Renovar</button>');
+    const upd=()=>{ const pl=valChip(root,'plan'); root.querySelector('#accres').textContent='Total: $'+(PRECIO_PLAN[pl]||0)+' · '+(PLANES.find(p=>p[0]===pl)||[0,0])[1]+' créditos'; };
+    bindChips(root,'plan',upd); bindChips(root,'mes'); bindChips(root,'pago'); upd();
+    root.querySelector('#accok').onclick=async e=>{ const pl=valChip(root,'plan'), pg=valChip(root,'pago'); const p={alumno_id:FICHA.id,plan:pl,mes:valChip(root,'mes'),agendar:root.querySelector('#accagendar').checked,estado_pago:pg==='Pendiente'?'Pendiente':'Pagado'}; if(pg!=='Pendiente'){p.metodo=pg;p.monto=PRECIO_PLAN[pl];} const res=await enviar(e.currentTarget,()=>call('renovar_mensualidad',p)); if(res)recargarFicha('✓ '+(res.folio||'Renovada')+(p.agendar?' · '+(res.agendadas||0)+' clases agendadas'+(res.sin_cupo?' · '+res.sin_cupo+' sin cupo':''):'')); }; return;
+  }
+  if(acc==='reagendar'){
+    const fut=(r.prox||[]).filter(p=>p.fecha>=(r.hoy||''));
+    if(!fut.length){ panelAccion('Reagendar','<div class="mut">No tiene clases reservadas por delante.</div>'); return; }
+    const root=panelAccion('Reagendar clase','<label class="mut">Clase a mover</label>'+chips('cls',fut.map(p=>[p.id,fmtFecha(p.fecha)]),fut[0].id)+'<label class="mut" for="accfecha">Nueva fecha</label><input class="field" id="accfecha" type="date" min="'+esc(r.hoy||'')+'"><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-calendar-event" aria-hidden="true"></i> Reagendar</button>');
+    bindChips(root,'cls');
+    root.querySelector('#accok').onclick=async e=>{ const f=root.querySelector('#accfecha').value; if(!f){document.getElementById('accerr').textContent='Elige la nueva fecha';return;} const res=await enviar(e.currentTarget,()=>call('reagendar_clase',{asistencia_id:valChip(root,'cls'),nueva_fecha:f})); if(res)recargarFicha('✓ Clase movida a '+fmtFecha(f)); }; return;
+  }
+  if(acc==='reponer'){
+    const root=panelAccion('Reponer clase','<div class="mut" style="margin-bottom:8px">Clase extra sin consumir crédito, en su horario asignado.</div><label class="mut" for="accfecha">Fecha</label><input class="field" id="accfecha" type="date" min="'+esc(r.hoy||'')+'" value="'+esc(r.hoy||'')+'"><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-calendar-plus" aria-hidden="true"></i> Reponer</button>');
+    root.querySelector('#accok').onclick=async e=>{ const f=root.querySelector('#accfecha').value; if(!f){document.getElementById('accerr').textContent='Elige la fecha';return;} const res=await enviar(e.currentTarget,()=>call('reponer_clase',{alumno_id:FICHA.id,fecha:f})); if(res)recargarFicha('✓ Clase de reposición el '+fmtFecha(f)); }; return;
+  }
+  if(acc==='horario'){
+    const root=panelAccion('Cambiar horario o plan','<div class="mut">Cargando horarios…</div>'); const bl=await horariosLista(); if(!vigente())return;
+    const vis=bl.filter(b=>!al.genero||paraGenero(b,al.genero)); const hid=r.horario&&r.horario.id;
+    root.innerHTML=volverFicha()+'<h2>Cambiar horario o plan</h2>'+(al.genero?'':'<div class="mut" style="color:var(--danger);margin-bottom:8px">Sin género capturado: los grupos de niñas o niños se rechazarán hasta verificarlo.</div>')+'<label class="mut">Bloque</label>'+chips('blq',vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),hid)+'<label class="mut">Días</label><div class="chipsel" data-grp="dias">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+((al.dias||[]).indexOf(d)!==-1?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div><label class="mut">Plan (opcional)</label>'+chips('plan',[['','Sin cambio']].concat(PLANES.map(p=>[p[0],p[0]+' · '+(p[1]/4)+'/sem'])),'')+'<button type="button" class="btn pri acbig" id="accok"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar cambios</button><div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
+    root.querySelector('[data-acc="volver"]').onclick=drawFicha; bindChips(root,'blq'); bindChips(root,'dias',null,true); bindChips(root,'plan');
+    root.querySelector('#accok').onclick=async e=>{ const p={alumno_id:FICHA.id}; const b=valChip(root,'blq'); const dias=valsChip(root,'dias'); const pl=valChip(root,'plan'); if(b&&b!==hid){p.horario_id=b; const bb=bl.find(x=>x.id===b); const hr=bb&&horaDeNombre(bb.nombre); if(hr)p.hora=hr;} if(dias.length&&dias.join()!==(al.dias||[]).join())p.dias=dias; if(pl)p.plan=pl; if(Object.keys(p).length===1){document.getElementById('accerr').textContent='No cambiaste nada';return;} const res=await enviar(e.currentTarget,()=>call('cambiar_plan_o_horario',p)); if(res)recargarFicha('✓ Actualizado: '+((res.actualizado||[]).join(', ')||'sin cambios')); }; return;
+  }
+  if(acc==='evento'){
+    const root=panelAccion('Inscribir a evento','<div class="mut">Cargando eventos…</div>'); const ev=await call('eventos_abiertos',{}); if(!vigente())return; const evs=((ev&&ev.data)||[]).filter(x=>x.estatus!=='Lleno');
+    if(!evs.length){ root.innerHTML=volverFicha()+'<h2>Inscribir a evento</h2><div class="mut">No hay eventos abiertos con cupo.</div>'; root.querySelector('[data-acc="volver"]').onclick=drawFicha; return; }
+    root.innerHTML=volverFicha()+'<h2>Inscribir a evento</h2><label class="mut">Evento</label>'+chips('evt',evs.map(x=>[x.id,esc(x.nombre)+' · '+esc(fmtFecha(x.fecha))+' · $'+esc(x.costo)+' · '+esc(x.lugares)+' lugares']),evs[0].id)+'<label class="mut">Cobro</label>'+chips('pm',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['pendiente','Pago pendiente'],['sin','Sin cobro']],'Efectivo')+'<button type="button" class="btn pri acbig" id="accok"><i class="ti ti-confetti" aria-hidden="true"></i> Inscribir</button><div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
+    root.querySelector('[data-acc="volver"]').onclick=drawFicha; bindChips(root,'evt'); bindChips(root,'pm');
+    root.querySelector('#accok').onclick=async e=>{ const pm=valChip(root,'pm'); const p={evento_id:valChip(root,'evt'),alumno_id:FICHA.id}; if(pm==='sin')p.sin_pago=true; else if(pm!=='pendiente')p.metodo=pm; const res=await enviar(e.currentTarget,()=>call('inscribir_a_evento',p)); if(res)recargarFicha('✓ Inscrito'+(res.pago?' · $'+res.pago.monto+' '+res.pago.estado.toLowerCase():'')); }; return;
+  }
+  if(acc==='verificar'){ return formVerificar(vigente); }
+}
+
+/* Verificación en recepción: mismos campos y reglas que el panel clásico. Las fechas AAAA-01-01 son relleno
+   calculado desde la edad y no se prellenan. Género obligatorio salvo FitParents. */
+async function formVerificar(vigente){
+  const r=FICHA.r, al=r.al||{}, tu=r.tutor||{}, mem=r.mem;
+  const root=panelAccion('Verificar datos','<div class="mut">Cargando horarios…</div>'); const bl=await horariosLista(); if(!vigente())return;
+  const fRaw=/^\d{4}-\d{2}-\d{2}/.test(al.fecha_nacimiento||'')?al.fecha_nacimiento.slice(0,10):''; const fAprox=fRaw&&fRaw.slice(5)==='01-01'?fRaw.slice(0,4):'';
+  const maxDias=mem&&mem.creditos?Math.floor(mem.creditos/4):null;
+  const V={genero:al.genero||'',hid:r.horario&&r.horario.id||'',dias:new Set((al.dias||[]).filter(d=>DIAS_CLASE.indexOf(d)!==-1))};
+  const campo=(id,l,v,a)=>'<label class="mut" for="'+id+'">'+l+'</label><input class="field" id="'+id+'" value="'+esc(v||'')+'" '+(a||'')+'>';
+  function draw(){
+    const vis=bl.filter(b=>paraGenero(b,V.genero)); if(V.hid&&!vis.find(b=>b.id===V.hid))V.hid='';
+    let h=volverFicha()+'<h2>Verificar datos</h2><div class="mut" style="margin-bottom:10px">Confirma con el tutor antes de guardar.</div>';
+    h+=campo('vnm','Nombre del alumno',document.getElementById('vnm')?document.getElementById('vnm').value:al.nombre);
+    h+=campo('vfn','Fecha de nacimiento',document.getElementById('vfn')?document.getElementById('vfn').value:(fAprox?'':fRaw),'type="date" max="'+esc(r.hoy||'')+'"');
+    if(fAprox)h+='<div class="mut" style="font-size:12px;margin-top:-6px;margin-bottom:8px">En Notion solo está el año aproximado ('+fAprox+'). Pide la fecha exacta.</div>';
+    const keep=(id,def)=>document.getElementById(id)?document.getElementById(id).value:def;
+    h+=campo('vtn','Nombre del tutor',keep('vtn',tu.nombre)); h+=campo('vtc','Correo del tutor',keep('vtc',tu.email),'type="email" inputmode="email"'); h+=campo('vtw','WhatsApp del tutor (10 dígitos)',keep('vtw',d10(tu.whatsapp)),'type="tel" inputmode="tel"');
+    h+=campo('vpa','Parentesco',keep('vpa',tu.parentesco)); h+=campo('ven','Contacto de emergencia',keep('ven',tu.contacto_emergencia)); h+=campo('vet','Teléfono de emergencia (10 dígitos)',keep('vet',d10(tu.telefono_emergencia)),'type="tel" inputmode="tel"');
+    h+=campo('val','Alergias o condiciones médicas',keep('val',al.alergias),'placeholder="Si no hay, escribe ninguna"');
+    h+='<label class="mut">Género</label>'+chips('gen',[['Niña','Niña'],['Niño','Niño']],V.genero);
+    h+='<label class="mut">Bloque</label>'+(V.genero?'':'<div class="mut" style="font-size:12px;margin-bottom:6px">Elige el género para ver los grupos de niñas o niños. FitParents no lleva género.</div>')+chips('blq',vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),V.hid);
+    h+='<label class="mut">Días '+(maxDias!=null?'(su plan: '+maxDias+' por semana)':'')+'</label><div class="chipsel" data-grp="dias">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+(V.dias.has(d)?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div>';
+    h+='<button type="button" class="btn pri acbig" id="accok"><i class="ti ti-shield-check" aria-hidden="true"></i> Guardar verificación</button><div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
+    const vals={}; ['vnm','vfn','vtn','vtc','vtw','vpa','ven','vet','val'].forEach(id=>{const e=document.getElementById(id); if(e)vals[id]=e.value;});
+    root.innerHTML=h; Object.keys(vals).forEach(id=>{const e=document.getElementById(id); if(e)e.value=vals[id];});
+    root.querySelector('[data-acc="volver"]').onclick=drawFicha;
+    bindChips(root,'gen',v=>{V.genero=v;draw();}); bindChips(root,'blq',v=>{V.hid=v;});
+    root.querySelectorAll('[data-grp="dias"] .chipo').forEach(b=>b.onclick=()=>{ const d=b.dataset.v; if(V.dias.has(d)){V.dias.delete(d);b.classList.remove('on');} else { if(maxDias!=null&&V.dias.size>=maxDias){document.getElementById('accerr').textContent='Su plan permite '+maxDias+' día(s) por semana';return;} V.dias.add(d);b.classList.add('on'); } });
+    root.querySelector('#accok').onclick=guardar;
+  }
+  async function guardar(e){
+    const g=id=>(document.getElementById(id).value||'').trim(); const err=document.getElementById('accerr');
+    const b=bl.find(x=>x.id===V.hid); const prog=b?programaDeNombre(b.nombre):''; const fn=g('vfn'); const edad=edadDe(fn);
+    const faltas=[[!g('vnm'),'el nombre'],[!fn,'la fecha de nacimiento'],[edad!=null&&edad<0,'una fecha válida'],[!g('vtn'),'el nombre del tutor'],[!/^\S+@\S+\.\S+$/.test(g('vtc')),'un correo válido'],[d10(g('vtw')).length!==10,'el WhatsApp a 10 dígitos'],[!g('ven'),'el contacto de emergencia'],[d10(g('vet')).length!==10,'el teléfono de emergencia a 10 dígitos'],[!g('val'),'las alergias (o "ninguna")'],[!V.genero&&prog!=='FitParents','el género'],[!b,'el bloque'],[!V.dias.size,'los días']].filter(x=>x[0]);
+    if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
+    const hora=horaDeNombre(b.nombre);
+    const payload={alumno_id:FICHA.id,nombre:g('vnm'),fecha_nacimiento:fn,programa:prog,genero:V.genero||null,horario_id:b.id,dias:DIAS_CLASE.filter(d=>V.dias.has(d)),alergias:g('val'),
+      tutor:{nombre:g('vtn'),email:g('vtc'),whatsapp:'+52'+d10(g('vtw')),contacto_emergencia:g('ven'),telefono_emergencia:'+52'+d10(g('vet')),parentesco:g('vpa')}};
+    if(hora)payload.hora_clase=hora;
+    const res=await enviar(e.currentTarget,()=>call('verificar_alumno',payload));
+    if(res)recargarFicha('✓ Verificado'+(res.alerta_edad_horario?' · revisa: la edad no coincide con el programa':''));
+  }
+  draw();
 }
 
 function verTutor(id){
