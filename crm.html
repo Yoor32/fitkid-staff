@@ -159,6 +159,7 @@
   .kiorow span{flex:1} .kiorow.hecho{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok);cursor:default} .kiorow.hecho i{font-size:22px}
   @media (max-width:760px){ .kiobody{grid-template-columns:1fr} }
   .kiosel{display:block}
+  .chkresp{margin:8px 0;padding:8px 10px;border-radius:var(--r-sm);background:var(--danger-bg);color:var(--danger);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center} .chkresp .btn{padding:5px 10px;min-height:0}
   .evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:18px}
   button.evcard{display:block;width:100%;text-align:left;font-family:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh-sm);cursor:pointer} button.evcard.on{border-color:var(--brand-600);box-shadow:0 0 0 2px var(--brand-bg)}
   .evtop{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px} .evtop .pill{margin-left:0;white-space:nowrap}
@@ -470,6 +471,7 @@ function paraGenero(b,g){ return !b.genero||b.genero===g; }
 function sugerencias(r){
   const al=r.al||{}, mem=r.mem, prox=r.prox||[], hoy=r.hoy||new Date().toLocaleDateString('en-CA');
   const s=[]; const claseHoy=prox.find(p=>p.fecha===hoy); const fut=prox.filter(p=>p.fecha>hoy);
+  if(al.responsiva===false) s.push({id:'responsiva',ic:'ti-file-alert',t:'Responsiva firmada',d:'Falta · obligatoria para entrar a clase',tono:'dng'});
   if(al.estatus==='Suspendido') s.push({id:'reactivar',ic:'ti-player-play',t:'Reactivar',d:'El alumno está suspendido',tono:'warn'});
   if(claseHoy){ s.push({id:'asistio',ic:'ti-check',t:'Asistió hoy',d:'Tiene clase hoy sin marcar',tono:'ok',asis:claseHoy.id}); s.push({id:'falta',ic:'ti-x',t:'Faltó hoy',d:'Consume crédito',tono:'dng',asis:claseHoy.id}); }
   if(!al.verificado) s.push({id:'verificar',ic:'ti-shield-check',t:'Verificar datos',d:'Falta la verificación en recepción',tono:'warn'});
@@ -512,7 +514,7 @@ function drawFicha(){
   const sug=sugerencias(r); const ya={}; sug.forEach(a=>ya[a.id]=1); const mas=masAcciones(r,ya);
   let h='<h2>Ficha</h2>';
   h+='<div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(al.nombre)+(al.genero?chipGenero(al.genero==='Niña'?'Niñas':'Niños'):'')+'</div><div class="mut">'+esc(al.cod||'')+(r.horario&&r.horario.nombre?' · '+esc(nombreSinGenero(r.horario.nombre)):'')+'</div>';
-  h+='<div style="margin-top:8px;font-size:12.5px" class="mut">Estatus: '+esc(al.estatus||'—')+' · Edad: '+esc(al.edad!=null&&al.edad!==''?al.edad:'—')+' · '+(al.verificado?'Verificado':'Sin verificar')+'</div>';
+  h+='<div style="margin-top:8px;font-size:12.5px" class="mut">Estatus: '+esc(al.estatus||'—')+' · Edad: '+esc(al.edad!=null&&al.edad!==''?al.edad:'—')+' · '+(al.verificado?'Verificado':'Sin verificar')+' · '+(al.responsiva===false?'<b style="color:var(--danger)">Sin responsiva</b>':'Responsiva firmada')+'</div>';
   if(al.alergias&&!/^ningun/i.test(al.alergias))h+='<div style="margin-top:6px;font-size:12.5px;color:var(--danger)">Alergias: '+esc(al.alergias)+'</div>';
   h+='</div>';
   if(sug.length){ h+='<h2>Acciones sugeridas</h2><div class="acts">'+sug.map(a=>btnAccion(a,true)).join('')+'</div>'; }
@@ -593,6 +595,10 @@ async function ejecutarAccion(acc,asis){
     root.querySelector('[data-acc="volver"]').onclick=drawFicha; bindChips(root,'evt'); bindChips(root,'pm');
     root.querySelector('#accok').onclick=async e=>{ const pm=valChip(root,'pm'); const p={evento_id:valChip(root,'evt'),alumno_id:FICHA.id}; if(pm==='sin')p.sin_pago=true; else if(pm!=='pendiente')p.metodo=pm; const res=await enviar(e.currentTarget,()=>call('inscribir_a_evento',p)); if(res)recargarFicha('✓ Inscrito'+(res.pago?' · $'+res.pago.monto+' '+res.pago.estado.toLowerCase():'')); }; return;
   }
+  if(acc==='responsiva'){
+    const root=panelAccion('Responsiva firmada','<div class="mut" style="margin-bottom:10px">La responsiva es obligatoria para entrar a clase. Márcala solo cuando el tutor la haya firmado.</div><label class="chk"><input type="checkbox" id="accresp"> El tutor firmó la responsiva de '+esc(al.nombre||'')+'</label><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-file-check" aria-hidden="true"></i> Marcar como firmada</button>');
+    root.querySelector('#accok').onclick=async e=>{ if(!root.querySelector('#accresp').checked){document.getElementById('accerr').textContent='Confirma que el tutor la firmó';return;} const res=await enviar(e.currentTarget,()=>call('marcar_responsiva',{alumno_id:FICHA.id,firmada:true})); if(res)recargarFicha('✓ Responsiva firmada'); }; return;
+  }
   if(acc==='verificar'){ return formVerificar(vigente); }
   if(acc==='tarjeta'){ return tarjetaQR(false); }
 }
@@ -616,6 +622,7 @@ async function formVerificar(vigente){
     h+=campo('vtn','Nombre del tutor',keep('vtn',tu.nombre)); h+=campo('vtc','Correo del tutor',keep('vtc',tu.email),'type="email" inputmode="email"'); h+=campo('vtw','WhatsApp del tutor (10 dígitos)',keep('vtw',d10(tu.whatsapp)),'type="tel" inputmode="tel"');
     h+=campo('vpa','Parentesco',keep('vpa',tu.parentesco)); h+=campo('ven','Contacto de emergencia',keep('ven',tu.contacto_emergencia)); h+=campo('vet','Teléfono de emergencia (10 dígitos)',keep('vet',d10(tu.telefono_emergencia)),'type="tel" inputmode="tel"');
     h+=campo('val','Alergias o condiciones médicas',keep('val',al.alergias),'placeholder="Si no hay, escribe ninguna"');
+    const rv=document.getElementById('vresp'); h+='<label class="chk"><input type="checkbox" id="vresp"'+((rv?rv.checked:al.responsiva)?' checked':'')+'> Responsiva firmada por el tutor (obligatoria para entrar a clase)</label>';
     h+='<label class="mut">Género</label>'+chips('gen',[['Niña','Niña'],['Niño','Niño']],V.genero);
     h+='<label class="mut">Bloque</label>'+(V.genero?'':'<div class="mut" style="font-size:12px;margin-bottom:6px">Elige el género para ver los grupos de niñas o niños. FitParents no lleva género.</div>')+chips('blq',vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),V.hid);
     h+='<label class="mut">Días '+(maxDias!=null?'(su plan: '+maxDias+' por semana)':'')+'</label><div class="chipsel" data-grp="dias">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+(V.dias.has(d)?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div>';
@@ -633,7 +640,7 @@ async function formVerificar(vigente){
     const faltas=[[!g('vnm'),'el nombre'],[!fn,'la fecha de nacimiento'],[edad!=null&&edad<0,'una fecha válida'],[!g('vtn'),'el nombre del tutor'],[!/^\S+@\S+\.\S+$/.test(g('vtc')),'un correo válido'],[d10(g('vtw')).length!==10,'el WhatsApp a 10 dígitos'],[!g('ven'),'el contacto de emergencia'],[d10(g('vet')).length!==10,'el teléfono de emergencia a 10 dígitos'],[!g('val'),'las alergias (o "ninguna")'],[!V.genero&&prog!=='FitParents','el género'],[!b,'el bloque'],[!V.dias.size,'los días']].filter(x=>x[0]);
     if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
     const hora=horaDeNombre(b.nombre);
-    const payload={alumno_id:FICHA.id,nombre:g('vnm'),fecha_nacimiento:fn,programa:prog,genero:V.genero||null,horario_id:b.id,dias:DIAS_CLASE.filter(d=>V.dias.has(d)),alergias:g('val'),
+    const payload={alumno_id:FICHA.id,responsiva:document.getElementById('vresp').checked,nombre:g('vnm'),fecha_nacimiento:fn,programa:prog,genero:V.genero||null,horario_id:b.id,dias:DIAS_CLASE.filter(d=>V.dias.has(d)),alergias:g('val'),
       tutor:{nombre:g('vtn'),email:g('vtc'),whatsapp:'+52'+d10(g('vtw')),contacto_emergencia:g('ven'),telefono_emergencia:'+52'+d10(g('vet')),parentesco:g('vpa')}};
     if(hora)payload.hora_clase=hora;
     const res=await enviar(e.currentTarget,()=>call('verificar_alumno',payload));
@@ -677,14 +684,18 @@ function tarjetaResultado(r){
   /* En kiosco no se ofrece abrir la ficha ni crear clases: la tablet la usan alumnos y tutores. */
   const enKiosco=!!KIOSCO;
   const ficha=(al.id&&!enKiosco)?'<button type="button" class="btn" data-verficha="'+esc(al.id)+'" style="margin-top:8px">Abrir ficha</button>':'';
-  if(r.resultado==='registrado')return '<div class="chkres ok"><i class="ti ti-circle-check" aria-hidden="true"></i><div><b>'+nom+'</b><div>'+(r.era_falta?'Llegó tarde · ':'')+'Asistencia registrada'+(cls?' · '+cls:'')+'</div>'+(enKiosco?'':alertas)+ficha+'</div></div>';
-  if(r.resultado==='ya_registrado')return '<div class="chkres info"><i class="ti ti-info-circle" aria-hidden="true"></i><div><b>'+nom+'</b><div>Ya estaba registrado hoy'+(cls?' · '+cls:'')+'</div>'+alertas+ficha+'</div></div>';
-  if(r.resultado==='sin_clase')return '<div class="chkres warn"><i class="ti ti-calendar-off" aria-hidden="true"></i><div><b>'+nom+'</b><div>No tiene clase reservada hoy</div>'+alertas+(enKiosco?'<div style="margin-top:6px">Pasa con el staff de recepción.</div>':'<button type="button" class="btn pri" data-reponer="'+esc(al.id)+'" style="margin-top:8px">Registrar clase de reposición hoy</button> ')+ficha+'</div></div>';
+  /* Responsiva: obligatoria para entrar a clase. Recepción puede marcarla aquí mismo. */
+  const faltaResp=al.responsiva===false; const btnResp=(faltaResp&&!enKiosco&&al.id)?'<div class="chkresp"><b>Falta la responsiva firmada.</b> Es obligatoria para entrar a clase.<button type="button" class="btn" data-resp="'+esc(al.id)+'">Ya la firmó: marcar</button></div>':'';
+  if(r.resultado==='sin_responsiva')return '<div class="chkres dng"><i class="ti ti-file-alert" aria-hidden="true"></i><div><b>'+nom+'</b><div>Falta la responsiva firmada. Pasa con el staff de recepción antes de entrar a clase.</div></div></div>';
+  if(r.resultado==='registrado')return '<div class="chkres ok"><i class="ti ti-circle-check" aria-hidden="true"></i><div><b>'+nom+'</b><div>'+(r.era_falta?'Llegó tarde · ':'')+'Asistencia registrada'+(cls?' · '+cls:'')+'</div>'+btnResp+(enKiosco?'':alertas)+ficha+'</div></div>';
+  if(r.resultado==='ya_registrado')return '<div class="chkres info"><i class="ti ti-info-circle" aria-hidden="true"></i><div><b>'+nom+'</b><div>Ya estaba registrado hoy'+(cls?' · '+cls:'')+'</div>'+btnResp+alertas+ficha+'</div></div>';
+  if(r.resultado==='sin_clase')return '<div class="chkres warn"><i class="ti ti-calendar-off" aria-hidden="true"></i><div><b>'+nom+'</b><div>No tiene clase reservada hoy</div>'+btnResp+alertas+(enKiosco?'<div style="margin-top:6px">Pasa con el staff de recepción.</div>':'<button type="button" class="btn pri" data-reponer="'+esc(al.id)+'" style="margin-top:8px">Registrar clase de reposición hoy</button> ')+ficha+'</div></div>';
   if(r.resultado==='suspendido')return '<div class="chkres dng"><i class="ti ti-ban" aria-hidden="true"></i><div><b>'+nom+'</b><div>Alumno suspendido: no se registró la asistencia</div>'+alertas+ficha+'</div></div>';
   return '<div class="chkres dng"><i class="ti ti-help-circle" aria-hidden="true"></i><div><b>Código no reconocido</b><div>Revisa la tarjeta o busca al alumno por nombre.</div></div></div>';
 }
 function bindResultado(box,alRegistrar){
   box.querySelectorAll('[data-verficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.verficha));
+  box.querySelectorAll('[data-resp]').forEach(b=>b.onclick=async()=>{ if(!confirm('¿El tutor ya firmó la responsiva en papel?'))return; b.disabled=true; b.textContent='Guardando…'; const r=await call('marcar_responsiva',{alumno_id:b.dataset.resp}); if(!r||r.ok===false){ b.disabled=false; b.textContent='No se pudo: '+((r&&r.error)||'error'); return; } const c=b.closest('.chkresp'); if(c)c.innerHTML='<b>✓ Responsiva marcada como firmada.</b>'; });
   box.querySelectorAll('[data-reponer]').forEach(b=>b.onclick=async()=>{ b.disabled=true; b.textContent='Registrando…'; const rp=await call('reponer_clase',{alumno_id:b.dataset.reponer,fecha:new Date().toLocaleDateString('en-CA')}); if(!rp||rp.ok===false){b.textContent='No se pudo: '+((rp&&rp.error)||'error');return;} const r=await call('checkin_qr',{alumno_id:b.dataset.reponer}); alRegistrar(r); });
 }
 async function registrarCheckin(payload,box,extra){
@@ -890,7 +901,7 @@ async function altaAlumno(pre){
   const [bl]=await Promise.all([horariosLista(), DIRECTORIO?null:call('directorio',{}).then(r=>{ if(r&&r.ok!==false)DIRECTORIO=r; })]);
   if(SECCION!=='estudiantes'||!document.getElementById('centercol'))return;
   const hoy=new Date().toLocaleDateString('en-CA'); const mesAct=hoy.slice(0,7)+'-01'; const dn=new Date(mesAct+'T12:00:00'); dn.setMonth(dn.getMonth()+1); const mesSig=dn.toLocaleDateString('en-CA').slice(0,7)+'-01';
-  ALTA={bl:bl,hoy:hoy,mesAct:mesAct,mesSig:mesSig,tutorSel:(pre&&pre.tutor)||null,t:{},a:{},gen:'',prog:'',progManual:false,hid:'',dias:new Set(),plan:'M2',mes:mesAct,pago:'Efectivo',montoM:'',insc:true,montoI:'500',agendar:true,forzar:false};
+  ALTA={bl:bl,hoy:hoy,mesAct:mesAct,mesSig:mesSig,tutorSel:(pre&&pre.tutor)||null,responsiva:false,t:{},a:{},gen:'',prog:'',progManual:false,hid:'',dias:new Set(),plan:'M2',mes:mesAct,pago:'Efectivo',montoM:'',insc:true,montoI:'500',agendar:true,forzar:false};
   drawAlta();
 }
 function altaCampo(k,l,extra){ const [g,c]=k.split('.'); const v=(ALTA[g]||{})[c]||''; return '<div><label class="mut" for="al_'+g+'_'+c+'">'+l+'</label><input class="field" id="al_'+g+'_'+c+'" data-ak="'+k+'" value="'+esc(v)+'" '+(extra||'')+'></div>'; }
@@ -917,7 +928,8 @@ function drawAlta(){
   h+='<section class="card altasec"><h2>2 · Alumno</h2><div class="altagrid">'+altaCampo('a.nombre','Nombre completo','autocomplete="off"')+altaCampo('a.fecha_nacimiento','Fecha de nacimiento','type="date" max="'+esc(A.hoy)+'"')+'</div>';
   h+='<div class="mut" id="altaedad" style="margin:-4px 0 8px">'+(edad!=null?(edad+' años · '+(A.prog||'')):'')+'</div>';
   if(!esAdulto)h+='<label class="mut">Género</label>'+chips('agen',[['Niña','Niña'],['Niño','Niño']],A.gen);
-  h+=altaCampo('a.alergias','Alergias o condiciones médicas','placeholder="Si no hay, escribe ninguna"')+'</section>';
+  h+=altaCampo('a.alergias','Alergias o condiciones médicas','placeholder="Si no hay, escribe ninguna"');
+  h+='<label class="chk"><input type="checkbox" id="altaresp"'+(A.responsiva?' checked':'')+'> El tutor firmó la responsiva</label>'+(A.responsiva?'':'<div class="mut" style="font-size:12px;color:var(--danger);margin-top:-4px">Sin responsiva no puede entrar a clase: el kiosco lo mandará a recepción. Puedes darlo de alta y marcarla después en la ficha.</div>')+'</section>';
   // Clase y plan
   h+='<section class="card altasec"><h2>3 · Clase y plan</h2><label class="mut">Programa'+(A.progManual?'':' (según la edad)')+'</label>'+chips('aprog',[['Iniciación Deportiva (3-6)','Iniciación (3-6)'],['Gimnasia Olímpica (7-14)','Olímpica (7-14)'],['FitParents','FitParents']],A.prog);
   if(A.prog==='Requiere revisión')h+='<div class="mut" style="color:var(--amber);font-size:12px;margin-bottom:6px">La edad no cae en ningún programa: elige uno a mano.</div>';
@@ -948,6 +960,7 @@ function drawAlta(){
   bindChips(center,'aplan',v=>{A.plan=v;A.montoM='';drawAlta();}); bindChips(center,'ames',v=>{A.mes=v;drawAlta();}); bindChips(center,'apago',v=>{A.pago=v;drawAlta();});
   center.querySelectorAll('[data-grp="adias"] .chipo').forEach(b=>b.onclick=()=>{ const d=b.dataset.v; if(A.dias.has(d))A.dias.delete(d); else { if(A.dias.size>=maxDias){ document.getElementById('altaerr').textContent='El plan permite '+maxDias+' día(s) por semana; cambia el plan para agregar más.'; return; } A.dias.add(d); } drawAlta(); });
   document.getElementById('altaagendar').onchange=e=>{A.agendar=e.target.checked;};
+  document.getElementById('altaresp').onchange=e=>{A.responsiva=e.target.checked;drawAlta();};
   document.getElementById('altainsc').onchange=e=>{A.insc=e.target.checked;drawAlta();};
   const mm2=document.getElementById('altamontom'); mm2.oninput=()=>{A.montoM=mm2.value;resumenAlta();}; const mi2=document.getElementById('altamontoi'); mi2.oninput=()=>{A.montoI=mi2.value;resumenAlta();};
   document.getElementById('altaok').onclick=e=>enviarAlta(e.currentTarget);
@@ -965,7 +978,7 @@ async function enviarAlta(btn){
     [!g('a.nombre'),'el nombre del alumno'],[!g('a.fecha_nacimiento'),'la fecha de nacimiento'],[edad!=null&&edad<0,'una fecha válida'],[!esAdulto&&!A.gen,'el género'],[!g('a.alergias'),'las alergias (o "ninguna")'],[!b,'el bloque'],[!A.dias.size,'los días'],[A.pago!=='Pendiente'&&!(Number(A.montoM!==''?A.montoM:plan[2])>0),'el monto de la mensualidad'],[A.insc&&A.pago!=='Pendiente'&&!(Number(A.montoI)>0),'el monto de la inscripción']].filter(x=>x[0]);
   if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
   const pagado=A.pago!=='Pendiente';
-  const p={alumno:{nombre:g('a.nombre'),fecha_nacimiento:g('a.fecha_nacimiento'),genero:esAdulto?null:A.gen,alergias:g('a.alergias'),programa:A.prog,horario_id:b.id,hora:horaDeNombre(b.nombre)||undefined,dias:DIAS_CLASE.filter(d=>A.dias.has(d))},
+  const p={alumno:{responsiva:A.responsiva,nombre:g('a.nombre'),fecha_nacimiento:g('a.fecha_nacimiento'),genero:esAdulto?null:A.gen,alergias:g('a.alergias'),programa:A.prog,horario_id:b.id,hora:horaDeNombre(b.nombre)||undefined,dias:DIAS_CLASE.filter(d=>A.dias.has(d))},
     membresia:{plan:A.plan,mes:A.mes,estado_pago:pagado?'Pagado':'Pendiente',metodo:pagado?A.pago:undefined,monto:Number(A.montoM!==''?A.montoM:plan[2]),agendar:A.agendar},
     inscripcion:{cobrar:pagado&&A.insc,monto:Number(A.montoI)||0,metodo:pagado?A.pago:undefined}};
   if(A.tutorSel)p.tutor_id=A.tutorSel.id; else p.tutor={nombre:g('t.nombre'),email:g('t.email').toLowerCase(),whatsapp:'+52'+d10(g('t.whatsapp')),parentesco:g('t.parentesco'),contacto_emergencia:g('t.contacto_emergencia'),telefono_emergencia:'+52'+d10(g('t.telefono_emergencia'))};
@@ -981,7 +994,7 @@ function resultadoAlta(r){
   const A=ALTA; const center=document.getElementById('centercol'); const ok=r.ok!==false;
   const it=(b,t)=>'<li class="'+(b?'ok':'dng')+'"><i class="ti '+(b?'ti-circle-check':'ti-alert-triangle')+'" aria-hidden="true"></i> '+t+'</li>';
   let h='<div class="pagehead"><h1>'+(ok?'Alumno dado de alta':'Alta incompleta')+'</h1></div><div class="card altasec"><div class="nm" style="font-size:17px">'+esc(r.nombre||'')+'</div><div class="mut">Código '+esc(r.codigo||'')+'</div><ul class="altares">';
-  h+=it(!!r.id,'Alumno creado'); if(r.verificado)h+=it(true,'Verificado en recepción'); if(r.tutor_id)h+=it(true,r.tutor_creado?'Tutor nuevo creado':'Vinculado a su tutor');
+  h+=it(!!r.id,'Alumno creado'); if(r.verificado)h+=it(true,'Verificado en recepción'); if(r.id)h+=it(!!r.responsiva,r.responsiva?'Responsiva firmada':'Falta la responsiva: márcala en la ficha cuando la firme'); if(r.tutor_id)h+=it(true,r.tutor_creado?'Tutor nuevo creado':'Vinculado a su tutor');
   if(r.membresia)h+=it(true,'Membresía '+esc(r.membresia)+(r.membresia_pagada?' · pagada':' · pendiente de pago'));
   if(r.membresia&&A&&A.agendar)h+=it(!r.sin_cupo,(r.agendadas||0)+' clases reservadas'+(r.sin_cupo?' · '+r.sin_cupo+' sin cupo (grupo lleno)':''));
   if(r.pago_inscripcion)h+=it(true,'Inscripción cobrada ('+esc(r.pago_inscripcion)+')');
