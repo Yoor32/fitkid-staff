@@ -96,6 +96,7 @@
   .calc:hover{border-color:var(--brand-500)}
   .calc.full{background:var(--danger-bg);color:var(--danger)}
   .calc .ok2{display:block;font-size:10px;font-weight:500;color:var(--ok)}
+  .rosterfoot{position:sticky;bottom:0;background:var(--surface);padding:12px 0 4px;margin-top:10px;border-top:1px solid var(--line)}
   .rosterrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}
   .rosterrow:last-child{border-bottom:none}
   .rosterrow .nm{font-size:13px}
@@ -111,12 +112,42 @@
   .venc .nm{font-size:13px;font-weight:600}
   .venc .mut{font-size:11.5px}
 
-  /* ---- responsivo: tablet/celular en la recepción ---- */
+  .sheetbar,.sheetback,.tabbar,.solo-movil{display:none}
+  .caldias{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+  .caldia{flex:1 0 auto;min-width:48px;padding:8px 6px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font-size:12px;color:var(--muted);cursor:pointer;text-align:center;font-family:inherit}
+  .caldia b{display:block;font-size:15px;color:var(--text)}
+  .caldia.on{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+  .caldia.on b{color:#fff}
+  .dayrow{display:flex;align-items:center;gap:10px;width:100%;padding:12px 13px;margin-bottom:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer;font-family:inherit;text-align:left}
+  .dayrow .nm{flex:1;font-size:13.5px}
+  .dayrow .cnt{font-weight:700;color:var(--brand-600);font-size:15px}
+  .dayrow.full .cnt{color:var(--danger)}
+
+  /* ---- responsivo: tablet/celular en la recepción ----
+     El panel derecho (ficha, roster, vencimientos) no se oculta: se vuelve una hoja que se desliza
+     desde la derecha al tocar un alumno o una clase. La navegación pasa a una barra inferior. */
   @media (max-width:980px){
     .shell{grid-template-columns:1fr}
     .navcol{display:none}
-    .rightcol{display:none}
-    .centercol{padding:16px}
+    .centercol{padding:16px 16px calc(84px + env(safe-area-inset-bottom))}
+    .rightcol{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);z-index:30;transform:translateX(105%);transition:transform .22s ease;box-shadow:var(--sh-lg);border-left:none;padding:0 16px calc(24px + env(safe-area-inset-bottom));visibility:hidden}
+    .rightcol.open{transform:none;visibility:visible}
+    .sheetbar{display:flex;align-items:center;justify-content:flex-end;position:sticky;top:0;background:var(--surface);padding:12px 0 8px;z-index:1}
+    .sheetbar button{display:flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r-pill);font-size:13px;cursor:pointer;font-family:inherit}
+    .sheetback{position:fixed;inset:0;background:rgba(16,24,40,.38);z-index:29}
+    .sheetback.open{display:block}
+    .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(16,30,54,.06)}
+    .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:52px;padding:6px 4px;border:none;background:transparent;color:var(--muted);font-size:11px;border-radius:var(--r-sm);cursor:pointer;font-family:inherit}
+    .tabbar button i{font-size:21px}
+    .tabbar button.on{color:var(--brand-600);font-weight:600;background:var(--brand-bg)}
+    .solo-movil{display:block}
+  }
+  /* En pantallas táctiles los botones chicos se agrandan (mínimo ~40px de alto). */
+  @media (pointer:coarse){
+    .dirtab{padding:10px 15px;font-size:13px}
+    .mkbtn{padding:10px 14px;font-size:13px;min-height:44px}
+    .weeknav .btn{min-width:44px;min-height:44px;justify-content:center}
+    .dirrow{padding:13px 14px}
   }
   .mobilebar{display:none}
   @media (max-width:980px){
@@ -206,14 +237,24 @@ function shell(){
   h+='<div class="navfoot"><a href="index.html"><i class="ti ti-qrcode" aria-hidden="true"></i> Panel clásico (check-in)</a><button data-act="logout"><i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión ('+esc(AUTH.nombre||'')+')</button></div>';
   h+='</nav>';
   h+='<main class="centercol" id="centercol"></main>';
-  h+='<aside class="rightcol" id="rightcol"></aside>';
+  h+='<aside class="rightcol" id="rightpane" aria-label="Detalle"><div class="sheetbar"><button type="button" data-act="cerrar-panel"><i class="ti ti-x" aria-hidden="true"></i> Cerrar</button></div><div id="rightcol"></div></aside>';
   h+='</div>';
+  h+='<div class="sheetback" data-act="cerrar-panel"></div>';
+  h+='<nav class="tabbar" aria-label="Secciones">'+NAV.filter(n=>n.ready).map(n=>'<button data-nav="'+n.id+'" class="'+(SECCION===n.id?'on':'')+'"><i class="ti '+n.icon+'" aria-hidden="true"></i>'+n.label+'</button>').join('')+'</nav>';
   fk.innerHTML=h;
+  fk.querySelectorAll('[data-act="cerrar-panel"]').forEach(b=>b.onclick=cerrarPanel);
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
   if(SECCION==='home')home(); else if(SECCION==='estudiantes')estudiantes(); else if(SECCION==='calendario')calendario(); else placeholder();
 }
+
+/* En tablet/celular el panel derecho es una hoja: se abre solo por una acción del usuario
+   (tocar un alumno, un tutor o una clase). En escritorio siempre está visible y esto no hace nada. */
+function esMovil(){ return window.matchMedia('(max-width:980px)').matches; }
+function abrirPanel(){ const p=document.getElementById('rightpane'),b=document.querySelector('.sheetback'); if(!p||!esMovil())return; p.classList.add('open'); if(b)b.classList.add('open'); p.scrollTop=0; }
+function cerrarPanel(){ const p=document.getElementById('rightpane'),b=document.querySelector('.sheetback'); if(p)p.classList.remove('open'); if(b)b.classList.remove('open'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')cerrarPanel(); });
 
 function placeholder(){
   const n=NAV.find(x=>x.id===SECCION);
@@ -224,11 +265,13 @@ function placeholder(){
 /* ---------- Panel de control (Home) ---------- */
 async function home(){
   const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
-  center.innerHTML='<div class="pagehead"><h1>Panel de control</h1><span class="mut" id="hoy"></span></div><div class="statgrid" id="stats"><div class="mut">Cargando…</div></div>';
+  center.innerHTML='<div class="pagehead"><h1>Panel de control</h1><span class="mut" id="hoy"></span></div><div class="statgrid" id="stats"><div class="mut">Cargando…</div></div><button type="button" class="dayrow solo-movil" id="vermovvenc"><i class="ti ti-calendar-due" aria-hidden="true"></i><span class="nm">Vencimientos próximos</span><i class="ti ti-chevron-right" aria-hidden="true"></i></button>';
+  document.getElementById('vermovvenc').onclick=abrirPanel;
   right.innerHTML='<h2>Vencimientos próximos</h2><div class="mut" id="vencbox">Cargando…</div>';
   document.getElementById('hoy').textContent=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
 
   const r=await call('resumen_del_dia',{});
+  if(SECCION!=='home')return;
   const stats=document.getElementById('stats');
   if(!r||r.ok===false){ stats.innerHTML='<div class="mut">No se pudo cargar el resumen.</div>'; }
   else{
@@ -237,6 +280,7 @@ async function home(){
   }
 
   const v=await call('vencimientos',{});
+  if(SECCION!=='home')return;
   const vb=document.getElementById('vencbox');
   if(!v||v.ok===false){ vb.innerHTML='<div class="mut">No se pudo cargar.</div>'; }
   else{
@@ -255,6 +299,7 @@ async function estudiantes(){
   center.innerHTML='<div class="pagehead"><h1>Estudiantes</h1></div><div class="mut">Cargando directorio…</div>';
   if(!DIRECTORIO){
     const r=await call('directorio',{});
+    if(SECCION!=='estudiantes')return;
     if(!r||r.ok===false){ center.innerHTML='<div class="pagehead"><h1>Estudiantes</h1></div><div class="placeholder">No se pudo cargar el directorio.'+(r&&r.error?' ('+esc(r.error)+')':'')+'</div>'; return; }
     DIRECTORIO=r;
   }
@@ -293,7 +338,7 @@ function renderDirList(){
 }
 
 async function verFichaAlumno(id){
-  const right=document.getElementById('rightcol');
+  const right=document.getElementById('rightcol'); abrirPanel();
   right.innerHTML='<h2>Ficha</h2><div class="mut">Cargando…</div>';
   const r=await call('ficha_alumno',{alumno_id:id});
   if(!r||r.ok===false){ right.innerHTML='<h2>Ficha</h2><div class="mut">No se pudo cargar.</div>'; return; }
@@ -312,7 +357,7 @@ async function verFichaAlumno(id){
 }
 
 function verTutor(id){
-  const right=document.getElementById('rightcol');
+  const right=document.getElementById('rightcol'); abrirPanel();
   const t=DIRECTORIO.tutores.find(x=>x.id===id);
   if(!t){ right.innerHTML='<h2>Tutor</h2><div class="mut">No encontrado.</div>'; return; }
   const hijos=DIRECTORIO.alumnos.filter(a=>a.tutor_id===id);
@@ -325,7 +370,7 @@ function verTutor(id){
 
 /* ---------- Calendario (agenda semanal + pasar lista) ---------- */
 const DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
-let CAL_DESDE=null;
+let CAL_DESDE=null; let CAL_DIA=null;
 function lunesDeHoy(){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return d.toISOString().slice(0,10);}
 /* Los grupos de niños van separados por género: el nombre del horario termina en "· Niñas" / "· Niños".
    FitParents no lleva género. */
@@ -345,10 +390,23 @@ async function calendario(){
   document.getElementById('calhoy').onclick=()=>{CAL_DESDE=lunesDeHoy();calendario();};
 
   const r=await call('agenda_semana',{desde:CAL_DESDE});
+  if(SECCION!=='calendario')return;
   const body=document.getElementById('calbody');
   if(!r||r.ok===false){ body.innerHTML='<div class="placeholder">No se pudo cargar la agenda.</div>'; return; }
   const dias=r.dias||[], bloques=(r.bloques||[]).slice().sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre))), cel=r.celdas||{};
   document.getElementById('calrango').textContent='Semana del '+CAL_DESDE;
+  /* Teléfono: la tabla semanal no cabe; se muestra un día a la vez con selector de días. */
+  if(window.matchMedia('(max-width:640px)').matches){
+    const hoyISO=new Date().toLocaleDateString('en-CA');
+    if(!CAL_DIA||dias.indexOf(CAL_DIA)===-1)CAL_DIA=dias.indexOf(hoyISO)!==-1?hoyISO:dias[0];
+    let hd='<div class="caldias" role="tablist">'+dias.map((f,i)=>'<button type="button" role="tab" class="caldia'+(f===CAL_DIA?' on':'')+'" aria-selected="'+(f===CAL_DIA)+'" data-dia="'+f+'">'+DN[i]+'<b>'+f.slice(8)+'</b></button>').join('')+'</div>';
+    const del=bloques.map(b=>({b:b,c:cel[CAL_DIA+'|'+b.id]})).filter(x=>x.c);
+    hd+=del.length?del.map(x=>'<button type="button" class="dayrow'+(x.c.total>=x.b.cupo?' full':'')+'" data-cell="'+CAL_DIA+'|'+x.b.id+'"><span class="nm">'+esc(nombreSinGenero(x.b.nombre))+chipGenero(generoDeHorario(x.b.nombre))+'</span>'+(x.c.asistio?'<span class="mut">✓'+x.c.asistio+'</span>':'')+'<span class="cnt">'+x.c.total+'<span class="mut" style="font-weight:400">/'+x.b.cupo+'</span></span></button>').join(''):'<div class="placeholder">No hay clases este día.</div>';
+    body.innerHTML=hd;
+    body.querySelectorAll('[data-dia]').forEach(b=>b.onclick=()=>{CAL_DIA=b.dataset.dia;calendario();});
+    body.querySelectorAll('[data-cell]').forEach(btn=>btn.onclick=()=>{ const p=btn.dataset.cell.split('|'); const b=bloques.find(x=>x.id===p[1]); verRoster(p[0],p[1],b?b.nombre:'Clase'); });
+    return;
+  }
   let h='<div style="overflow:auto"><table class="cal"><thead><tr><th></th>'+dias.map((f,i)=>'<th>'+DN[i]+'<div class="mut" style="font-weight:400">'+f.slice(8)+'</div></th>').join('')+'</tr></thead><tbody>';
   let alguno=false;
   bloques.forEach(b=>{
@@ -372,7 +430,7 @@ async function calendario(){
 }
 
 async function verRoster(fecha,hid,label){
-  const right=document.getElementById('rightcol');
+  const right=document.getElementById('rightcol'); abrirPanel();
   right.innerHTML='<h2>Pasar lista</h2><div class="mut">Cargando '+esc(label)+'…</div>';
   const r=await call('clases_hoy',{fecha:fecha,horario_id:hid});
   const rows=(r&&r.data||[]).map(x=>({id:x.id,n:x.n,cod:x.cod,e:x.e||null}));
@@ -385,8 +443,10 @@ function drawRoster(fecha,label,rows){
   let h='<h2>Pasar lista</h2><div class="mut" style="margin-bottom:10px">'+esc(label)+' · '+esc(fecha)+' · '+done+'/'+rows.length+'</div>';
   h+=rows.length? rows.map((c,idx)=>'<div class="rosterrow"><div class="miniavatar">'+esc(ini(c.n))+'</div><div style="flex:1;min-width:0"><div class="nm">'+esc(c.n)+'</div><div class="mut">'+esc(c.cod||'')+'</div></div><button class="mkbtn'+(c.e==='Asistió'?' on-ok':'')+'" data-mk="'+idx+'|Asistió"><i class="ti ti-check" aria-hidden="true"></i></button><button class="mkbtn'+(c.e==='Falta'?' on-dng':'')+'" data-mk="'+idx+'|Falta"><i class="ti ti-x" aria-hidden="true"></i></button></div>').join('')
     : '<div class="mut">Sin alumnos en esta clase.</div>';
-  if(rows.length)h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:14px" id="guardarlista"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar asistencia ('+done+')</button>';
-  h+='<div id="rostermsg" class="mut" style="margin-top:10px"></div>';
+  /* El botón queda fijo al pie del panel: en rosters largos no hay que bajar hasta el final para guardar. */
+  h+='<div class="rosterfoot">';
+  if(rows.length)h+='<button class="btn pri" style="width:100%;justify-content:center;min-height:44px" id="guardarlista"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar asistencia ('+done+')</button>';
+  h+='<div id="rostermsg" class="mut" style="margin-top:8px"></div></div>';
   right.innerHTML=h;
   right.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{
     const p=b.dataset.mk.split('|'); const idx=+p[0];
