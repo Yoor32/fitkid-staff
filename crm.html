@@ -182,6 +182,18 @@
   .loterow input{width:20px;height:20px;flex:none} .loterow .nm{flex:1;min-width:160px}
   .lotetag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--warn-bg,#fff4e5);color:var(--warn,#9a5b00)} .lotetag.dng{background:var(--danger-bg);color:var(--danger)}
   a.btn{text-decoration:none}
+  .alpasos{display:flex;gap:6px;list-style:none;padding:0;margin:0 0 14px;flex-wrap:wrap} .alpasos li{flex:1;min-width:0} .alpasos button{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font:inherit;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .alpasos button span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--text);font-size:12px;font-weight:700;flex:none} .alpasos button.on{border-color:var(--brand-600);color:var(--text);font-weight:600} .alpasos button.on span{background:var(--brand-600);color:#fff} .alpasos button.ok span{background:var(--ok);color:#fff} .alpasos button:disabled{opacity:.5;cursor:not-allowed}
+  .alkid .alkidtop{display:flex;gap:8px;align-items:center} .alkid.abierto{border-color:var(--brand-600)}
+  .alpie{margin:6px 0 20px} .alpiebtn{display:flex;gap:8px;justify-content:space-between;margin-top:8px} .alpiebtn .pri{margin-left:auto}
+  .acuerdo{font-size:14.5px;line-height:1.55} .acuerdo p{margin:0 0 10px} .acuerdo h3{font-size:15px;margin:18px 0 8px} .actit{font-size:17px!important;text-transform:none!important;letter-spacing:0!important;color:var(--text)!important;margin:8px 0 8px!important}
+  .acentrega{background:var(--brand-bg);color:var(--brand-700);padding:10px 12px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600}
+  .acbloque{border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:8px} .acsub{font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .acdato{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:3px 0;border-bottom:1px dashed var(--line)} .acdato:last-child{border-bottom:0} .acdato span{color:var(--muted)} .acdato b{text-align:right;font-weight:600}
+  .acnota{font-size:12.5px;color:var(--muted)} .acchk{align-items:flex-start;background:var(--surface-2);padding:10px 12px;border-radius:var(--r-sm)} .acchk input{margin-top:3px;flex:none} .acregla{padding-left:20px;margin:0 0 10px} .acregla li{margin-bottom:4px}
+  .acfirmahead{display:flex;justify-content:space-between;align-items:center;margin-top:6px} .acfirmahead .btn{padding:4px 10px;min-height:0}
+  .firmapad{display:block;width:100%;border:1.5px dashed var(--line-2);border-radius:var(--r-sm);background:#fff;touch-action:none;cursor:crosshair;margin-top:4px}
+  .altares li.gris{color:var(--muted)} .girando{display:inline-block;animation:gira 1s linear infinite} @keyframes gira{to{transform:rotate(360deg)}}
+  @media (max-width:640px){ .alpasos button{font-size:0;justify-content:center;padding:8px 4px} .alpasos button span{font-size:12px} .alpasos button.on{font-size:12px} .acdato{flex-direction:column;gap:0} .acdato b{text-align:left} }
   .docpick{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);font:inherit;color:inherit;cursor:pointer} .docpick:hover{background:var(--surface-2)}
   .infaviso{padding:12px 16px;margin-bottom:14px;background:var(--amber-bg);border-color:transparent;color:var(--amber);font-size:13px}
   .infcal{padding:0 16px;margin-bottom:8px} .infcal summary{display:flex;justify-content:space-between;gap:8px;padding:12px 0;cursor:pointer;font-size:13.5px} .infcal summary b{color:var(--danger)} .infcal summary b.ok{color:var(--ok)} .infcal[open] summary{border-bottom:1px solid var(--line)}
@@ -211,6 +223,9 @@
     .phojadoc td{vertical-align:top;font-size:9pt}
     @page lista{size:letter landscape;margin:8mm} .plista{page:lista}
     .ptabla{table-layout:fixed} .ptabla th,.ptabla td{border:.2mm solid #999!important;padding:1mm!important;font-size:8pt;height:6.5mm} .ptabla .pnomb{width:58mm;text-align:left} .ptabla th.pcel{text-align:center;font-size:7pt;line-height:1.1} .ptabla td.pno{background:#ddd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pacuerdo{font-size:9.5pt;line-height:1.4} .pacuerdo h1{font-size:14pt;text-align:center;margin:0} .pacuerdo .psub{text-align:center;margin-bottom:3mm} .pacuerdo h2{font-size:11pt;margin:5mm 0 2mm;border-bottom:.3mm solid #333;padding-bottom:1mm} .pacuerdo h3{font-size:10pt;margin:3mm 0 1mm} .pacuerdo p{margin:0 0 2mm;text-align:justify} .pacuerdo ol{margin:0 0 2mm;padding-left:6mm}
+    .pacuerdo td{padding:1mm 2mm;vertical-align:top} .pacuerdo td.pk{width:55mm;color:#444} .plinea{display:inline-block;width:100%;border-bottom:.2mm solid #999;height:4mm} .pchk{font-size:10pt}
+    .pfirmabox{width:80mm;margin:6mm auto 0;text-align:center} .pfirmasvg{width:80mm;height:26.7mm;display:block} .pfirmalinea{border-top:.3mm solid #333;padding-top:1mm} .pmeta{text-align:center;margin-top:4mm;font-size:8.5pt;color:#444}
     .pconst{font-size:11.5pt;line-height:1.6;max-width:170mm;margin:0 auto} .pconst p{margin:0 0 5mm;text-align:justify} .pconst td{padding:2.5mm 2mm}
   }
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
@@ -531,6 +546,8 @@ function drawFicha(){
   h+='<div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(al.nombre)+(al.genero?chipGenero(al.genero==='Niña'?'Niñas':'Niños'):'')+'</div><div class="mut">'+esc(al.cod||'')+(r.horario&&r.horario.nombre?' · '+esc(nombreSinGenero(r.horario.nombre)):'')+'</div>';
   h+='<div style="margin-top:8px;font-size:12.5px" class="mut">Estatus: '+esc(al.estatus||'—')+' · Edad: '+esc(al.edad!=null&&al.edad!==''?al.edad:'—')+' · '+(al.verificado?'Verificado':'Sin verificar')+' · '+(al.responsiva===false?'<b style="color:var(--danger)">Sin responsiva</b>':'Responsiva firmada')+'</div>';
   if(al.alergias&&!/^ningun/i.test(al.alergias))h+='<div style="margin-top:6px;font-size:12.5px;color:var(--danger)">Alergias: '+esc(al.alergias)+'</div>';
+  if(al.observaciones)h+='<div style="margin-top:4px;font-size:12.5px">Observaciones: '+esc(al.observaciones)+'</div>';
+  h+='<div class="mut" style="margin-top:6px;font-size:12.5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+(al.acuerdo?'Acuerdo firmado el '+esc(fechaLargaDoc(String(al.acuerdo).slice(0,10)))+(al.acuerdo_firmante?' por '+esc(al.acuerdo_firmante):'')+' <button type="button" class="btn" style="padding:4px 8px;min-height:0" id="fichaacu"><i class="ti ti-printer" aria-hidden="true"></i> Acuerdo</button>':'Sin acuerdo digital'+(al.responsiva?' (responsiva en papel)':''))+' · Fotos: '+(al.uso_imagen==='Autoriza'?'autoriza':al.uso_imagen==='No autoriza'?'<b style="color:var(--danger)">no autoriza</b>':'sin registro')+'</div>';
   h+='</div>';
   if(sug.length){ h+='<h2>Acciones sugeridas</h2><div class="acts">'+sug.map(a=>btnAccion(a,true)).join('')+'</div>'; }
   else h+='<div class="mut" style="margin-bottom:12px">Todo al día: sin acciones pendientes.</div>';
@@ -542,6 +559,7 @@ function drawFicha(){
   right.innerHTML=h;
   right.querySelectorAll('[data-acc]').forEach(b=>b.onclick=()=>ejecutarAccion(b.dataset.acc,b.dataset.asis));
   right.querySelectorAll('[data-comp]').forEach(b=>b.onclick=()=>imprimirComprobante(pagos[+b.dataset.comp]));
+  const fa=right.querySelector('#fichaacu'); if(fa)fa.onclick=imprimirAcuerdoFicha;
 }
 async function recargarFicha(msg){ if(msg)toast(msg,'ok'); DIRECTORIO=null; await verFichaAlumno(FICHA.id); }
 function panelAccion(titulo,cuerpo){ const right=document.getElementById('rightcol'); right.innerHTML=volverFicha()+'<h2>'+esc(titulo)+'</h2>'+cuerpo+'<div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>'; right.querySelector('[data-acc="volver"]').onclick=drawFicha; const p=document.getElementById('rightpane'); if(p)p.scrollTop=0; return right; }
@@ -904,124 +922,320 @@ async function tarjetaQR(regenerar){
   root.querySelector('#qrregen').onclick=()=>{ if(confirm('¿Regenerar? La tarjeta actual dejará de funcionar.'))tarjetaQR(true); };
 }
 
-/* ---------- Alta de alumno ----------
-   Un solo formulario: tutor (existente o nuevo) → alumno → clase y plan → cobro. El servidor (alta_completa)
-   valida todo antes de escribir; el alumno queda verificado porque el staff capturó los datos en persona. */
+/* ---------- Alta de alumno con Acuerdo General de Inscripción y Responsiva ----------
+   Por pasos: tutor → alumnos (uno o varios hermanos) → cobro → acuerdo. El acuerdo lo lee y firma el tutor en la
+   misma tablet. Cada alumno se da de alta con alta_completa (el servidor valida todo antes de escribir); los
+   hermanos van uno tras otro y reutilizan el tutor que creó el primero. */
+const ACUERDO_VERSION='2026-09-25';
+const ACUERDO={
+  intro:'El presente documento establece las condiciones generales para la inscripción del alumno en FITKID GYMNASTIC (FKM) y contiene la ficha de inscripción con la confirmación de datos, la aceptación del reglamento interno, la autorización de uso de imagen y la carta responsiva.',
+  veracidad:'Declaro que la información proporcionada en esta ficha de registro es verídica, completa y está actualizada. Me comprometo a notificar de inmediato a FitKid cualquier cambio en el estado de salud o datos de contacto del alumno.',
+  reglamentoIntro:'Al inscribir al alumno, acepto cumplir y hacer cumplir las siguientes normas:',
+  reglamento:[['Puntualidad','Llegar puntuales al horario de clase (5 min de tolerancia) y al recoger a los alumnos.'],['Reposición de Clases','Las clases no se reponen, salvo por enfermedad (con justificante médico), cierre del gimnasio o día festivo oficial.'],['Vestimenta','Asistir con ropa deportiva o cómoda adecuada para la actividad.'],['Horarios','Evitar cambios de horario sin previa autorización administrativa.'],['Respeto','Mantener un trato respetuoso hacia entrenadores, compañeros y cuidar las instalaciones.'],['Accesorios','No usar accesorios durante el entrenamiento (pulseras, collares, relojes, etc.) por seguridad.'],['Salud','No asistir al gimnasio si el alumno presenta síntomas de enfermedad (gripe, fiebre, tos, etc.).']],
+  imagen:'Autorizo a FITKID GYMNASTIC (FKM) a utilizar fotografías y/o videos en los que aparezca el alumno, capturados durante las actividades, únicamente con fines promocionales y educativos de la institución (redes sociales, sitio web, folletos).',
+  imagenNota:'Esta autorización puede ser revocada por escrito en cualquier momento enviando un correo a la administración.',
+  responsiva:'Manifiesto que conozco los riesgos inherentes a la práctica de la gimnasia y actividades deportivas. Acepto la inscripción del alumno en FITKID GYMNASTIC (FKM) y deslindo al club, sus propietarios, entrenadores y personal de cualquier responsabilidad civil o penal por accidentes, caídas o lesiones que pudieran ocurrir durante el desarrollo normal de las actividades, habiendo tomado el gimnasio las medidas de seguridad pertinentes.',
+  /* El original decía "Al aprobar este presupuesto y realizar el pago de la inscripción": en recepción se puede firmar sin pagar ese día. */
+  aceptacion:'Al firmar este acuerdo, firmo de conformidad con todos los puntos anteriores en mi calidad de Padre, Madre o Tutor legal del alumno registrado.'
+};
+const PARENTESCOS=['Mamá','Papá','Tutor legal','Abuela','Abuelo','Otro'];
 let ALTA=null;
 function programaPorEdad(e){ if(e==null)return ''; if(e>=18)return 'FitParents'; if(e>=7&&e<=14)return 'Gimnasia Olímpica (7-14)'; if(e>=3&&e<=6)return 'Iniciación Deportiva (3-6)'; return 'Requiere revisión'; }
 /* Fechas que quedan en el mes (desde hoy) para los días elegidos: es lo que el servidor va a reservar. */
 function clasesRestantes(mesISO,dias,max){ const idx={Lunes:1,Martes:2,'Miércoles':3,Jueves:4,Viernes:5}; const ds=dias.map(d=>idx[d]).filter(Boolean); const hoy=new Date().toLocaleDateString('en-CA'); const y=+mesISO.slice(0,4), m=+mesISO.slice(5,7)-1; const out=[]; const d=new Date(y,m,1,12); while(d.getMonth()===m){ const f=d.toLocaleDateString('en-CA'); if(ds.indexOf(d.getDay())!==-1&&f>=hoy)out.push(f); d.setDate(d.getDate()+1); } return max?out.slice(0,max):out; }
+function nuevoHijo(){ return {nombre:'',fn:'',gen:'',alergias:'',obs:'',prog:'',progManual:false,hid:'',dias:new Set(),plan:'M2',montoM:'',insc:true,montoI:'500'}; }
 async function altaAlumno(pre){
   SECCION='estudiantes'; const center=document.getElementById('centercol'), right=document.getElementById('rightcol'); cerrarPanel();
   center.innerHTML='<div class="pagehead"><h1>Nuevo alumno</h1></div><div class="mut">Cargando…</div>'; right.innerHTML='';
   const [bl]=await Promise.all([horariosLista(), DIRECTORIO?null:call('directorio',{}).then(r=>{ if(r&&r.ok!==false)DIRECTORIO=r; })]);
   if(SECCION!=='estudiantes'||!document.getElementById('centercol'))return;
   const hoy=new Date().toLocaleDateString('en-CA'); const mesAct=hoy.slice(0,7)+'-01'; const dn=new Date(mesAct+'T12:00:00'); dn.setMonth(dn.getMonth()+1); const mesSig=dn.toLocaleDateString('en-CA').slice(0,7)+'-01';
-  ALTA={bl:bl,hoy:hoy,mesAct:mesAct,mesSig:mesSig,tutorSel:(pre&&pre.tutor)||null,responsiva:false,t:{},a:{},gen:'',prog:'',progManual:false,hid:'',dias:new Set(),plan:'M2',mes:mesAct,pago:'Efectivo',montoM:'',insc:true,montoI:'500',agendar:true,forzar:false};
+  ALTA={bl:bl,hoy:hoy,mesAct:mesAct,mesSig:mesSig,paso:1,tutorSel:(pre&&pre.tutor)||null,t:{},kids:[nuevoHijo()],abierto:0,mes:mesAct,pago:'Efectivo',agendar:true,
+    ac:{veracidad:false,reglamento:false,responsiva:false,uso_imagen:'',firmante:'',trazos:[],firma:'',papel:false},forzar:{},res:[],tutorId:null,enviando:false,nota:''};
+  if(ALTA.tutorSel)ALTA.paso=2;
   drawAlta();
 }
-function altaCampo(k,l,extra){ const [g,c]=k.split('.'); const v=(ALTA[g]||{})[c]||''; return '<div><label class="mut" for="al_'+g+'_'+c+'">'+l+'</label><input class="field" id="al_'+g+'_'+c+'" data-ak="'+k+'" value="'+esc(v)+'" '+(extra||'')+'></div>'; }
+function nombreTutorAlta(A){ return (A.tutorSel&&A.tutorSel.nombre)||String(A.t.nombre||'').trim(); }
+function edadKid(k){ return edadDe(k.fn); }
+function planDe(k){ return PLANES.find(p=>p[0]===k.plan)||PLANES[1]; }
+function bloquesKid(A,k){ const esAd=k.prog==='FitParents'; return !k.prog?[]:A.bl.filter(b=>(k.prog==='Requiere revisión'||programaDeNombre(b.nombre)===k.prog)&&(esAd?!b.genero:paraGenero(b,k.gen))); }
+/* ---- validaciones por paso (devuelven la lista de lo que falta) ---- */
+function faltasTutor(A){ if(A.tutorSel)return []; const g=k=>String(A.t[k]||'').trim(); const wa=d10(g('whatsapp')), te=d10(g('telefono_emergencia'));
+  return [[g('nombre').split(/\s+/).filter(Boolean).length<2,'nombre completo del tutor'],[!g('parentesco'),'relación con el alumno'],[wa.length!==10,'WhatsApp a 10 dígitos'],[!/^\S+@\S+\.\S+$/.test(g('email')),'correo válido'],[!g('contacto_emergencia'),'nombre del contacto de emergencia'],[te.length!==10,'teléfono de emergencia a 10 dígitos'],[te.length===10&&te===wa,'un contacto de emergencia distinto al tutor']].filter(x=>x[0]).map(x=>x[1]); }
+function faltasHijo(A,i){ const k=A.kids[i]; if(A.res[i]&&A.res[i].ok!==false)return []; const e=edadKid(k), esAd=k.prog==='FitParents'; const nm=k.nombre.trim().toLowerCase().replace(/\s+/g,' ');
+  const repetido=nm&&A.kids.some((o,j)=>j<i&&o.nombre.trim().toLowerCase().replace(/\s+/g,' ')===nm);
+  return [[k.nombre.trim().split(/\s+/).filter(Boolean).length<2,'nombre completo'],[!k.fn,'fecha de nacimiento'],[!!k.fn&&(e==null||e<0||k.fn>A.hoy),'una fecha de nacimiento válida'],[!esAd&&!k.gen,'género'],[!k.alergias.trim(),'alergias (o "ninguna")'],[!k.prog||k.prog==='Requiere revisión','programa'],[!bloquesKid(A,k).find(b=>b.id===k.hid),'bloque'],[!k.dias.size,'días de clase'],[repetido,'un nombre distinto al de su hermano']].filter(x=>x[0]).map(x=>x[1]); }
+function faltasCobro(A){ if(A.pago==='Pendiente')return []; const f=[]; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); if(!(Number(k.montoM!==''?k.montoM:pl[2])>0))f.push('mensualidad de '+(primerNombre(k.nombre)||'alumno '+(i+1))); if(k.insc&&!(Number(k.montoI)>0))f.push('inscripción de '+(primerNombre(k.nombre)||'alumno '+(i+1))); }); return f; }
+function firmaValida(ac){ return ac.trazos.reduce((s,t)=>s+t.length,0)>=8; }
+function faltasAcuerdo(A){ const ac=A.ac; if(ac.papel)return []; return [[!ac.veracidad,'la declaración de veracidad'],[!ac.reglamento,'el reglamento'],[!ac.uso_imagen,'la decisión sobre uso de imagen'],[!ac.responsiva,'la carta responsiva'],[String(ac.firmante||'').trim().split(/\s+/).filter(Boolean).length<2,'el nombre completo de quien firma'],[!firmaValida(ac),'la firma']].filter(x=>x[0]).map(x=>x[1]); }
+function pasoListo(A,p){ if(p===1)return !faltasTutor(A).length; if(p===2)return A.kids.every((k,i)=>!faltasHijo(A,i).length); if(p===3)return !faltasCobro(A).length; return !faltasAcuerdo(A).length; }
+/* ---- dibujo ---- */
+function guardarTecleado(A,root){
+  root.querySelectorAll('[data-ak]').forEach(i=>{ const [g,c]=i.dataset.ak.split('.'); A[g][c]=i.value; });
+  root.querySelectorAll('[data-kk]').forEach(i=>{ const [n,c]=i.dataset.kk.split('.'); A.kids[+n][c]=i.value; });
+}
+function campoAlta(k,l,extra,v){ return '<div><label class="mut" for="al_'+k.replace('.','_')+'">'+l+'</label><input class="field" id="al_'+k.replace('.','_')+'" '+(k.indexOf('t.')===0?'data-ak':'data-kk')+'="'+k+'" value="'+esc(v||'')+'" '+(extra||'')+'></div>'; }
 function drawAlta(){
   const A=ALTA, center=document.getElementById('centercol'); if(!A||!center)return;
-  const edad=edadDe(A.a.fecha_nacimiento); if(!A.progManual)A.prog=programaPorEdad(edad);
-  const esAdulto=A.prog==='FitParents';
-  const vis=!A.prog?[]:A.bl.filter(b=>(A.prog==='Requiere revisión'||programaDeNombre(b.nombre)===A.prog)&&(esAdulto?!b.genero:paraGenero(b,A.gen)));
-  if(A.hid&&!vis.find(b=>b.id===A.hid))A.hid='';
-  const plan=PLANES.find(p=>p[0]===A.plan)||PLANES[1]; const maxDias=plan[1]/4;
-  if(A.dias.size>maxDias)A.dias=new Set([...A.dias].slice(0,maxDias));
-  const restantes=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>A.dias.has(d)),plan[1]);
+  guardarTecleado(A,center);
+  if(A.enviando){ pintarProgreso(); return; }
+  const pasos=[[1,'Tutor'],[2,A.kids.length>1?'Alumnos ('+A.kids.length+')':'Alumno'],[3,'Cobro'],[4,'Acuerdo']];
   let h='<div class="pagehead"><h1>Nuevo alumno</h1><button type="button" class="btn" id="altacancel"><i class="ti ti-x" aria-hidden="true"></i> Cancelar</button></div>';
-  // Tutor
-  h+='<section class="card altasec"><h2>1 · Tutor</h2>';
+  h+='<ol class="alpasos">'+pasos.map(p=>{ const listo=p[0]<A.paso&&pasoListo(A,p[0]); return '<li><button type="button" data-paso="'+p[0]+'" class="'+(A.paso===p[0]?'on':'')+(listo?' ok':'')+'"'+(p[0]>A.paso&&!pasosPrevios(A,p[0])?' disabled':'')+'><span>'+(listo?'<i class="ti ti-check" aria-hidden="true"></i>':p[0])+'</span>'+p[1]+'</button></li>'; }).join('')+'</ol>';
+  if(A.paso===1)h+=pasoTutor(A); else if(A.paso===2)h+=pasoHijos(A); else if(A.paso===3)h+=pasoCobro(A); else h+=pasoAcuerdo(A);
+  center.innerHTML=h; center.scrollTop=0;
+  document.getElementById('altacancel').onclick=()=>{ if(A.kids.some(k=>k.nombre)&&!confirm('¿Cancelar el alta? Se pierde lo capturado.'))return; ALTA=null; estudiantes(); };
+  center.querySelectorAll('[data-paso]').forEach(b=>b.onclick=()=>{ guardarTecleado(A,center); A.paso=+b.dataset.paso; drawAlta(); });
+  if(A.paso===1)bindTutor(A,center); else if(A.paso===2)bindHijos(A,center); else if(A.paso===3)bindCobro(A,center); else bindAcuerdo(A,center);
+  resumenAlta();
+}
+function pasosPrevios(A,p){ for(let i=1;i<p;i++)if(!pasoListo(A,i))return false; return true; }
+function pieAlta(A,faltas,txtSig){ return '<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px">'+(A.nota?esc(A.nota):'')+'</div><div class="alpiebtn">'+(A.paso>1?'<button type="button" class="btn" id="altaatras"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>':'')+'<button type="button" class="btn pri" id="altasig">'+txtSig+' <i class="ti ti-arrow-right" aria-hidden="true"></i></button></div></div>'; }
+function bindPie(A,root,validar,siguiente){
+  const at=root.querySelector('#altaatras'); if(at)at.onclick=()=>{ guardarTecleado(A,root); A.nota=''; A.paso--; drawAlta(); };
+  root.querySelector('#altasig').onclick=()=>{ guardarTecleado(A,root); const f=validar(); if(f.length){ root.querySelector('#altaerr').textContent='Falta: '+f.join(', ')+'.'; return; } A.nota=''; siguiente(); };
+}
+/* Paso 1: tutor */
+function pasoTutor(A){
+  let h='<section class="card altasec"><h2>Padre, madre o tutor legal</h2>';
   if(A.tutorSel){ const t=A.tutorSel; const hijos=((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(x=>x.tutor_id===t.id);
     h+='<div class="dirrow" style="cursor:default"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="flex:1"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc([t.email,t.whatsapp].filter(Boolean).join(' · ')||'sin contacto')+'</div>'+(hijos.length?'<div class="mut">Ya inscritos: '+esc(hijos.map(x=>x.nombre).join(', '))+'</div>':'')+'</div><button type="button" class="btn" id="altatcambiar">Cambiar</button></div>';
-  } else {
-    h+='<label class="mut" for="altatbus">¿Ya tiene un hermano inscrito? Busca al tutor</label><input class="field" id="altatbus" placeholder="Nombre, correo o WhatsApp del tutor" autocomplete="off"><div id="altatres" class="dirlist" style="margin:-4px 0 10px"></div>';
-    h+='<div class="altagrid">'+altaCampo('t.nombre','Nombre del tutor','autocomplete="off"')+altaCampo('t.parentesco','Parentesco','placeholder="Mamá, papá, abuela…"')+altaCampo('t.email','Correo','type="email" inputmode="email" autocomplete="off"')+altaCampo('t.whatsapp','WhatsApp (10 dígitos)','type="tel" inputmode="tel"')+altaCampo('t.contacto_emergencia','Contacto de emergencia','placeholder="Otra persona, no el tutor"')+altaCampo('t.telefono_emergencia','Teléfono de emergencia (10 dígitos)','type="tel" inputmode="tel"')+'</div>';
+    h+='<div class="mut" style="font-size:12.5px;margin-top:8px">Se usan sus datos de contacto y emergencia ya registrados. Si cambiaron, actualízalos en su ficha.</div></section>';
+    return h+pieAlta(A,[],'Continuar');
   }
-  h+='</section>';
-  // Alumno
-  h+='<section class="card altasec"><h2>2 · Alumno</h2><div class="altagrid">'+altaCampo('a.nombre','Nombre completo','autocomplete="off"')+altaCampo('a.fecha_nacimiento','Fecha de nacimiento','type="date" max="'+esc(A.hoy)+'"')+'</div>';
-  h+='<div class="mut" id="altaedad" style="margin:-4px 0 8px">'+(edad!=null?(edad+' años · '+(A.prog||'')):'')+'</div>';
-  if(!esAdulto)h+='<label class="mut">Género</label>'+chips('agen',[['Niña','Niña'],['Niño','Niño']],A.gen);
-  h+=altaCampo('a.alergias','Alergias o condiciones médicas','placeholder="Si no hay, escribe ninguna"');
-  h+='<label class="chk"><input type="checkbox" id="altaresp"'+(A.responsiva?' checked':'')+'> El tutor firmó la responsiva</label>'+(A.responsiva?'':'<div class="mut" style="font-size:12px;color:var(--danger);margin-top:-4px">Sin responsiva no puede entrar a clase: el kiosco lo mandará a recepción. Puedes darlo de alta y marcarla después en la ficha.</div>')+'</section>';
-  // Clase y plan
-  h+='<section class="card altasec"><h2>3 · Clase y plan</h2><label class="mut">Programa'+(A.progManual?'':' (según la edad)')+'</label>'+chips('aprog',[['Iniciación Deportiva (3-6)','Iniciación (3-6)'],['Gimnasia Olímpica (7-14)','Olímpica (7-14)'],['FitParents','FitParents']],A.prog);
-  if(A.prog==='Requiere revisión')h+='<div class="mut" style="color:var(--amber);font-size:12px;margin-bottom:6px">La edad no cae en ningún programa: elige uno a mano.</div>';
-  h+='<label class="mut">Bloque</label>'+(!esAdulto&&!A.gen?'<div class="mut" style="font-size:12px;margin-bottom:6px">Elige el género para ver los grupos de niñas o niños.</div>':'')+(!A.prog?'<div class="mut" style="font-size:12px">Captura la fecha de nacimiento o elige el programa.</div>':vis.length?chips('ablq',vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),A.hid):'<div class="mut" style="font-size:12px">No hay bloques para esta combinación.</div>');
-  h+='<label class="mut">Plan</label>'+chips('aplan',PLANES.map(p=>[p[0],(p[1]/4)+'/sem · $'+p[2]]),A.plan);
-  h+='<label class="mut">Días ('+maxDias+' por semana)</label><div class="chipsel" data-grp="adias">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+(A.dias.has(d)?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div>';
+  const t=A.t, wa=d10(t.whatsapp), te=d10(t.telefono_emergencia);
+  h+='<label class="mut" for="altatbus">¿Ya tiene un hijo inscrito? Busca al tutor</label><input class="field" id="altatbus" placeholder="Nombre, correo o WhatsApp" autocomplete="off"><div id="altatres" class="dirlist" style="margin:-4px 0 10px"></div>';
+  h+='<div class="altagrid">'+campoAlta('t.nombre','Nombre completo','autocomplete="off"',t.nombre)+campoAlta('t.whatsapp','Celular / WhatsApp (10 dígitos)','type="tel" inputmode="tel" autocomplete="off"',t.whatsapp)+campoAlta('t.email','Correo electrónico','type="email" inputmode="email" autocomplete="off"',t.email)+campoAlta('t.direccion','Dirección (calle, número, colonia, C.P.) · opcional','autocomplete="off"',t.direccion)+'</div>';
+  h+='<label class="mut">Relación con el alumno</label>'+chips('tpar',PARENTESCOS.map(p=>[p,p]),t.parentesco||'');
+  h+='</section><section class="card altasec"><h2>Contacto de emergencia</h2><div class="mut" style="font-size:12.5px;margin:-4px 0 8px">Otra persona, no el tutor: alguien a quien llamar si el tutor no contesta.</div><div class="altagrid">'+campoAlta('t.contacto_emergencia','Nombre completo','autocomplete="off"',t.contacto_emergencia)+campoAlta('t.telefono_emergencia','Teléfono (10 dígitos)','type="tel" inputmode="tel" autocomplete="off"',t.telefono_emergencia)+campoAlta('t.relacion_emergencia','Relación con el alumno · opcional','placeholder="Tía, abuelo, vecina…" autocomplete="off"',t.relacion_emergencia)+'</div>';
+  h+='<div id="altaemerg" class="mut" style="font-size:12.5px;color:var(--danger)">'+(te.length===10&&te===wa?'Es el mismo número del tutor: pide el de otra persona.':'')+'</div></section>';
+  return h+pieAlta(A,[],'Continuar');
+}
+function bindTutor(A,root){
+  bindPie(A,root,()=>faltasTutor(A),()=>{ A.paso=2; drawAlta(); });
+  if(A.tutorSel){ root.querySelector('#altatcambiar').onclick=()=>{ A.tutorSel=null; drawAlta(); }; return; }
+  bindChips(root,'tpar',v=>{ A.t.parentesco=v; resumenAlta(); });
+  const em=root.querySelector('#altaemerg'); const chkEm=()=>{ const wa=d10(A.t.whatsapp), te=d10(A.t.telefono_emergencia); em.textContent=te.length===10&&te===wa?'Es el mismo número del tutor: pide el de otra persona.':''; };
+  root.querySelectorAll('[data-ak]').forEach(i=>{ const [g,c]=i.dataset.ak.split('.'); i.oninput=()=>{ A[g][c]=i.value; if(c==='whatsapp'||c==='telefono_emergencia')chkEm(); if(c==='nombre')resumenAlta(); }; });
+  const bus=root.querySelector('#altatbus'), res=root.querySelector('#altatres');
+  bus.oninput=()=>{ const q=bus.value.trim().toLowerCase(); const qd=d10(q); if(q.length<3){res.innerHTML='';return;}
+    const arr=((DIRECTORIO&&DIRECTORIO.tutores)||[]).filter(t=>String(t.nombre).toLowerCase().indexOf(q)!==-1||String(t.email||'').toLowerCase().indexOf(q)!==-1||(qd.length>=6&&d10(t.whatsapp).indexOf(qd)!==-1)).slice(0,5);
+    res.innerHTML=arr.length?arr.map(t=>'<button type="button" class="dirrow" data-atut="'+esc(t.id)+'"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="text-align:left"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc(t.email||t.whatsapp||'')+'</div></div></button>').join(''):'<div class="mut">Sin coincidencias: captura al tutor abajo.</div>';
+    res.querySelectorAll('[data-atut]').forEach(b=>b.onclick=()=>{ A.tutorSel=DIRECTORIO.tutores.find(t=>t.id===b.dataset.atut)||null; drawAlta(); }); };
+  /* Si el WhatsApp tecleado ya es de un tutor registrado, se sugiere usarlo en vez de duplicarlo. */
+  const wa=root.querySelector('[data-ak="t.whatsapp"]'); wa.addEventListener('blur',()=>{ const d=d10(wa.value); if(d.length!==10)return; const t=((DIRECTORIO&&DIRECTORIO.tutores)||[]).find(x=>d10(x.whatsapp)===d); if(t){ res.innerHTML='<div class="mut" style="color:var(--amber)">Ese WhatsApp ya es de '+esc(t.nombre)+'.</div><button type="button" class="dirrow" data-atut="'+esc(t.id)+'"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="text-align:left"><div class="nm">Usar a '+esc(t.nombre)+'</div><div class="mut">'+esc(t.email||'')+'</div></div></button>'; res.querySelector('[data-atut]').onclick=()=>{ A.tutorSel=t; drawAlta(); }; bus.scrollIntoView({block:'center'}); } });
+}
+/* Paso 2: alumnos */
+function pasoHijos(A){
+  let h=''; const existentes=A.tutorSel?((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(x=>x.tutor_id===A.tutorSel.id):[];
+  A.kids.forEach((k,i)=>{ const hecho=A.res[i]&&A.res[i].ok!==false; const e=edadKid(k); const f=faltasHijo(A,i); const abierto=A.abierto===i&&!hecho;
+    h+='<section class="card altasec alkid'+(abierto?' abierto':'')+'"><div class="alkidtop"><div style="flex:1;min-width:0"><h2 style="margin:0">Alumno '+(i+1)+'</h2><div class="nm">'+esc(k.nombre||'Sin nombre')+'</div><div class="mut" style="font-size:12.5px">'+[e!=null&&e>=0?e+' años':'',k.prog&&k.prog!=='Requiere revisión'?k.prog:'',k.hid?nombreSinGenero((A.bl.find(b=>b.id===k.hid)||{}).nombre||''):''].filter(Boolean).map(esc).join(' · ')+'</div></div>'
+      +(hecho?'<span class="pill ok">dado de alta</span>':(f.length?(abierto?'':'<span class="pill warn">faltan '+f.length+'</span>'):'<span class="pill ok">listo</span>'))
+      +(!hecho&&!abierto?'<button type="button" class="btn" data-kab="'+i+'">Editar</button>':'')+(!hecho&&A.kids.length>1?'<button type="button" class="btn" data-kdel="'+i+'" aria-label="Quitar alumno '+(i+1)+'"><i class="ti ti-trash" aria-hidden="true"></i></button>':'')+'</div>';
+    if(abierto)h+=cuerpoHijo(A,k,i,existentes);
+    h+='</section>'; });
+  h+='<button type="button" class="btn acbig" id="altamas"><i class="ti ti-user-plus" aria-hidden="true"></i> Agregar otro hijo/a</button>';
+  return h+pieAlta(A,[],'Continuar al cobro');
+}
+function cuerpoHijo(A,k,i,existentes){
+  const e=edadKid(k); if(!k.progManual)k.prog=programaPorEdad(e); const esAd=k.prog==='FitParents';
+  const vis=bloquesKid(A,k); if(k.hid&&!vis.find(b=>b.id===k.hid))k.hid='';
+  const pl=planDe(k), maxDias=pl[1]/4; if(k.dias.size>maxDias)k.dias=new Set([...k.dias].slice(0,maxDias));
+  let h='<div class="altagrid" style="margin-top:10px">'+campoAlta(i+'.nombre','Nombre completo','autocomplete="off"',k.nombre)+campoAlta(i+'.fn','Fecha de nacimiento','type="date" max="'+esc(A.hoy)+'"',k.fn)+'</div>';
+  const avisos=[];
+  if(e!=null&&e>=0)avisos.push('<b>'+e+' años</b>'+(k.prog&&k.prog!=='Requiere revisión'&&!k.progManual?' → '+esc(k.prog):''));
+  if(e!=null&&e<3&&e>=0)avisos.push('<span style="color:var(--danger)">Menor de 3 años: ningún programa lo acepta. Confirma con dirección.</span>');
+  if(e!=null&&e>=15&&e<18)avisos.push('<span style="color:var(--amber)">15 a 17 años: fuera de Olímpica (7-14) y de FitParents. Elige el programa a mano solo si dirección lo aprobó.</span>');
+  if(k.fn&&k.fn.slice(5)==='01-01')avisos.push('<span style="color:var(--amber)">¿Nació el 1 de enero? Confírmalo: muchas fichas tienen esa fecha por error.</span>');
+  const nm=k.nombre.trim().toLowerCase(); const ya=nm&&existentes.find(x=>String(x.nombre).trim().toLowerCase()===nm); if(ya)avisos.push('<span style="color:var(--danger)">'+esc(ya.nombre)+' ya está inscrito con este tutor.</span>');
+  h+='<div class="mut" style="font-size:12.5px;margin:-4px 0 8px;display:flex;flex-direction:column;gap:3px">'+avisos.map(a=>'<div>'+a+'</div>').join('')+'</div>';
+  if(!esAd)h+='<label class="mut">Género</label>'+chips('kgen'+i,[['Niña','Niña'],['Niño','Niño']],k.gen);
+  h+='<label class="mut" for="al_'+i+'_alergias">Alergias (alimentos, medicamentos, otros)</label><div style="display:flex;gap:8px"><input class="field" id="al_'+i+'_alergias" data-kk="'+i+'.alergias" value="'+esc(k.alergias)+'" placeholder="Si no tiene, toca Ninguna" autocomplete="off" style="flex:1"><button type="button" class="btn" data-kning="'+i+'" style="margin-bottom:12px">Ninguna</button></div>';
+  h+='<label class="mut" for="al_'+i+'_obs">Observaciones · opcional</label><textarea class="field" id="al_'+i+'_obs" data-kk="'+i+'.obs" rows="2" placeholder="Condiciones médicas, atención especial, algo que el entrenador deba saber">'+esc(k.obs)+'</textarea>';
+  h+='<label class="mut">Programa'+(k.progManual?'':' (según la edad)')+'</label>'+chips('kprog'+i,[['Iniciación Deportiva (3-6)','Iniciación (3-6)'],['Gimnasia Olímpica (7-14)','Olímpica (7-14)'],['FitParents','FitParents (adultos)']],k.prog);
+  const prev=A.kids.slice(0,i).find(o=>o.hid&&o.dias.size);
+  h+='<label class="mut">Bloque</label>'+(!esAd&&!k.gen?'<div class="mut" style="font-size:12px;margin-bottom:6px">Elige el género para ver los grupos de niñas o niños.</div>':'')+(!k.prog||k.prog==='Requiere revisión'?'<div class="mut" style="font-size:12px;margin-bottom:10px">Captura la fecha de nacimiento o elige el programa.</div>':vis.length?chips('kblq'+i,vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),k.hid):'<div class="mut" style="font-size:12px;margin-bottom:10px">No hay bloques para esta combinación.</div>');
+  h+='<label class="mut">Días de clase · el plan se ajusta solo</label><div class="chipsel" data-grp="kdias'+i+'">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+(k.dias.has(d)?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div>';
+  if(prev&&!k.dias.size)h+='<button type="button" class="btn" data-kcopia="'+i+'" style="margin:-4px 0 12px"><i class="ti ti-copy" aria-hidden="true"></i> Mismos días que '+esc(primerNombre(prev.nombre)||'su hermano')+'</button>';
+  h+='<label class="mut">Plan</label>'+chips('kplan'+i,PLANES.map(p=>[p[0],(p[1]/4)+'/sem · '+p[1]+' clases · $'+p[2]]),k.plan);
+  return h;
+}
+function bindHijos(A,root){
+  bindPie(A,root,()=>{ const f=[]; A.kids.forEach((k,i)=>{ const x=faltasHijo(A,i); if(x.length)f.push((A.kids.length>1?'alumno '+(i+1)+': ':'')+x.join(', ')); }); if(f.length){ const i=A.kids.findIndex((k,j)=>faltasHijo(A,j).length); if(i!==A.abierto){ A.abierto=i; drawAlta(); } } return f; },()=>{ A.paso=3; drawAlta(); });
+  root.querySelectorAll('[data-kab]').forEach(b=>b.onclick=()=>{ guardarTecleado(A,root); A.abierto=+b.dataset.kab; drawAlta(); });
+  root.querySelectorAll('[data-kdel]').forEach(b=>b.onclick=()=>{ guardarTecleado(A,root); const i=+b.dataset.kdel; const k=A.kids[i]; if(k.nombre&&!confirm('¿Quitar a '+k.nombre+' de esta alta?'))return; A.kids.splice(i,1); A.res.splice(i,1); A.abierto=Math.min(A.abierto,A.kids.length-1); drawAlta(); });
+  root.querySelector('#altamas').onclick=()=>{ guardarTecleado(A,root); A.kids.push(nuevoHijo()); A.abierto=A.kids.length-1; drawAlta(); const c=root.querySelectorAll('.alkid'); if(c.length)c[c.length-1].scrollIntoView({block:'start'}); };
+  const i=A.abierto, k=A.kids[i]; if(!k||!root.querySelector('[data-kk="'+i+'.nombre"]'))return;
+  root.querySelectorAll('[data-kk]').forEach(inp=>{ const [n,c]=inp.dataset.kk.split('.'); inp.oninput=()=>{ A.kids[+n][c]=inp.value; resumenAlta(); }; });
+  const nmI=root.querySelector('[data-kk="'+i+'.nombre"]'); nmI.onchange=()=>{ k.nombre=nmI.value; drawAlta(); };
+  const fn=root.querySelector('[data-kk="'+i+'.fn"]'); fn.onchange=()=>{ k.fn=fn.value; k.progManual=false; drawAlta(); };
+  const ning=root.querySelector('[data-kning]'); if(ning)ning.onclick=()=>{ k.alergias='ninguna'; root.querySelector('[data-kk="'+i+'.alergias"]').value='ninguna'; resumenAlta(); };
+  bindChips(root,'kgen'+i,v=>{ k.gen=v; drawAlta(); }); bindChips(root,'kprog'+i,v=>{ k.prog=v; k.progManual=true; drawAlta(); }); bindChips(root,'kblq'+i,v=>{ k.hid=v; drawAlta(); });
+  bindChips(root,'kplan'+i,v=>{ k.plan=v; k.montoM=''; drawAlta(); });
+  /* Tocar un día más de los que cubre el plan sube el plan en vez de bloquear. */
+  root.querySelectorAll('[data-grp="kdias'+i+'"] .chipo').forEach(b=>b.onclick=()=>{ const d=b.dataset.v; if(k.dias.has(d))k.dias.delete(d); else { k.dias.add(d); const cr=k.dias.size*4; if(cr>planDe(k)[1]){ const np=PLANES.find(p=>p[1]===cr); if(np){ k.plan=np[0]; k.montoM=''; A.nota='Plan ajustado a '+k.dias.size+' clases por semana ('+np[0]+' · $'+np[2]+').'; } } } drawAlta(); A.nota=''; });
+  const cp=root.querySelector('[data-kcopia]'); if(cp)cp.onclick=()=>{ const prev=A.kids.slice(0,i).find(o=>o.hid&&o.dias.size); k.dias=new Set(prev.dias); k.plan=prev.plan; k.montoM=''; if(k.gen===prev.gen&&k.prog===prev.prog)k.hid=prev.hid; drawAlta(); };
+}
+/* Paso 3: cobro */
+function pasoCobro(A){
+  let h='<section class="card altasec"><h2>Cobro de hoy</h2>'+chips('apago',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['Pendiente','No paga hoy']],A.pago);
   h+='<label class="mut">Empieza</label>'+chips('ames',[[A.mesAct,'Este mes ('+MESES[+A.mesAct.slice(5,7)-1]+')'],[A.mesSig,'Próximo mes ('+MESES[+A.mesSig.slice(5,7)-1]+')']],A.mes);
-  if(A.dias.size){ const aviso=A.mes===A.mesAct&&restantes.length<plan[1]; h+='<div class="mut" style="font-size:12.5px;margin:2px 0 8px'+(aviso?';color:var(--amber)':'')+'">'+(restantes.length?'Se reservan '+restantes.length+' clase'+(restantes.length===1?'':'s')+': '+restantes.slice(0,6).map(fmtFecha).join(', ')+(restantes.length>6?'…':''):'No quedan clases de esos días este mes.')+(aviso?' · El plan es de '+plan[1]+': ajusta el monto o empieza el próximo mes.':'')+'</div>'; }
   h+='<label class="chk"><input type="checkbox" id="altaagendar"'+(A.agendar?' checked':'')+'> Reservar sus clases del mes</label></section>';
-  // Cobro
-  const montoM=A.montoM!==''?A.montoM:String(plan[2]);
-  h+='<section class="card altasec"><h2>4 · Cobro de hoy</h2>'+chips('apago',[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['Pendiente','No paga hoy']],A.pago);
-  h+='<div class="altagrid"><div><label class="mut" for="altamontom">Mensualidad</label><input class="field" id="altamontom" type="number" min="0" step="50" inputmode="numeric" value="'+esc(montoM)+'"></div>';
-  h+='<div><label class="chk" style="margin:0 0 6px"><input type="checkbox" id="altainsc"'+(A.insc?' checked':'')+(A.pago==='Pendiente'?' disabled':'')+'> Inscripción anual</label><input class="field" id="altamontoi" type="number" min="0" step="50" inputmode="numeric" value="'+esc(A.montoI)+'"'+((A.insc&&A.pago!=='Pendiente')?'':' disabled')+'></div></div>';
-  if(A.pago==='Pendiente')h+='<div class="mut" style="font-size:12px">La mensualidad queda pendiente (aparece en "quién debe"). La inscripción no se registra: cóbrala después desde la ficha con "Otro pago".</div>';
+  A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); const rest=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>k.dias.has(d)),pl[1]); const aviso=A.mes===A.mesAct&&rest.length<pl[1];
+    h+='<section class="card altasec"><h2>'+esc(k.nombre||'Alumno '+(i+1))+'</h2><div class="mut" style="font-size:12.5px;margin:-4px 0 8px">'+esc(pl[0])+' · '+(pl[1]/4)+' por semana · '+DIAS_CLASE.filter(d=>k.dias.has(d)).map(d=>d.slice(0,3)).join(', ')+'</div>';
+    if(A.agendar)h+='<div class="mut" style="font-size:12.5px;margin-bottom:8px'+(aviso?';color:var(--amber)':'')+'">'+(rest.length?'Se reservan '+rest.length+' clase'+(rest.length===1?'':'s')+': '+rest.slice(0,6).map(fmtFecha).join(', ')+(rest.length>6?'…':''):'No quedan clases de esos días este mes.')+(aviso?' Quedan menos clases que las del plan: ajusta el monto o empieza el próximo mes.':'')+'</div>';
+    if(A.pago!=='Pendiente')h+='<div class="altagrid"><div><label class="mut" for="al_'+i+'_montoM">Mensualidad</label><input class="field" id="al_'+i+'_montoM" data-kk="'+i+'.montoM" type="number" min="0" step="50" inputmode="numeric" value="'+esc(k.montoM!==''?k.montoM:String(pl[2]))+'"></div><div><label class="chk" style="margin:0 0 6px"><input type="checkbox" data-kinsc="'+i+'"'+(k.insc?' checked':'')+'> Inscripción anual</label><input class="field" data-kk="'+i+'.montoI" type="number" min="0" step="50" inputmode="numeric" value="'+esc(k.montoI)+'"'+(k.insc?'':' disabled')+' aria-label="Monto de inscripción"></div></div>';
+    h+='</section>'; });
+  { let tot=0; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); tot+=(Number(k.montoM!==''?k.montoM:pl[2])||0)+((k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0); }); h+='<div class="card altasec" style="display:flex;justify-content:space-between;align-items:center"><b>'+(A.pago==='Pendiente'?'Queda pendiente':'Total a cobrar hoy')+'</b><b style="font-size:18px" id="altatotal">'+$$(tot)+'</b></div>'; }
+  if(A.pago==='Pendiente')h+='<div class="mut" style="font-size:12.5px;margin-bottom:10px">Las mensualidades quedan pendientes (aparecen en "Quién debe"). La inscripción no se registra: cóbrala después desde la ficha.</div>';
+  return h+pieAlta(A,[],'Continuar al acuerdo');
+}
+function bindCobro(A,root){
+  bindPie(A,root,()=>faltasCobro(A),()=>{ A.paso=4; if(!A.ac.firmante)A.ac.firmante=nombreTutorAlta(A); drawAlta(); });
+  bindChips(root,'apago',v=>{ A.pago=v; drawAlta(); }); bindChips(root,'ames',v=>{ A.mes=v; drawAlta(); });
+  root.querySelector('#altaagendar').onchange=e=>{ A.agendar=e.target.checked; drawAlta(); };
+  root.querySelectorAll('[data-kinsc]').forEach(c=>c.onchange=()=>{ A.kids[+c.dataset.kinsc].insc=c.checked; drawAlta(); });
+  const tt=root.querySelector('#altatotal'); const retot=()=>{ let tot=0; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); tot+=(Number(k.montoM!==''?k.montoM:pl[2])||0)+((k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0); }); if(tt)tt.textContent=$$(tot); };
+  root.querySelectorAll('[data-kk]').forEach(inp=>{ const [n,c]=inp.dataset.kk.split('.'); inp.oninput=()=>{ A.kids[+n][c]=inp.value; resumenAlta(); retot(); }; });
+}
+/* Paso 4: acuerdo. Se lee y firma en la tablet; no se redibuja al marcar casillas para no perder el scroll. */
+function pasoAcuerdo(A){
+  const ac=A.ac, t=A.tutorSel||A.t, kids=A.kids;
+  const dato=(k,v)=>'<div class="acdato"><span>'+k+'</span><b>'+(v?esc(v):'—')+'</b></div>';
+  let h='<section class="card altasec acuerdo"><div class="acentrega"><i class="ti ti-hand-finger" aria-hidden="true"></i> Entrega la tablet al tutor para que lea y firme.</div>';
+  h+='<h2 class="actit">Acuerdo General de Inscripción y Responsiva</h2><p>'+esc(ACUERDO.intro)+'</p>';
+  h+='<h3>1. Ficha de inscripción y confirmación de datos</h3>';
+  kids.forEach((k,i)=>{ const b=A.bl.find(x=>x.id===k.hid); const pl=planDe(k); h+='<div class="acbloque"><div class="acsub">Alumno '+(kids.length>1?(i+1):'')+'</div>'+dato('Nombre',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+' ('+edadKid(k)+' años)':'')+dato('Alergias',k.alergias)+dato('Programa',k.prog)+dato('Horario',b?nombreSinGenero(b.nombre):'')+dato('Días',DIAS_CLASE.filter(d=>k.dias.has(d)).join(', '))+dato('Membresía',pl[1]+' clases al mes ('+(pl[1]/4)+' por semana) · '+pl[0]+' · $'+Number(k.montoM!==''?k.montoM:pl[2]).toLocaleString('es-MX'))+(k.obs?dato('Observaciones',k.obs):'')+'</div>'; });
+  h+='<div class="acbloque"><div class="acsub">Padre, madre o tutor legal</div>'+dato('Nombre',t.nombre)+(A.tutorSel?'':dato('Relación',t.parentesco)+dato('Celular',t.whatsapp)+dato('Correo',t.email)+(t.direccion?dato('Dirección',t.direccion):'')+dato('Contacto de emergencia',[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':'',t.telefono_emergencia].filter(Boolean).join(' ')))+'</div>';
+  h+='<p class="acnota">¿Algún dato está mal? Regresa la tablet a recepción para corregirlo antes de firmar.</p>';
+  h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(ACUERDO.veracidad)+'</span></label>';
+  h+='<h3>2. Reglamento interno</h3><p>'+esc(ACUERDO.reglamentoIntro)+'</p><ol class="acregla">'+ACUERDO.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol>';
+  h+='<label class="chk acchk"><input type="checkbox" data-ac="reglamento"'+(ac.reglamento?' checked':'')+'> <span>Acepto cumplir y hacer cumplir el reglamento interno.</span></label>';
+  h+='<h3>3. Autorización de uso de imagen</h3><p>'+esc(ACUERDO.imagen)+'</p><p class="acnota">'+esc(ACUERDO.imagenNota)+'</p><div class="chipsel acimg" data-grp="acimg">'+[['Autoriza','Sí autorizo'],['No autoriza','No autorizo']].map(o=>'<button type="button" class="chipo'+(ac.uso_imagen===o[0]?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div><div class="mut" style="font-size:12px;margin:-6px 0 10px">Es opcional: la inscripción no depende de esta respuesta.</div>';
+  h+='<h3>4. Carta responsiva</h3><p>'+esc(ACUERDO.responsiva)+'</p><label class="chk acchk"><input type="checkbox" data-ac="responsiva"'+(ac.responsiva?' checked':'')+'> <span>Acepto la carta responsiva.</span></label>';
+  h+='<h3>Aceptación</h3><p>'+esc(ACUERDO.aceptacion)+'</p><label class="mut" for="acfirmante">Nombre completo de quien firma</label><input class="field" id="acfirmante" value="'+esc(ac.firmante)+'" autocomplete="off">';
+  h+='<div class="acfirmahead"><span class="mut">Firma</span><button type="button" class="btn" id="acborrar">Borrar firma</button></div><canvas id="acfirma" class="firmapad" aria-label="Firma del tutor: dibuja con el dedo"></canvas><div class="mut" style="font-size:12px;margin-top:4px">Fecha: '+esc(new Date().toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' · Mérida, Yucatán</div>';
   h+='</section>';
-  h+='<div id="altaerr" role="alert" style="color:var(--danger);font-size:13px;margin:10px 0"></div><button type="button" class="btn pri acbig" id="altaok"><i class="ti ti-user-plus" aria-hidden="true"></i> Dar de alta</button>';
-  // guardar lo tecleado antes de repintar
-  center.querySelectorAll('[data-ak]').forEach(i=>{ const [g,c]=i.dataset.ak.split('.'); A[g][c]=i.value; });
-  const mm=document.getElementById('altamontom'); if(mm)A.montoM=mm.value; const mi=document.getElementById('altamontoi'); if(mi)A.montoI=mi.value;
+  h+='<label class="chk"><input type="checkbox" id="acpapel"'+(ac.papel?' checked':'')+'> El tutor no puede firmar ahora: firmará en papel después</label>'+(ac.papel?'<div class="mut" style="font-size:12.5px;color:var(--danger);margin:-4px 0 10px">Sin responsiva firmada no puede entrar a clase: el kiosco lo mandará a recepción. Al terminar podrás imprimir el acuerdo con sus datos para que lo firme.</div>':'');
+  h+='<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="altaatras"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button><button type="button" class="btn pri" id="altasig"><i class="ti ti-signature" aria-hidden="true"></i> '+(ac.papel?'Dar de alta sin firma':'Firmar y dar de alta')+(A.kids.length>1?' ('+A.kids.length+')':'')+'</button></div></div>';
+  return h;
+}
+function bindAcuerdo(A,root){
+  const ac=A.ac;
+  root.querySelector('#altaatras').onclick=()=>{ A.paso=3; drawAlta(); };
+  root.querySelector('#altasig').onclick=()=>{ ac.firmante=root.querySelector('#acfirmante').value; const f=faltasAcuerdo(A); if(f.length){ root.querySelector('#altaerr').textContent='Falta: '+f.join(', ')+'.'; return; } ac.firma=ac.papel?'':trazoSVG(ac.trazos); enviarAltas(); };
+  root.querySelectorAll('[data-ac]').forEach(c=>c.onchange=()=>{ ac[c.dataset.ac]=c.checked; });
+  root.querySelectorAll('[data-grp="acimg"] .chipo').forEach(b=>b.onclick=()=>{ ac.uso_imagen=b.dataset.v; root.querySelectorAll('[data-grp="acimg"] .chipo').forEach(x=>x.classList.toggle('on',x===b)); });
+  root.querySelector('#acfirmante').oninput=e=>{ ac.firmante=e.target.value; };
+  root.querySelector('#acpapel').onchange=e=>{ ac.papel=e.target.checked; drawAlta(); if(ac.papel)root.querySelector('#acpapel').scrollIntoView({block:'center'}); };
+  const cv=root.querySelector('#acfirma'); iniciarFirma(cv,ac); root.querySelector('#acborrar').onclick=()=>{ ac.trazos=[]; iniciarFirma(cv,ac); };
+}
+/* Firma en pantalla: coordenadas en un lienzo lógico de 600×200 para que se vea igual en cualquier tamaño. */
+function iniciarFirma(cv,ac){
+  const W=600,H=200, ctx=cv.getContext('2d'); const r=cv.getBoundingClientRect(); const dpr=window.devicePixelRatio||1; const w=r.width||600;
+  cv.style.height=Math.round(w*H/W)+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(w*H/W*dpr);
+  ctx.setTransform(cv.width/W,0,0,cv.height/H,0,0); ctx.lineWidth=2.6; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#111';
+  ctx.clearRect(0,0,W,H); ac.trazos.forEach(t=>{ ctx.beginPath(); t.forEach((p,j)=>j?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); if(t.length===1)ctx.lineTo(t[0][0]+.5,t[0][1]); ctx.stroke(); });
+  const pt=e=>{ const b=cv.getBoundingClientRect(); return [Math.max(0,Math.min(W,Math.round((e.clientX-b.left)/b.width*W))),Math.max(0,Math.min(H,Math.round((e.clientY-b.top)/b.height*H)))]; };
+  let cur=null;
+  cv.onpointerdown=e=>{ e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch(x){} cur=[pt(e)]; ac.trazos.push(cur); };
+  cv.onpointermove=e=>{ if(!cur)return; const p=pt(e), q=cur[cur.length-1]; if(Math.abs(p[0]-q[0])+Math.abs(p[1]-q[1])<2)return; ctx.beginPath(); ctx.moveTo(q[0],q[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); cur.push(p); };
+  cv.onpointerup=cv.onpointercancel=()=>{ cur=null; };
+}
+function trazoSVG(tr){ return tr.filter(t=>t.length).map(t=>'M'+t[0][0]+' '+t[0][1]+(t.length>1?'L'+t.slice(1).map(p=>p[0]+' '+p[1]).join(' '):'')).join(' '); }
+function firmaSVG(d){ return /^M[\d .LM-]+$/.test(String(d||''))?'<svg viewBox="0 0 600 200" class="pfirmasvg" role="img" aria-label="Firma"><path d="'+d+'" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>':''; }
+/* ---- envío: un alta por alumno, en orden; el primero crea al tutor y los demás lo reutilizan ---- */
+function payloadHijo(A,i){
+  const k=A.kids[i], b=A.bl.find(x=>x.id===k.hid), pl=planDe(k), pagado=A.pago!=='Pendiente', esAd=k.prog==='FitParents';
+  const p={alumno:{responsiva:!A.ac.papel,nombre:k.nombre.trim().replace(/\s+/g,' '),fecha_nacimiento:k.fn,genero:esAd?null:k.gen,alergias:k.alergias.trim(),observaciones:k.obs.trim(),programa:k.prog,horario_id:b.id,hora:horaDeNombre(b.nombre)||undefined,dias:DIAS_CLASE.filter(d=>k.dias.has(d))},
+    membresia:{plan:k.plan,mes:A.mes,estado_pago:pagado?'Pagado':'Pendiente',metodo:pagado?A.pago:undefined,monto:Number(k.montoM!==''?k.montoM:pl[2]),agendar:A.agendar},
+    inscripcion:{cobrar:pagado&&k.insc,monto:Number(k.montoI)||0,metodo:pagado?A.pago:undefined}};
+  if(!A.ac.papel)p.acuerdo={veracidad:A.ac.veracidad,reglamento:A.ac.reglamento,responsiva:A.ac.responsiva,uso_imagen:A.ac.uso_imagen,firmante:A.ac.firmante.trim().replace(/\s+/g,' '),firma:A.ac.firma,version:ACUERDO_VERSION};
+  if(A.tutorSel)p.tutor_id=A.tutorSel.id; else if(A.tutorId)p.tutor_id=A.tutorId;
+  else { const t=A.t; p.tutor={nombre:t.nombre.trim(),email:String(t.email).trim().toLowerCase(),whatsapp:'+52'+d10(t.whatsapp),parentesco:t.parentesco,direccion:String(t.direccion||'').trim(),contacto_emergencia:String(t.contacto_emergencia).trim(),relacion_emergencia:String(t.relacion_emergencia||'').trim(),telefono_emergencia:'+52'+d10(t.telefono_emergencia)}; }
+  if(A.forzar[i])p.forzar=true;
+  return p;
+}
+async function enviarAltas(){
+  const A=ALTA; A.enviando=true; A.fecha=new Date().toISOString(); pintarProgreso();
+  for(let i=0;i<A.kids.length;i++){
+    if(A.res[i]&&(A.res[i].ok!==false||A.res[i].parcial))continue;
+    A.actual=i; pintarProgreso();
+    const r=await call('alta_completa',payloadHijo(A,i)); if(ALTA!==A)return;
+    A.res[i]=r||{ok:false,error:'error de red'};
+    if(r&&r.tutor_id&&!A.tutorSel)A.tutorId=r.tutor_id;
+    if(!r||r.ok===false)break;
+  }
+  A.enviando=false; A.actual=null; DIRECTORIO=null; resultadoAlta();
+}
+function pintarProgreso(){
+  const A=ALTA, center=document.getElementById('centercol'); if(!A||!center)return;
+  center.innerHTML='<div class="pagehead"><h1>Dando de alta…</h1></div><div class="card altasec"><div class="mut" style="margin-bottom:10px">Tarda unos 25 segundos por alumno. No cierres esta pantalla.</div><ul class="altares">'+A.kids.map((k,i)=>{ const r=A.res[i]; const st=r?(r.ok!==false?'ok':'dng'):(A.actual===i?'':'gris'); return '<li class="'+st+'"><i class="ti '+(r?(r.ok!==false?'ti-circle-check':'ti-alert-triangle'):(A.actual===i?'ti-loader-2 girando':'ti-clock'))+'" aria-hidden="true"></i> '+esc(k.nombre)+'</li>'; }).join('')+'</ul></div>';
+}
+function resultadoAlta(){
+  const A=ALTA, center=document.getElementById('centercol'); if(!A||!center)return;
+  const oks=A.res.filter(r=>r&&r.ok!==false), todo=oks.length===A.kids.length;
+  const it=(b,t)=>'<li class="'+(b?'ok':'dng')+'"><i class="ti '+(b?'ti-circle-check':'ti-alert-triangle')+'" aria-hidden="true"></i> '+t+'</li>';
+  let h='<div class="pagehead"><h1>'+(todo?(A.kids.length>1?A.kids.length+' alumnos dados de alta':'Alumno dado de alta'):'Alta incompleta')+'</h1></div>';
+  A.kids.forEach((k,i)=>{ const r=A.res[i]; h+='<div class="card altasec"><div class="nm" style="font-size:16px">'+esc(k.nombre)+'</div>';
+    if(!r){ h+='<div class="mut">No se envió: se detuvo antes por el error de arriba.</div></div>'; return; }
+    if(r.duplicado){ h+='<div style="color:var(--danger);font-size:13px;margin:6px 0">Ya existe un alumno con ese nombre. No se guardó nada de este alumno.</div>'+r.duplicado.map(d=>'<div class="dirrow" style="cursor:default"><div style="flex:1"><div class="nm">'+esc(d.nombre)+'</div><div class="mut">'+esc(d.cod||'sin código')+(d.fecha_nacimiento?' · nació '+esc(d.fecha_nacimiento):'')+'</div></div><button type="button" class="btn" data-dupf="'+esc(d.id)+'">Abrir ficha</button></div>').join('')+'<button type="button" class="btn pri" data-forzar="'+i+'" style="margin-top:8px">Es otra persona: darlo de alta</button></div>'; return; }
+    h+='<div class="mut">Código '+esc(r.codigo||'—')+'</div><ul class="altares">'+it(!!r.id,'Alumno creado');
+    if(r.id)h+=it(!!r.acuerdo,r.acuerdo?'Acuerdo firmado (responsiva, reglamento'+(A.ac.uso_imagen==='Autoriza'?', autoriza fotos)':', no autoriza fotos)'):'Falta el acuerdo firmado: no puede entrar a clase');
+    if(r.tutor_id&&i===0&&!A.tutorSel)h+=it(true,r.tutor_creado?'Tutor nuevo creado':'Vinculado a un tutor que ya existía (mismo correo o WhatsApp)');
+    if(r.membresia)h+=it(true,'Membresía '+esc(r.membresia)+(r.membresia_pagada?' · pagada':' · pendiente de pago'));
+    if(r.membresia&&A.agendar)h+=it(!r.sin_cupo,(r.agendadas||0)+' clases reservadas'+(r.sin_cupo?' · '+r.sin_cupo+' sin cupo (grupo lleno)':''));
+    if(r.pago_inscripcion)h+=it(true,'Inscripción cobrada ('+esc(r.pago_inscripcion)+')');
+    if(r.ok===false)h+=it(false,(r.parcial?'Quedó a medias: ':'No se guardó: ')+esc(r.error||'error')+(r.parcial?'. Termínalo desde su ficha.':''));
+    h+='</ul>'+(r.id?'<button type="button" class="btn" data-rficha="'+esc(r.id)+'" style="margin-top:8px"><i class="ti ti-id" aria-hidden="true"></i> Ficha</button>':'')+(r.ok===false&&!r.parcial?'<button type="button" class="btn pri" data-corregir="'+i+'" style="margin:8px 0 0 6px">Corregir y reintentar</button>':'')+'</div>'; });
+  const ids=oks.map(r=>r.id).filter(Boolean);
+  h+='<div class="card altasec"><div style="display:flex;gap:8px;flex-wrap:wrap">'+(ids.length?'<button type="button" class="btn pri" id="altaacu"><i class="ti ti-printer" aria-hidden="true"></i> '+(A.ac.papel?'Imprimir acuerdo para firmar':'Imprimir acuerdo firmado')+'</button><button type="button" class="btn" id="altaqr"><i class="ti ti-qrcode" aria-hidden="true"></i> Tarjetas QR ('+ids.length+')</button>':'')+((A.tutorSel||A.tutorId)?'<button type="button" class="btn" id="altaherm"><i class="ti ti-users-plus" aria-hidden="true"></i> Otro hijo del mismo tutor</button>':'')+'<button type="button" class="btn" id="altaotro">Nueva alta</button></div><div class="mut" id="altaqrst" style="margin-top:8px"></div></div>';
   center.innerHTML=h; resumenAlta();
-  document.getElementById('altacancel').onclick=()=>{ ALTA=null; estudiantes(); };
-  center.querySelectorAll('[data-ak]').forEach(i=>{ const [g,c]=i.dataset.ak.split('.'); i.oninput=()=>{ A[g][c]=i.value; resumenAlta(); }; });
-  const fn=document.getElementById('al_a_fecha_nacimiento'); fn.onchange=()=>{ A.a.fecha_nacimiento=fn.value; A.progManual=false; drawAlta(); };
-  if(A.tutorSel){ document.getElementById('altatcambiar').onclick=()=>{ A.tutorSel=null; drawAlta(); }; }
-  else { const bus=document.getElementById('altatbus'), res=document.getElementById('altatres'); bus.oninput=()=>{ const q=bus.value.trim().toLowerCase(); const qd=d10(q); if(q.length<3){res.innerHTML='';return;} const arr=((DIRECTORIO&&DIRECTORIO.tutores)||[]).filter(t=>String(t.nombre).toLowerCase().indexOf(q)!==-1||String(t.email||'').toLowerCase().indexOf(q)!==-1||(qd.length>=6&&d10(t.whatsapp).indexOf(qd)!==-1)).slice(0,5); res.innerHTML=arr.length?arr.map(t=>'<button type="button" class="dirrow" data-atut="'+esc(t.id)+'"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="text-align:left"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc(t.email||t.whatsapp||'')+'</div></div></button>').join(''):'<div class="mut">Sin coincidencias: captura al tutor abajo.</div>'; res.querySelectorAll('[data-atut]').forEach(b=>b.onclick=()=>{ A.tutorSel=DIRECTORIO.tutores.find(t=>t.id===b.dataset.atut)||null; drawAlta(); }); }; }
-  bindChips(center,'agen',v=>{A.gen=v;drawAlta();}); bindChips(center,'aprog',v=>{A.prog=v;A.progManual=true;drawAlta();}); bindChips(center,'ablq',v=>{A.hid=v;resumenAlta();});
-  bindChips(center,'aplan',v=>{A.plan=v;A.montoM='';drawAlta();}); bindChips(center,'ames',v=>{A.mes=v;drawAlta();}); bindChips(center,'apago',v=>{A.pago=v;drawAlta();});
-  center.querySelectorAll('[data-grp="adias"] .chipo').forEach(b=>b.onclick=()=>{ const d=b.dataset.v; if(A.dias.has(d))A.dias.delete(d); else { if(A.dias.size>=maxDias){ document.getElementById('altaerr').textContent='El plan permite '+maxDias+' día(s) por semana; cambia el plan para agregar más.'; return; } A.dias.add(d); } drawAlta(); });
-  document.getElementById('altaagendar').onchange=e=>{A.agendar=e.target.checked;};
-  document.getElementById('altaresp').onchange=e=>{A.responsiva=e.target.checked;drawAlta();};
-  document.getElementById('altainsc').onchange=e=>{A.insc=e.target.checked;drawAlta();};
-  const mm2=document.getElementById('altamontom'); mm2.oninput=()=>{A.montoM=mm2.value;resumenAlta();}; const mi2=document.getElementById('altamontoi'); mi2.oninput=()=>{A.montoI=mi2.value;resumenAlta();};
-  document.getElementById('altaok').onclick=e=>enviarAlta(e.currentTarget);
+  center.querySelectorAll('[data-rficha],[data-dupf]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.rficha||b.dataset.dupf));
+  center.querySelectorAll('[data-forzar]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.forzar; A.forzar[i]=true; A.res[i]=null; enviarAltas(); });
+  center.querySelectorAll('[data-corregir]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.corregir; A.res[i]=null; A.paso=2; A.abierto=i; drawAlta(); });
+  const ac=document.getElementById('altaacu'); if(ac)ac.onclick=()=>imprimirAcuerdo(datosAcuerdoAlta(A));
+  const q=document.getElementById('altaqr'); if(q)q.onclick=async()=>{ const st=document.getElementById('altaqrst'); st.textContent='Generando tarjetas…'; const t=await call('qr_lote',{generar:ids}); if(!t||t.ok===false){ st.textContent='No se pudo: '+((t&&t.error)||'error'); return; } const items=(t.data||[]).filter(x=>ids.includes(x.id)&&x.token).map(x=>({nombre:x.nombre,cod:x.cod,token:x.token,clase:x.horario})); st.textContent=''; imprimirTarjetas(items).catch(()=>{ st.textContent='No se pudo preparar la impresión'; }); };
+  const hm=document.getElementById('altaherm'); if(hm)hm.onclick=()=>altaAlumno({tutor:A.tutorSel||{id:A.tutorId,nombre:A.t.nombre,email:A.t.email,whatsapp:A.t.whatsapp}});
+  document.getElementById('altaotro').onclick=()=>altaAlumno();
 }
 function resumenAlta(){
-  const A=ALTA, right=document.getElementById('rightcol'); if(!A||!right)return; const b=A.bl.find(x=>x.id===A.hid); const plan=PLANES.find(p=>p[0]===A.plan)||PLANES[1];
-  const mM=Number(A.montoM!==''?A.montoM:plan[2])||0, mI=(A.insc&&A.pago!=='Pendiente')?(Number(A.montoI)||0):0; const hoyCobra=A.pago==='Pendiente'?0:mM+mI;
+  const A=ALTA, right=document.getElementById('rightcol'); if(!A||!right)return;
   const fila=(k,v)=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span class="mut">'+k+'</span><span style="text-align:right">'+v+'</span></div>';
-  right.innerHTML='<h2>Resumen</h2>'+fila('Alumno',esc(A.a.nombre||'—'))+fila('Tutor',esc((A.tutorSel&&A.tutorSel.nombre)||A.t.nombre||'—'))+fila('Clase',b?esc(nombreSinGenero(b.nombre)):'—')+fila('Días',A.dias.size?DIAS_CLASE.filter(d=>A.dias.has(d)).map(d=>d.slice(0,3)).join(', '):'—')+fila('Plan',plan[1]+' clases · '+MESES[+A.mes.slice(5,7)-1])+fila('Cobra hoy','<b>$'+hoyCobra.toLocaleString('es-MX')+'</b>'+(A.pago==='Pendiente'?' (pendiente $'+mM.toLocaleString('es-MX')+')':' · '+esc(A.pago==='Tarjeta TPV'?'tarjeta':'efectivo')));
+  let total=0, pend=0;
+  const kids=A.kids.map((k,i)=>{ const pl=planDe(k); const b=A.bl.find(x=>x.id===k.hid); const mM=Number(k.montoM!==''?k.montoM:pl[2])||0, mI=(k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0; if(A.pago==='Pendiente')pend+=mM; else total+=mM+mI;
+    return '<div class="venc"><div class="nm">'+esc(k.nombre||'Alumno '+(i+1))+'</div><div class="mut">'+esc([b?nombreSinGenero(b.nombre):'',k.dias.size?DIAS_CLASE.filter(d=>k.dias.has(d)).map(d=>d.slice(0,3)).join(', '):'',pl[0]+' $'+pl[2]].filter(Boolean).join(' · '))+'</div></div>'; }).join('');
+  right.innerHTML='<h2>Resumen</h2>'+fila('Tutor',esc(nombreTutorAlta(A)||'—'))+kids+fila('Cobra hoy','<b>'+$$(total)+'</b>'+(A.pago==='Pendiente'?'<br><span class="mut">pendiente '+$$(pend)+'</span>':' · '+esc(A.pago==='Tarjeta TPV'?'tarjeta':'efectivo')))+fila('Acuerdo',A.ac.papel?'<span style="color:var(--danger)">en papel después</span>':(A.paso===4&&!faltasAcuerdo(A).length?'listo para firmar':'pendiente'));
 }
-async function enviarAlta(btn){
-  const A=ALTA, err=document.getElementById('altaerr'); const g=k=>String((A[k.split('.')[0]]||{})[k.split('.')[1]]||'').trim();
-  const b=A.bl.find(x=>x.id===A.hid); const plan=PLANES.find(p=>p[0]===A.plan); const edad=edadDe(g('a.fecha_nacimiento')); const esAdulto=A.prog==='FitParents';
-  const faltas=[[!A.tutorSel&&!g('t.nombre'),'el nombre del tutor'],[!A.tutorSel&&!/^\S+@\S+\.\S+$/.test(g('t.email')),'un correo válido del tutor'],[!A.tutorSel&&d10(g('t.whatsapp')).length!==10,'el WhatsApp a 10 dígitos'],[!A.tutorSel&&!g('t.contacto_emergencia'),'el contacto de emergencia'],[!A.tutorSel&&d10(g('t.telefono_emergencia')).length!==10,'el teléfono de emergencia a 10 dígitos'],
-    [!g('a.nombre'),'el nombre del alumno'],[!g('a.fecha_nacimiento'),'la fecha de nacimiento'],[edad!=null&&edad<0,'una fecha válida'],[!esAdulto&&!A.gen,'el género'],[!g('a.alergias'),'las alergias (o "ninguna")'],[!b,'el bloque'],[!A.dias.size,'los días'],[A.pago!=='Pendiente'&&!(Number(A.montoM!==''?A.montoM:plan[2])>0),'el monto de la mensualidad'],[A.insc&&A.pago!=='Pendiente'&&!(Number(A.montoI)>0),'el monto de la inscripción']].filter(x=>x[0]);
-  if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
-  const pagado=A.pago!=='Pendiente';
-  const p={alumno:{responsiva:A.responsiva,nombre:g('a.nombre'),fecha_nacimiento:g('a.fecha_nacimiento'),genero:esAdulto?null:A.gen,alergias:g('a.alergias'),programa:A.prog,horario_id:b.id,hora:horaDeNombre(b.nombre)||undefined,dias:DIAS_CLASE.filter(d=>A.dias.has(d))},
-    membresia:{plan:A.plan,mes:A.mes,estado_pago:pagado?'Pagado':'Pendiente',metodo:pagado?A.pago:undefined,monto:Number(A.montoM!==''?A.montoM:plan[2]),agendar:A.agendar},
-    inscripcion:{cobrar:pagado&&A.insc,monto:Number(A.montoI)||0,metodo:pagado?A.pago:undefined}};
-  if(A.tutorSel)p.tutor_id=A.tutorSel.id; else p.tutor={nombre:g('t.nombre'),email:g('t.email').toLowerCase(),whatsapp:'+52'+d10(g('t.whatsapp')),parentesco:g('t.parentesco'),contacto_emergencia:g('t.contacto_emergencia'),telefono_emergencia:'+52'+d10(g('t.telefono_emergencia'))};
-  if(A.forzar)p.forzar=true;
-  btn.disabled=true; const txt=btn.innerHTML; btn.innerHTML='Dando de alta… (tarda unos segundos)'; err.textContent='';
-  const r=await call('alta_completa',p); btn.disabled=false; btn.innerHTML=txt; if(ALTA!==A)return;
-  if(r&&r.duplicado){ err.innerHTML='Ya existe un alumno con ese nombre:'+r.duplicado.map(d=>'<div class="dirrow" style="margin-top:6px;cursor:default"><div style="flex:1"><div class="nm">'+esc(d.nombre)+'</div><div class="mut">'+esc(d.cod||'sin código')+(d.fecha_nacimiento?' · nació '+esc(d.fecha_nacimiento):'')+'</div></div><button type="button" class="btn" data-dupf="'+esc(d.id)+'">Abrir ficha</button></div>').join('')+'<button type="button" class="btn" id="altaforzar" style="margin-top:8px">Es otra persona: dar de alta de todos modos</button>';
-    err.querySelectorAll('[data-dupf]').forEach(x=>x.onclick=()=>{ALTA=null;verFichaAlumno(x.dataset.dupf);}); document.getElementById('altaforzar').onclick=()=>{A.forzar=true;enviarAlta(btn);}; return; }
-  if(!r||r.ok===false){ if(r&&r.parcial){ DIRECTORIO=null; resultadoAlta(r); return; } err.textContent='No se guardó nada: '+((r&&r.error)||'error de red'); return; }
-  DIRECTORIO=null; resultadoAlta(r);
+/* ---- documento del acuerdo: firmado (alta o ficha) o en blanco para firmar en papel ---- */
+function datosAcuerdoAlta(A){
+  const t=A.tutorSel||A.t;
+  return {tutor:{nombre:t.nombre,parentesco:t.parentesco||'',whatsapp:t.whatsapp||'',email:t.email||'',direccion:t.direccion||'',emergencia:A.tutorSel?'':[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':''].filter(Boolean).join(' '),tel_emergencia:A.tutorSel?'':t.telefono_emergencia},
+    kids:A.kids.filter((k,i)=>A.res[i]&&A.res[i].ok!==false).map(k=>{ const b=A.bl.find(x=>x.id===k.hid); const pl=planDe(k); return {nombre:k.nombre,fn:k.fn,edad:edadKid(k),alergias:k.alergias,programa:k.prog,horario:b?nombreSinGenero(b.nombre):'',dias:DIAS_CLASE.filter(d=>k.dias.has(d)).join(', '),plan:pl[1]+' clases al mes ('+(pl[1]/4)+' por semana) · '+pl[0],obs:k.obs}; }),
+    ac:A.ac.papel?null:{uso_imagen:A.ac.uso_imagen,firmante:A.ac.firmante,firma:A.ac.firma,version:ACUERDO_VERSION,fecha:A.fecha}};
 }
-function resultadoAlta(r){
-  const A=ALTA; const center=document.getElementById('centercol'); const ok=r.ok!==false;
-  const it=(b,t)=>'<li class="'+(b?'ok':'dng')+'"><i class="ti '+(b?'ti-circle-check':'ti-alert-triangle')+'" aria-hidden="true"></i> '+t+'</li>';
-  let h='<div class="pagehead"><h1>'+(ok?'Alumno dado de alta':'Alta incompleta')+'</h1></div><div class="card altasec"><div class="nm" style="font-size:17px">'+esc(r.nombre||'')+'</div><div class="mut">Código '+esc(r.codigo||'')+'</div><ul class="altares">';
-  h+=it(!!r.id,'Alumno creado'); if(r.verificado)h+=it(true,'Verificado en recepción'); if(r.id)h+=it(!!r.responsiva,r.responsiva?'Responsiva firmada':'Falta la responsiva: márcala en la ficha cuando la firme'); if(r.tutor_id)h+=it(true,r.tutor_creado?'Tutor nuevo creado':'Vinculado a su tutor');
-  if(r.membresia)h+=it(true,'Membresía '+esc(r.membresia)+(r.membresia_pagada?' · pagada':' · pendiente de pago'));
-  if(r.membresia&&A&&A.agendar)h+=it(!r.sin_cupo,(r.agendadas||0)+' clases reservadas'+(r.sin_cupo?' · '+r.sin_cupo+' sin cupo (grupo lleno)':''));
-  if(r.pago_inscripcion)h+=it(true,'Inscripción cobrada ('+esc(r.pago_inscripcion)+')');
-  if(r.alerta_edad_horario)h+=it(false,'La edad no coincide con el programa: revísalo en la ficha');
-  if(!ok)h+=it(false,'Se detuvo en '+esc(r.error||'')+'. Termina desde la ficha (renovar o cobrar).');
-  h+='</ul><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="altaficha"><i class="ti ti-id" aria-hidden="true"></i> Abrir ficha</button>'+(r.id?'<button type="button" class="btn" id="altaqr"><i class="ti ti-qrcode" aria-hidden="true"></i> Imprimir tarjeta QR</button>':'')+(r.tutor_id?'<button type="button" class="btn" id="altaherm"><i class="ti ti-users-plus" aria-hidden="true"></i> Alta de un hermano</button>':'')+'<button type="button" class="btn" id="altaotro">Otro alumno</button></div><div class="mut" id="altaqrst" style="margin-top:8px"></div></div>';
-  center.innerHTML=h;
-  document.getElementById('altaficha').onclick=()=>{ALTA=null;verFichaAlumno(r.id);};
-  const q=document.getElementById('altaqr'); if(q)q.onclick=async()=>{ const st=document.getElementById('altaqrst'); st.textContent='Generando…'; const t=await call('qr_alumno',{alumno_id:r.id}); if(!t||t.ok===false){st.textContent='No se pudo: '+((t&&t.error)||'error');return;} st.textContent=''; const b=A&&A.bl.find(x=>x.id===A.hid); imprimirTarjetas([{nombre:t.nombre,cod:t.cod,token:t.token,clase:b?b.nombre:''}]).catch(()=>{st.textContent='No se pudo preparar la impresión';}); };
-  const hm=document.getElementById('altaherm'); if(hm)hm.onclick=async()=>{ let t=A&&A.tutorSel; if(!t){ const d=await call('directorio',{}); if(d&&d.ok!==false)DIRECTORIO=d; t=(DIRECTORIO&&DIRECTORIO.tutores||[]).find(x=>x.id===r.tutor_id)||{id:r.tutor_id,nombre:(A&&A.t.nombre)||'Tutor'}; } altaAlumno({tutor:t}); };
-  document.getElementById('altaotro').onclick=()=>altaAlumno();
+function imprimirAcuerdo(d){
+  const ac=d.ac, x=b=>ac?'☑':'☐';
+  const dato=(k,v)=>'<tr><td class="pk">'+k+'</td><td>'+(v?esc(v):'<span class="plinea"></span>')+'</td></tr>';
+  let h='<div class="pcorte pacuerdo"><h1>Acuerdo General de Inscripción y Responsiva</h1><div class="psub">FITKID GYMNASTIC (FKM) · Mérida, Yucatán</div><p>'+esc(ACUERDO.intro)+'</p>';
+  h+='<h2>1. Ficha de inscripción y confirmación de datos</h2>';
+  (d.kids.length?d.kids:[{}]).forEach((k,i,arr)=>{ h+='<h3>Datos del alumno'+(arr.length>1?' '+(i+1):'')+'</h3><table>'+dato('Nombre completo',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+(k.edad!=null?' ('+k.edad+' años)':''):'')+dato('Alergias (alimentos, medicamentos, otros)',k.alergias)+dato('Programa',k.programa)+dato('Horario',k.horario)+dato('Días',k.dias)+dato('Tipo de membresía',k.plan)+dato('Observaciones',k.obs||(ac?'Ninguna':''))+'</table>'; });
+  const t=d.tutor||{};
+  h+='<h3>Datos del padre, madre o tutor legal</h3><table>'+dato('Nombre completo',t.nombre)+dato('Relación con el alumno',t.parentesco)+dato('Teléfono celular',t.whatsapp)+dato('Correo electrónico',t.email)+dato('Dirección',t.direccion)+'</table><h3>Contacto de emergencia (diferente al tutor)</h3><table>'+dato('Nombre y relación',t.emergencia)+dato('Teléfono',t.tel_emergencia)+'</table>';
+  h+='<p class="pchk">'+x()+' <b>Declaración de veracidad:</b> '+esc(ACUERDO.veracidad)+'</p>';
+  h+='<h2>2. Reglamento interno</h2><p>'+esc(ACUERDO.reglamentoIntro)+'</p><ol>'+ACUERDO.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol><p class="pchk">'+x()+' Acepto cumplir y hacer cumplir el reglamento interno.</p>';
+  h+='<h2>3. Autorización de uso de imagen</h2><p>'+esc(ACUERDO.imagen)+'</p><p><i>'+esc(ACUERDO.imagenNota)+'</i></p><p class="pchk">'+(ac&&ac.uso_imagen==='Autoriza'?'☑':'☐')+' Sí autorizo &nbsp;&nbsp; '+(ac&&ac.uso_imagen==='No autoriza'?'☑':'☐')+' No autorizo</p>';
+  h+='<h2>4. Carta responsiva</h2><p>'+esc(ACUERDO.responsiva)+'</p><p class="pchk">'+x()+' Acepto la carta responsiva.</p>';
+  h+='<h2>Aceptación</h2><p>'+esc(ACUERDO.aceptacion)+'</p><table>'+dato('Nombre completo del padre/tutor',ac?ac.firmante:'')+'</table><div class="pfirmabox">'+(ac&&ac.firma?firmaSVG(ac.firma):'')+'<div class="pfirmalinea">Firma</div></div>';
+  h+='<div class="pmeta">'+(ac?'Aceptado digitalmente el '+esc(new Date(ac.fecha||Date.now()).toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' en recepción · versión del acuerdo '+esc(ac.version||'')+'.':'Fecha: ____________________')+'</div></div>';
+  imprimirDoc(h);
+}
+/* Reimpresión desde la ficha con lo que quedó guardado en Notion. */
+function imprimirAcuerdoFicha(){
+  const r=FICHA&&FICHA.r; if(!r)return; const al=r.al||{}, t=r.tutor||{}, mem=r.mem;
+  imprimirAcuerdo({tutor:{nombre:t.nombre,parentesco:t.parentesco,whatsapp:t.whatsapp,email:t.email,direccion:t.direccion,emergencia:t.contacto_emergencia,tel_emergencia:t.telefono_emergencia},
+    kids:[{nombre:al.nombre,fn:al.fecha_nacimiento,edad:typeof al.edad==='number'?al.edad:null,alergias:al.alergias,programa:al.programa,horario:r.horario?nombreSinGenero(r.horario.nombre):'',dias:(al.dias||[]).join(', '),plan:mem&&mem.creditos?mem.creditos+' clases al mes · '+mem.plan:'',obs:al.observaciones}],
+    ac:al.acuerdo?{uso_imagen:al.uso_imagen,firmante:al.acuerdo_firmante,firma:al.firma,version:al.acuerdo_version,fecha:al.acuerdo}:null});
 }
 
 /* ---------- Ventas y reportes ----------
@@ -1269,7 +1483,9 @@ const DOCS=[
   {id:'asistencia',ic:'ti-list-check',t:'Lista de asistencia en papel',d:'Por grupo y mes, para cuando no hay tablet.'},
   {id:'constancia',ic:'ti-certificate',t:'Constancia de inscripción',d:'Para la escuela o el trabajo del tutor.'},
   {id:'comprobante',ic:'ti-receipt',t:'Comprobante de pago',d:'Sale de los pagos en la ficha del alumno. No es factura.'},
-  {id:'responsiva',ic:'ti-file-alert',t:'Responsivas pendientes',d:'Quién no la tiene firmada y no puede entrar a clase.'}
+  {id:'responsiva',ic:'ti-file-alert',t:'Responsivas pendientes',d:'Quién no la tiene firmada y no puede entrar a clase.'},
+  {id:'acuerdo',ic:'ti-signature',t:'Acuerdo de inscripción',d:'Formato en blanco para firmar en papel, o el firmado desde la ficha.'},
+  {id:'imagen',ic:'ti-camera-off',t:'Uso de imagen',d:'Quién no autoriza fotos o videos: revísalo antes de publicar.'}
 ];
 async function documentos(forzar){ const B=await cargarBase('documentos','Documentos',forzar); if(!B||SECCION!=='documentos')return; drawDocumentos(); }
 function drawDocumentos(){
@@ -1304,6 +1520,16 @@ function drawDocPanel(){
   } else if(DOC_SEL==='comprobante'){
     right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">Abre la ficha del alumno; en "Últimos pagos" cada pago completado tiene su botón de imprimir.</div>');
     buscadorAlumno(right,a=>verFichaAlumno(a.id));
+  } else if(DOC_SEL==='acuerdo'){
+    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">El acuerdo se firma en la tablet al dar de alta. Para alumnos que ya estaban inscritos, o si el tutor prefiere papel, imprime el formato en blanco.</div><button type="button" class="btn pri acbig" id="docimp"><i class="ti ti-printer" aria-hidden="true"></i> Formato en blanco</button><div class="mut" style="font-size:12.5px;margin:14px 0 8px">Para reimprimir uno firmado, abre la ficha del alumno:</div>');
+    right.querySelector('#docimp').onclick=()=>imprimirAcuerdo({tutor:{},kids:[{},{}],ac:null});
+    buscadorAlumno(right,a=>verFichaAlumno(a.id));
+  } else if(DOC_SEL==='imagen'){
+    const no=BASE.activos.filter(a=>a.uso_imagen==='No autoriza'), sin=BASE.activos.filter(a=>!a.uso_imagen), si=BASE.activos.filter(a=>a.uso_imagen==='Autoriza');
+    const lista=l=>l.map(a=>'<div class="venc" style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(tituloGrupo(a.horario_id||'sin'))+'</div></div><button type="button" class="btn" data-vficha="'+esc(a.id)+'">Ficha</button></div>').join('');
+    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">'+si.length+' autorizan · <b>'+no.length+' no autorizan</b> · '+sin.length+' sin registro (firmaron antes del acuerdo digital).</div>'+(no.length?'<h2 style="margin-top:6px">No autorizan</h2>'+lista(no):'<div class="placeholder">Nadie ha dicho que no.</div>')+(sin.length?'<div class="mut" style="font-size:12.5px;margin-top:12px">"Sin registro" no es un sí: antes de publicar su foto, pregúntale al tutor.</div>':'')+(no.length?'<button type="button" class="btn acbig" id="docimp" style="margin-top:12px"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir lista</button>':''));
+    right.querySelectorAll('[data-vficha]').forEach(b=>b.onclick=()=>verFichaAlumno(b.dataset.vficha));
+    const bi=right.querySelector('#docimp'); if(bi)bi.onclick=()=>imprimirDoc('<div class="pcorte"><h1>FitKid Gymnastic · No autorizan fotos ni videos</h1><div>'+esc(fechaLargaDoc())+' · '+no.length+' alumnos</div><table style="margin-top:4mm"><tr><th>Alumno</th><th>Grupo</th></tr>'+no.map(a=>'<tr><td>'+esc(a.nombre)+'</td><td>'+esc(tituloGrupo(a.horario_id||'sin'))+'</td></tr>').join('')+'</table></div>');
   } else if(DOC_SEL==='responsiva'){
     const l=BASE.activos.filter(a=>!a.responsiva);
     right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">Sin responsiva firmada no pueden entrar a clase: el kiosco los manda a recepción.</div>'+(l.length?l.map(a=>{ const t=BASE.tu[a.tutor_id]; const wa=t&&waLink(t.whatsapp,'Hola '+primerNombre(t.nombre)+', para que '+primerNombre(a.nombre)+' pueda entrar a clase en FitKid Gymnastic necesitamos la responsiva firmada. ¿Nos la puede traer en su próxima visita?'); return '<div class="venc" style="display:flex;gap:8px;align-items:center"><div style="flex:1;min-width:0"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(t?t.nombre:'sin tutor')+'</div></div><button type="button" class="btn" data-vficha="'+esc(a.id)+'">Ficha</button>'+(wa?'<a class="btn" target="_blank" rel="noopener" href="'+esc(wa)+'" aria-label="WhatsApp"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i></a>':'')+'</div>'; }).join('')+'<button type="button" class="btn acbig" id="docimp" style="margin-top:12px"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir lista</button>':'<div class="placeholder">Todos los alumnos activos tienen la responsiva firmada.</div>')
