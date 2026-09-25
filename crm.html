@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FitKid · CRM</title>
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#185fa5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitKid CRM">
+<link rel="apple-touch-icon" href="https://lirp.cdn-website.com/ce8372ef/dms3rep/multi/opt/FitKidGimnastic-Logo-89199942-1920w.jpeg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  /* ---- FitKid Design System · tokens (mismos que index.html) ---- */
+  :root{
+    --brand-700:#0c447c; --brand-600:#185fa5; --brand-500:#2477c9; --brand-bg:#e8f1fb;
+    --energy:#ef7d2e; --energy-bg:#fdeede;
+    --bg:#eef2f7; --surface:#ffffff; --surface-2:#f7f9fc; --line:#e3e8f0; --line-2:#d3dae6;
+    --text:#13151a; --muted:#667085; --hint:#9aa3b2;
+    --teal:#0f6e56; --teal-bg:#e1f5ee; --blue:#185fa5; --blue-bg:#e6f1fb; --green:#3b6d11; --green-bg:#eaf3de;
+    --purple:#534ab7; --purple-bg:#eeedfe; --pink:#993556; --pink-bg:#fbeaf0; --amber:#854f0b; --amber-bg:#faeeda;
+    --ok:#0f6e56; --ok-bg:#e1f5ee; --danger:#a32d2d; --danger-bg:#fcebeb;
+    --r-lg:16px; --r:13px; --r-sm:10px; --r-pill:999px;
+    --sp-1:6px; --sp-2:10px; --sp-3:14px; --sp-4:18px; --sp-5:24px;
+    --sh-sm:0 1px 2px rgba(16,24,40,.05); --sh-md:0 6px 20px rgba(16,30,54,.08); --sh-lg:0 14px 40px rgba(16,30,54,.14);
+    --logo:url("https://lirp.cdn-website.com/ce8372ef/dms3rep/multi/opt/FitKidGimnastic-Logo-89199942-1920w.jpeg");
+    --nav-w:220px; --right-w:300px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  :focus-visible{outline:3px solid var(--brand-500);outline-offset:2px;border-radius:8px}
+  button{font-family:inherit}
+
+  /* ---- login (pantalla completa, reusa estilo de index.html) ---- */
+  .loginwrap{max-width:420px;margin:0 auto;padding:40px 18px}
+  .hero{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:20px;color:#fff;margin-bottom:var(--sp-4);box-shadow:var(--sh-md);background:linear-gradient(120deg,var(--brand-700),var(--brand-500))}
+  .hlogo{width:46px;height:46px;border-radius:13px;background:#fff var(--logo) center/82% no-repeat;box-shadow:var(--sh-sm);flex:0 0 auto;margin:0 auto 10px}
+  .htit{font-weight:700;font-size:19px;line-height:1.1;letter-spacing:-.2px}
+  .hsub{font-size:12.5px;opacity:.92;margin-top:2px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-sm)}
+  .field{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:14px;margin-bottom:10px;font-family:inherit}
+  .field:focus{border-color:var(--brand-500);outline:none;box-shadow:0 0 0 4px var(--brand-bg)}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font-size:14px;cursor:pointer;color:var(--text);transition:.13s;box-shadow:var(--sh-sm)}
+  .btn:hover{background:var(--surface-2);border-color:var(--line-2)} .btn:active{transform:scale(.98)}
+  .btn.pri{background:var(--brand-600);border-color:var(--brand-600);color:#fff;box-shadow:0 4px 12px rgba(24,95,165,.28)} .btn.pri:hover{background:var(--brand-500)}
+  .mut{font-size:12px;color:var(--muted)}
+  .footer{margin-top:var(--sp-5);text-align:center;font-size:11.5px;color:var(--hint)}
+
+  /* ---- shell de 3 paneles ---- */
+  .shell{display:grid;grid-template-columns:var(--nav-w) 1fr var(--right-w);min-height:100vh}
+  .navcol{background:var(--brand-700);color:#fff;padding:18px 12px;display:flex;flex-direction:column}
+  .navbrand{display:flex;align-items:center;gap:10px;padding:0 8px 18px}
+  .navbrand .hlogo{margin:0}
+  .navbrand b{font-size:14px}
+  .navlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+  .navlist button{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:none;background:transparent;color:rgba(255,255,255,.75);border-radius:var(--r-sm);font-size:13.5px;cursor:pointer;text-align:left}
+  .navlist button:hover{background:rgba(255,255,255,.08);color:#fff}
+  .navlist button.on{background:rgba(255,255,255,.16);color:#fff;font-weight:600}
+  .navlist button[disabled]{cursor:default;opacity:.45}
+  .navlist button[disabled]:hover{background:transparent;color:rgba(255,255,255,.75)}
+  .navlist .soon{margin-left:auto;font-size:9.5px;background:rgba(255,255,255,.14);padding:2px 7px;border-radius:var(--r-pill)}
+  .navfoot{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
+  .navfoot a,.navfoot button{color:rgba(255,255,255,.75);font-size:12.5px;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r-sm);text-decoration:none;border:none;background:transparent;cursor:pointer;width:100%;text-align:left}
+  .navfoot a:hover,.navfoot button:hover{background:rgba(255,255,255,.08);color:#fff}
+
+  .centercol{padding:22px 24px;overflow:auto}
+  .pagehead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+  .pagehead h1{font-size:20px;margin:0;letter-spacing:-.2px}
+  .pagehead .mut{font-size:12.5px}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+  .statcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh-sm)}
+  .statcard .v{font-size:22px;font-weight:700;color:var(--brand-600)}
+  .statcard .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .placeholder{background:var(--surface);border:1px dashed var(--line-2);border-radius:var(--r);padding:40px 20px;text-align:center;color:var(--muted)}
+
+  .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
+  .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
+  .venc{padding:10px 0;border-bottom:1px solid var(--line)}
+  .venc:last-child{border-bottom:none}
+  .venc .nm{font-size:13px;font-weight:600}
+  .venc .mut{font-size:11.5px}
+
+  /* ---- responsivo: tablet/celular en la recepción ---- */
+  @media (max-width:980px){
+    .shell{grid-template-columns:1fr}
+    .navcol{display:none}
+    .rightcol{display:none}
+    .centercol{padding:16px}
+  }
+  .mobilebar{display:none}
+  @media (max-width:980px){
+    .mobilebar{display:flex;align-items:center;gap:10px;background:var(--brand-700);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:5}
+    .mobilebar b{font-size:14px;flex:1}
+    .mobilebar a,.mobilebar button{color:#fff;background:rgba(255,255,255,.16);border:none;border-radius:var(--r-sm);padding:8px 12px;font-size:12.5px;text-decoration:none;cursor:pointer}
+  }
+</style>
+</head>
+<body>
+<div id="fk"></div>
+<script>
+/* CONFIG — mismas URLs de n8n que usa index.html. */
+const CONFIG = { WEBHOOK_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-staff-acciones", AUTH_URL:"https://yoor32.app.n8n.cloud/webhook/fitkid-auth" };
+const fk=document.getElementById('fk');
+const AUTH={token:null,rol:null,nombre:null,expira:null};
+let SECCION='home';
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ---------- red (mismo patron que index.html) ---------- */
+const SIN_SESION=()=>new Promise(()=>{});
+function borrarSesion(){ AUTH.token=null;AUTH.rol=null;AUTH.nombre=null;AUTH.expira=null; }
+function sessionExpired(){ borrarSesion(); loginScreen('Tu sesión expiró, vuelve a entrar'); }
+function doLogout(){ borrarSesion(); loginScreen(); }
+async function call(a,p){ return callUrl(CONFIG.WEBHOOK_URL,{accion:a,...(p||{})}); }
+async function callUrl(url,p){
+  const tk=AUTH.token; if(!tk)return SIN_SESION();
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8','Authorization':'Bearer '+tk},body:JSON.stringify(p||{})});
+    if(r.status===401){ if(AUTH.token===tk)sessionExpired(); return SIN_SESION(); }
+    return await r.json();
+  }catch(e){ return {ok:false,error:String(e),data:[],red:true}; }
+}
+async function callAuth(usuario,pass){
+  try{
+    const r=await fetch(CONFIG.AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:usuario,contrasena:pass})});
+    return await r.json();
+  }catch(e){ return {ok:false,error:String(e)}; }
+}
+
+/* ---------- login ---------- */
+function loginScreen(msg){
+  let h='<div class="loginwrap">';
+  h+='<div class="hero" style="text-align:center"><div class="hlogo" role="img" aria-label="FitKid"></div><div class="htit">CRM · FitKid Gymnastic</div><div class="hsub">Panel administrativo</div></div>';
+  h+='<div class="card" style="padding:18px 16px">';
+  if(msg)h+='<div class="mut" style="background:var(--danger-bg);color:var(--danger);padding:10px;border-radius:var(--r-sm);margin:0 0 14px">'+esc(msg)+'</div>';
+  h+='<div class="mut" style="margin-bottom:6px">Usuario</div><input class="field" id="lu" autocomplete="username">';
+  h+='<div class="mut" style="margin-bottom:6px">Contraseña</div><input class="field" id="lp" type="password" autocomplete="current-password">';
+  h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:6px" id="lbtn"><i class="ti ti-login" aria-hidden="true"></i> Entrar</button>';
+  h+='<div id="lerr" class="mut" style="margin-top:10px;color:var(--danger)"></div>';
+  h+='</div><div class="footer">FitKid Gymnastic · Formando gimnastas, creando Guerreros<br><a href="index.html">Ir al panel clásico (check-in, kiosco, escáner)</a></div></div>';
+  fk.innerHTML=h;
+  const lu=fk.querySelector('#lu'),lp=fk.querySelector('#lp'),err=fk.querySelector('#lerr'),btn=fk.querySelector('#lbtn');
+  const submit=async()=>{
+    const usuario=lu.value.trim(),pass=lp.value;
+    if(!usuario||!pass){err.textContent='Escribe usuario y contraseña';return;}
+    btn.disabled=true;err.textContent='';
+    const r=await callAuth(usuario,pass);
+    btn.disabled=false;
+    if(!r||r.ok===false||!r.token||!r.rol){err.textContent=(r&&r.error)||'Usuario o contraseña incorrectos';return;}
+    if(r.rol!=='staff'){err.textContent='El CRM es solo para staff (usa el panel clásico para kiosco)';return;}
+    AUTH.token=r.token;AUTH.rol=r.rol;AUTH.nombre=r.nombre||null;AUTH.expira=r.expira||null;
+    shell();
+  };
+  btn.onclick=submit;
+  lp.addEventListener('keydown',e=>{if(e.key==='Enter')submit();});
+  lu.focus();
+}
+
+/* ---------- shell de 3 paneles ---------- */
+const NAV=[
+  {id:'home', icon:'ti-home', label:'Panel de control', ready:true},
+  {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:false},
+  {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:false},
+  {id:'ventas', icon:'ti-cash', label:'Ventas', ready:false},
+  {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:false},
+  {id:'marketing', icon:'ti-speakerphone', label:'Marketing', ready:false},
+  {id:'informes', icon:'ti-chart-bar', label:'Informes', ready:false}
+];
+
+function shell(){
+  let h='<div class="mobilebar"><b>FitKid CRM</b><a href="index.html">Check-in</a><button data-act="logout-m">Salir</button></div>';
+  h+='<div class="shell">';
+  h+='<nav class="navcol"><div class="navbrand"><div class="hlogo" role="img" aria-label="FitKid"></div><b>FitKid CRM</b></div>';
+  h+='<ul class="navlist">'+NAV.map(n=>'<li><button data-nav="'+n.id+'" class="'+(SECCION===n.id?'on':'')+'" '+(n.ready?'':'disabled')+'><i class="ti '+n.icon+'" aria-hidden="true"></i> '+n.label+(n.ready?'':'<span class="soon">pronto</span>')+'</button></li>').join('')+'</ul>';
+  h+='<div class="navfoot"><a href="index.html"><i class="ti ti-qrcode" aria-hidden="true"></i> Panel clásico (check-in)</a><button data-act="logout"><i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión ('+esc(AUTH.nombre||'')+')</button></div>';
+  h+='</nav>';
+  h+='<main class="centercol" id="centercol"></main>';
+  h+='<aside class="rightcol" id="rightcol"></aside>';
+  h+='</div>';
+  fk.innerHTML=h;
+  fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
+  const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
+  const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
+  if(SECCION==='home')home(); else placeholder();
+}
+
+function placeholder(){
+  const n=NAV.find(x=>x.id===SECCION);
+  document.getElementById('centercol').innerHTML='<div class="pagehead"><h1>'+esc(n?n.label:'')+'</h1></div><div class="placeholder"><i class="ti ti-tool" style="font-size:28px" aria-hidden="true"></i><div style="margin-top:8px">Este módulo todavía no está construido.</div></div>';
+  document.getElementById('rightcol').innerHTML='';
+}
+
+/* ---------- Panel de control (Home) ---------- */
+async function home(){
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  center.innerHTML='<div class="pagehead"><h1>Panel de control</h1><span class="mut" id="hoy"></span></div><div class="statgrid" id="stats"><div class="mut">Cargando…</div></div>';
+  right.innerHTML='<h2>Vencimientos próximos</h2><div class="mut" id="vencbox">Cargando…</div>';
+  document.getElementById('hoy').textContent=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+
+  const r=await call('resumen_del_dia',{});
+  const stats=document.getElementById('stats');
+  if(!r||r.ok===false){ stats.innerHTML='<div class="mut">No se pudo cargar el resumen.</div>'; }
+  else{
+    const data=r.data||[];
+    stats.innerHTML=data.map(s=>'<div class="statcard"><div class="v">'+esc(s.estado)+'</div><div class="l">'+esc(s.n)+'</div></div>').join('')||'<div class="mut">Sin datos para hoy.</div>';
+  }
+
+  const v=await call('vencimientos',{});
+  const vb=document.getElementById('vencbox');
+  if(!v||v.ok===false){ vb.innerHTML='<div class="mut">No se pudo cargar.</div>'; }
+  else{
+    const data=(v.data||[]).slice(0,10);
+    vb.innerHTML=data.length? data.map(x=>'<div class="venc"><div class="nm">'+esc(x.n)+'</div><div class="mut">'+esc(x.estado)+'</div></div>').join('') : '<div class="mut">Nada por vencer en 30 días.</div>';
+  }
+}
+
+if(!AUTH.token)loginScreen();
+</script>
+</body>
+</html>
