@@ -501,7 +501,8 @@ function paraGenero(b,g){ return !b.genero||b.genero===g; }
 function sugerencias(r){
   const al=r.al||{}, mem=r.mem, prox=r.prox||[], hoy=r.hoy||new Date().toLocaleDateString('en-CA');
   const s=[]; const claseHoy=prox.find(p=>p.fecha===hoy); const fut=prox.filter(p=>p.fecha>hoy);
-  if(al.responsiva===false) s.push({id:'responsiva',ic:'ti-file-alert',t:'Responsiva firmada',d:'Falta · obligatoria para entrar a clase',tono:'dng'});
+  if(!al.acuerdo) s.push({id:'acuerdo',ic:'ti-signature',t:'Firmar acuerdo digital',d:al.responsiva===false?'Falta la responsiva · obligatoria para entrar a clase':'Tiene responsiva en papel; falta firma digital y uso de imagen',tono:al.responsiva===false?'dng':'warn'});
+  if(al.responsiva===false) s.push({id:'responsiva',ic:'ti-file-alert',t:'Responsiva en papel',d:'Si ya la firmó en papel, márcala',tono:'dng'});
   if(al.estatus==='Suspendido') s.push({id:'reactivar',ic:'ti-player-play',t:'Reactivar',d:'El alumno está suspendido',tono:'warn'});
   if(claseHoy){ s.push({id:'asistio',ic:'ti-check',t:'Asistió hoy',d:'Tiene clase hoy sin marcar',tono:'ok',asis:claseHoy.id}); s.push({id:'falta',ic:'ti-x',t:'Faltó hoy',d:'Consume crédito',tono:'dng',asis:claseHoy.id}); }
   if(!al.verificado) s.push({id:'verificar',ic:'ti-shield-check',t:'Verificar datos',d:'Falta la verificación en recepción',tono:'warn'});
@@ -571,6 +572,7 @@ async function enviar(btn,fn){ const err=document.getElementById('accerr'); btn.
 const METODOS=[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta (terminal)']];
 
 async function ejecutarAccion(acc,asis){
+  if(acc==='acuerdo'){ firmarAcuerdoFicha(); return; }
   const seq=++ACC_SEQ; const vigente=()=>seq===ACC_SEQ;
   const r=FICHA.r, al=r.al||{}, mem=r.mem, tu=r.tutor||{};
   if(acc==='asistio'||acc==='falta'){
@@ -654,7 +656,7 @@ async function formVerificar(vigente){
     if(fAprox)h+='<div class="mut" style="font-size:12px;margin-top:-6px;margin-bottom:8px">En Notion solo está el año aproximado ('+fAprox+'). Pide la fecha exacta.</div>';
     const keep=(id,def)=>document.getElementById(id)?document.getElementById(id).value:def;
     h+=campo('vtn','Nombre del tutor',keep('vtn',tu.nombre)); h+=campo('vtc','Correo del tutor',keep('vtc',tu.email),'type="email" inputmode="email"'); h+=campo('vtw','WhatsApp del tutor (10 dígitos)',keep('vtw',d10(tu.whatsapp)),'type="tel" inputmode="tel"');
-    h+=campo('vpa','Parentesco',keep('vpa',tu.parentesco)); h+=campo('ven','Contacto de emergencia',keep('ven',tu.contacto_emergencia)); h+=campo('vet','Teléfono de emergencia (10 dígitos)',keep('vet',d10(tu.telefono_emergencia)),'type="tel" inputmode="tel"');
+    h+=campo('vpa','Parentesco',keep('vpa',tu.parentesco)); h+=campo('vdir','Dirección (calle, número, colonia, C.P.)',keep('vdir',tu.direccion)); h+=campo('ven','Contacto de emergencia',keep('ven',tu.contacto_emergencia)); h+=campo('vet','Teléfono de emergencia (10 dígitos)',keep('vet',d10(tu.telefono_emergencia)),'type="tel" inputmode="tel"');
     h+=campo('val','Alergias o condiciones médicas',keep('val',al.alergias),'placeholder="Si no hay, escribe ninguna"');
     const rv=document.getElementById('vresp'); h+='<label class="chk"><input type="checkbox" id="vresp"'+((rv?rv.checked:al.responsiva)?' checked':'')+'> Responsiva firmada por el tutor (obligatoria para entrar a clase)</label>';
     h+='<label class="mut">Género</label>'+chips('gen',[['Niña','Niña'],['Niño','Niño']],V.genero);
@@ -675,7 +677,7 @@ async function formVerificar(vigente){
     if(faltas.length){ err.textContent='Falta '+faltas.map(x=>x[1]).join(', ')+'.'; return; }
     const hora=horaDeNombre(b.nombre);
     const payload={alumno_id:FICHA.id,responsiva:document.getElementById('vresp').checked,nombre:g('vnm'),fecha_nacimiento:fn,programa:prog,genero:V.genero||null,horario_id:b.id,dias:DIAS_CLASE.filter(d=>V.dias.has(d)),alergias:g('val'),
-      tutor:{nombre:g('vtn'),email:g('vtc'),whatsapp:'+52'+d10(g('vtw')),contacto_emergencia:g('ven'),telefono_emergencia:'+52'+d10(g('vet')),parentesco:g('vpa')}};
+      tutor:{nombre:g('vtn'),email:g('vtc'),whatsapp:'+52'+d10(g('vtw')),contacto_emergencia:g('ven'),telefono_emergencia:'+52'+d10(g('vet')),direccion:g('vdir'),parentesco:g('vpa')}};
     if(hora)payload.hora_clase=hora;
     const res=await enviar(e.currentTarget,()=>call('verificar_alumno',payload));
     if(res)recargarFicha('✓ Verificado'+(res.alerta_edad_horario?' · revisa: la edad no coincide con el programa':''));
@@ -1109,15 +1111,21 @@ function pasoAcuerdo(A){
   h+='<div class="acbloque"><div class="acsub">Padre, madre o tutor legal</div>'+dato('Nombre',t.nombre)+(A.tutorSel?'':dato('Relación',t.parentesco)+dato('Celular',t.whatsapp)+dato('Correo',t.email)+(t.direccion?dato('Dirección',t.direccion):'')+dato('Contacto de emergencia',[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':'',t.telefono_emergencia].filter(Boolean).join(' ')))+'</div>';
   h+='<p class="acnota">¿Algún dato está mal? Regresa la tablet a recepción para corregirlo antes de firmar.</p>';
   h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(ACUERDO.veracidad)+'</span></label>';
+  h+=acuerdoCuerpo(ac);
+  h+='</section>';
+  h+='<label class="chk"><input type="checkbox" id="acpapel"'+(ac.papel?' checked':'')+'> El tutor no puede firmar ahora: firmará en papel después</label>'+(ac.papel?'<div class="mut" style="font-size:12.5px;color:var(--danger);margin:-4px 0 10px">Sin responsiva firmada no puede entrar a clase: el kiosco lo mandará a recepción. Al terminar podrás imprimir el acuerdo con sus datos para que lo firme.</div>':'');
+  h+='<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="altaatras"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button><button type="button" class="btn pri" id="altasig"><i class="ti ti-signature" aria-hidden="true"></i> '+(ac.papel?'Dar de alta sin firma':'Firmar y dar de alta')+(A.kids.length>1?' ('+A.kids.length+')':'')+'</button></div></div>';
+  return h;
+}
+/* Secciones 2 a 4 y aceptación: las comparten el alta y la firma desde la ficha. */
+function acuerdoCuerpo(ac){
+  let h='';
   h+='<h3>2. Reglamento interno</h3><p>'+esc(ACUERDO.reglamentoIntro)+'</p><ol class="acregla">'+ACUERDO.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol>';
   h+='<label class="chk acchk"><input type="checkbox" data-ac="reglamento"'+(ac.reglamento?' checked':'')+'> <span>Acepto cumplir y hacer cumplir el reglamento interno.</span></label>';
   h+='<h3>3. Autorización de uso de imagen</h3><p>'+esc(ACUERDO.imagen)+'</p><p class="acnota">'+esc(ACUERDO.imagenNota)+'</p><div class="chipsel acimg" data-grp="acimg">'+[['Autoriza','Sí autorizo'],['No autoriza','No autorizo']].map(o=>'<button type="button" class="chipo'+(ac.uso_imagen===o[0]?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div><div class="mut" style="font-size:12px;margin:-6px 0 10px">Es opcional: la inscripción no depende de esta respuesta.</div>';
   h+='<h3>4. Carta responsiva</h3><p>'+esc(ACUERDO.responsiva)+'</p><label class="chk acchk"><input type="checkbox" data-ac="responsiva"'+(ac.responsiva?' checked':'')+'> <span>Acepto la carta responsiva.</span></label>';
   h+='<h3>Aceptación</h3><p>'+esc(ACUERDO.aceptacion)+'</p><label class="mut" for="acfirmante">Nombre completo de quien firma</label><input class="field" id="acfirmante" value="'+esc(ac.firmante)+'" autocomplete="off">';
   h+='<div class="acfirmahead"><span class="mut">Firma</span><button type="button" class="btn" id="acborrar">Borrar firma</button></div><canvas id="acfirma" class="firmapad" aria-label="Firma del tutor: dibuja con el dedo"></canvas><div class="mut" style="font-size:12px;margin-top:4px">Fecha: '+esc(new Date().toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' · Mérida, Yucatán</div>';
-  h+='</section>';
-  h+='<label class="chk"><input type="checkbox" id="acpapel"'+(ac.papel?' checked':'')+'> El tutor no puede firmar ahora: firmará en papel después</label>'+(ac.papel?'<div class="mut" style="font-size:12.5px;color:var(--danger);margin:-4px 0 10px">Sin responsiva firmada no puede entrar a clase: el kiosco lo mandará a recepción. Al terminar podrás imprimir el acuerdo con sus datos para que lo firme.</div>':'');
-  h+='<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="altaatras"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button><button type="button" class="btn pri" id="altasig"><i class="ti ti-signature" aria-hidden="true"></i> '+(ac.papel?'Dar de alta sin firma':'Firmar y dar de alta')+(A.kids.length>1?' ('+A.kids.length+')':'')+'</button></div></div>';
   return h;
 }
 function bindAcuerdo(A,root){
@@ -1229,6 +1237,52 @@ function imprimirAcuerdo(d){
   h+='<h2>Aceptación</h2><p>'+esc(ACUERDO.aceptacion)+'</p><table>'+dato('Nombre completo del padre/tutor',ac?ac.firmante:'')+'</table><div class="pfirmabox">'+(ac&&ac.firma?firmaSVG(ac.firma):'')+'<div class="pfirmalinea">Firma</div></div>';
   h+='<div class="pmeta">'+(ac?'Aceptado digitalmente el '+esc(new Date(ac.fecha||Date.now()).toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' en recepción · versión del acuerdo '+esc(ac.version||'')+'.':'Fecha: ____________________')+'</div></div>';
   imprimirDoc(h);
+}
+/* Firma del acuerdo para alumnos que ya estaban inscritos: desde la ficha, con sus hermanos (mismo tutor) a la vez. */
+let FIRMA=null;
+function firmarAcuerdoFicha(){
+  const r=FICHA&&FICHA.r; if(!r)return; const al=r.al||{}, t=r.tutor;
+  if(!t){ toast('El alumno no tiene tutor vinculado: captúralo antes en "Verificar datos"',''); return; }
+  const principal={id:FICHA.id,nombre:al.nombre,fn:al.fecha_nacimiento,alergias:al.alergias,programa:al.programa,horario:r.horario?nombreSinGenero(r.horario.nombre):'',dias:(al.dias||[]).join(', '),plan:r.mem&&r.mem.creditos?r.mem.creditos+' clases al mes · '+r.mem.plan:'',obs:al.observaciones,acuerdo:al.acuerdo,sel:true};
+  const hermanos=(r.hermanos||[]).map(x=>({id:x.id,nombre:x.nombre,fn:x.fecha_nacimiento,alergias:x.alergias,dias:(x.dias||[]).join(', '),acuerdo:x.acuerdo,sel:!x.acuerdo&&x.estatus!=='Suspendido'}));
+  FIRMA={kids:[principal].concat(hermanos),t:t,ac:{veracidad:false,reglamento:false,responsiva:false,uso_imagen:'',firmante:t.nombre||'',trazos:[],firma:''},volver:FICHA.id,listo:null};
+  cerrarPanel(); drawFirmaFicha();
+}
+function drawFirmaFicha(){
+  const F=FIRMA, center=document.getElementById('centercol'); if(!F||!center)return; const t=F.t, ac=F.ac;
+  const dato=(k,v)=>'<div class="acdato"><span>'+k+'</span><b>'+(v?esc(v):'—')+'</b></div>';
+  let h='<div class="pagehead"><h1>Acuerdo de inscripción</h1><button type="button" class="btn" id="firvolver"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver a la ficha</button></div>';
+  if(F.kids.length>1)h+='<section class="card altasec"><h2>¿Para quién firma?</h2>'+F.kids.map((k,i)=>'<label class="chk"><input type="checkbox" data-firk="'+i+'"'+(k.sel?' checked':'')+'> '+esc(k.nombre)+(k.acuerdo?' <span class="pill ok">ya firmado '+esc(fechaLargaDoc(String(k.acuerdo).slice(0,10)))+'</span>':'')+'</label>').join('')+'<div class="mut" style="font-size:12.5px">Hermanos con el mismo tutor. El tutor firma una vez por todos los marcados.</div></section>';
+  const faltan=[!t.contacto_emergencia&&'contacto de emergencia',!t.direccion&&'dirección'].filter(Boolean);
+  h+='<section class="card altasec acuerdo"><div class="acentrega"><i class="ti ti-hand-finger" aria-hidden="true"></i> Entrega la tablet al tutor para que lea y firme.</div><h2 class="actit">Acuerdo General de Inscripción y Responsiva</h2><p>'+esc(ACUERDO.intro)+'</p><h3>1. Ficha de inscripción y confirmación de datos</h3>';
+  F.kids.forEach((k,i)=>{ const e=edadDe(k.fn); h+='<div class="acbloque" data-firb="'+i+'"'+(k.sel?'':' hidden')+'><div class="acsub">Alumno</div>'+dato('Nombre',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+(e!=null?' ('+e+' años)':''):'')+dato('Alergias',k.alergias)+(k.horario?dato('Horario',k.horario):'')+dato('Días',k.dias)+(k.plan?dato('Membresía',k.plan):'')+(k.obs?dato('Observaciones',k.obs):'')+'</div>'; });
+  h+='<div class="acbloque"><div class="acsub">Padre, madre o tutor legal</div>'+dato('Nombre',t.nombre)+dato('Relación',t.parentesco)+dato('Celular',t.whatsapp)+dato('Correo',t.email)+dato('Dirección',t.direccion)+dato('Contacto de emergencia',[t.contacto_emergencia,t.telefono_emergencia].filter(Boolean).join(' '))+'</div>';
+  h+=faltan.length?'<p class="acnota" style="color:var(--amber)">Falta '+faltan.join(' y ')+'. Puedes firmar así, pero conviene capturarlo en "Verificar datos".</p>':'<p class="acnota">¿Algún dato está mal? Regresa la tablet a recepción para corregirlo antes de firmar.</p>';
+  h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(ACUERDO.veracidad)+'</span></label>';
+  h+=acuerdoCuerpo(ac)+'</section>';
+  h+='<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="firvolver2">Cancelar</button><button type="button" class="btn pri" id="firok"><i class="ti ti-signature" aria-hidden="true"></i> Firmar acuerdo</button></div></div>';
+  center.innerHTML=h; center.scrollTop=0;
+  const volver=()=>{ const id=F.volver; FIRMA=null; shell(); verFichaAlumno(id); };
+  center.querySelector('#firvolver').onclick=volver; center.querySelector('#firvolver2').onclick=volver;
+  center.querySelectorAll('[data-firk]').forEach(c=>c.onchange=()=>{ const i=+c.dataset.firk; F.kids[i].sel=c.checked; const b=center.querySelector('[data-firb="'+i+'"]'); if(b)b.hidden=!c.checked; });
+  center.querySelectorAll('[data-ac]').forEach(c=>c.onchange=()=>{ ac[c.dataset.ac]=c.checked; });
+  center.querySelectorAll('[data-grp="acimg"] .chipo').forEach(b=>b.onclick=()=>{ ac.uso_imagen=b.dataset.v; center.querySelectorAll('[data-grp="acimg"] .chipo').forEach(x=>x.classList.toggle('on',x===b)); });
+  center.querySelector('#acfirmante').oninput=e=>{ ac.firmante=e.target.value; };
+  const cv=center.querySelector('#acfirma'); iniciarFirma(cv,ac); center.querySelector('#acborrar').onclick=()=>{ ac.trazos=[]; iniciarFirma(cv,ac); };
+  center.querySelector('#firok').onclick=async e=>{
+    const err=center.querySelector('#altaerr'); const sel=F.kids.filter(k=>k.sel);
+    const f=[!sel.length&&'elegir al menos un alumno',!ac.veracidad&&'la declaración de veracidad',!ac.reglamento&&'el reglamento',!ac.uso_imagen&&'la decisión sobre uso de imagen',!ac.responsiva&&'la carta responsiva',String(ac.firmante||'').trim().split(/\s+/).filter(Boolean).length<2&&'el nombre completo de quien firma',!firmaValida(ac)&&'la firma'].filter(Boolean);
+    if(f.length){ err.textContent='Falta: '+f.join(', ')+'.'; return; }
+    const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='Guardando…'; err.textContent='';
+    ac.firma=trazoSVG(ac.trazos);
+    const r=await call('registrar_acuerdo',{alumno_ids:sel.map(k=>k.id),acuerdo:{veracidad:true,reglamento:true,responsiva:true,uso_imagen:ac.uso_imagen,firmante:ac.firmante.trim().replace(/\s+/g,' '),firma:ac.firma,version:ACUERDO_VERSION}});
+    if(FIRMA!==F)return;
+    if(!r||r.ok===false){ btn.disabled=false; btn.innerHTML='<i class="ti ti-signature" aria-hidden="true"></i> Firmar acuerdo'; err.textContent='No se guardó: '+((r&&r.error)||'error de red'); return; }
+    DIRECTORIO=null; BASE=null;
+    const datos={tutor:{nombre:t.nombre,parentesco:t.parentesco,whatsapp:t.whatsapp,email:t.email,direccion:t.direccion,emergencia:t.contacto_emergencia,tel_emergencia:t.telefono_emergencia},kids:sel,ac:{uso_imagen:ac.uso_imagen,firmante:ac.firmante,firma:ac.firma,version:ACUERDO_VERSION,fecha:r.fecha}};
+    center.innerHTML='<div class="pagehead"><h1>Acuerdo firmado</h1></div><div class="card altasec"><ul class="altares">'+sel.map(k=>'<li class="ok"><i class="ti ti-circle-check" aria-hidden="true"></i> '+esc(k.nombre)+'</li>').join('')+'<li class="'+(ac.uso_imagen==='Autoriza'?'ok':'dng')+'"><i class="ti '+(ac.uso_imagen==='Autoriza'?'ti-camera':'ti-camera-off')+'" aria-hidden="true"></i> '+(ac.uso_imagen==='Autoriza'?'Autoriza fotos y videos':'No autoriza fotos ni videos')+'</li></ul><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="firimp"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir acuerdo</button><button type="button" class="btn" id="firfin">Volver a la ficha</button></div></div>';
+    center.querySelector('#firimp').onclick=()=>imprimirAcuerdo(datos); center.querySelector('#firfin').onclick=volver;
+  };
 }
 /* Reimpresión desde la ficha con lo que quedó guardado en Notion. */
 function imprimirAcuerdoFicha(){
