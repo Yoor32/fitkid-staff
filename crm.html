@@ -76,6 +76,16 @@
   .statcard .v{font-size:22px;font-weight:700;color:var(--brand-600)}
   .statcard .l{font-size:12px;color:var(--muted);margin-top:2px}
   .placeholder{background:var(--surface);border:1px dashed var(--line-2);border-radius:var(--r);padding:40px 20px;text-align:center;color:var(--muted)}
+  .dirtabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .dirtab{padding:7px 13px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-pill);font-size:12.5px;color:var(--muted);cursor:pointer}
+  .dirtab.on{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+  .dirlist{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .dirrow{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer}
+  .dirrow:hover{border-color:var(--line-2);background:var(--surface-2)}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--brand-bg);color:var(--brand-600);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex:0 0 auto}
+  .nm{font-weight:600;font-size:14px}
+  .pill{font-size:10px;padding:2px 7px;border-radius:var(--r-pill);margin-left:6px;font-weight:600}
+  .pill.warn{background:var(--amber-bg);color:var(--amber)}
 
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
@@ -164,7 +174,7 @@ function loginScreen(msg){
 const NAV=[
   {id:'home', icon:'ti-home', label:'Panel de control', ready:true},
   {id:'calendario', icon:'ti-calendar', label:'Calendario', ready:false},
-  {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:false},
+  {id:'estudiantes', icon:'ti-users', label:'Estudiantes', ready:true},
   {id:'ventas', icon:'ti-cash', label:'Ventas', ready:false},
   {id:'documentos', icon:'ti-file-text', label:'Documentos', ready:false},
   {id:'marketing', icon:'ti-speakerphone', label:'Marketing', ready:false},
@@ -185,7 +195,7 @@ function shell(){
   fk.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ if(b.disabled)return; SECCION=b.dataset.nav; shell(); });
   const lo=fk.querySelector('[data-act="logout"]'); if(lo)lo.onclick=doLogout;
   const lom=fk.querySelector('[data-act="logout-m"]'); if(lom)lom.onclick=doLogout;
-  if(SECCION==='home')home(); else placeholder();
+  if(SECCION==='home')home(); else if(SECCION==='estudiantes')estudiantes(); else placeholder();
 }
 
 function placeholder(){
@@ -216,6 +226,84 @@ async function home(){
     const data=(v.data||[]).slice(0,10);
     vb.innerHTML=data.length? data.map(x=>'<div class="venc"><div class="nm">'+esc(x.n)+'</div><div class="mut">'+esc(x.estado)+'</div></div>').join('') : '<div class="mut">Nada por vencer en 30 días.</div>';
   }
+}
+
+/* ---------- Estudiantes (directorio) ---------- */
+let DIRECTORIO=null; let DIR_TAB='todos'; let DIR_Q='';
+function ini(n){return String(n||'').split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';}
+
+async function estudiantes(){
+  const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  right.innerHTML='';
+  center.innerHTML='<div class="pagehead"><h1>Estudiantes</h1></div><div class="mut">Cargando directorio…</div>';
+  if(!DIRECTORIO){
+    const r=await call('directorio',{});
+    if(!r||r.ok===false){ center.innerHTML='<div class="pagehead"><h1>Estudiantes</h1></div><div class="placeholder">No se pudo cargar el directorio.'+(r&&r.error?' ('+esc(r.error)+')':'')+'</div>'; return; }
+    DIRECTORIO=r;
+  }
+  drawEstudiantes();
+}
+
+function drawEstudiantes(){
+  const center=document.getElementById('centercol');
+  const tabs=[['todos','Todos'],['menor','Menores'],['adulto','Adultos'],['tutor','Tutores']];
+  let h='<div class="pagehead"><h1>Estudiantes</h1><span class="mut">'+DIRECTORIO.alumnos.length+' alumnos · '+DIRECTORIO.tutores.length+' tutores</span></div>';
+  h+='<div class="dirtabs">'+tabs.map(t=>'<button class="dirtab'+(DIR_TAB===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  h+='<input class="field" id="dirsearch" placeholder="Buscar por nombre…" value="'+esc(DIR_Q)+'" style="max-width:340px">';
+  h+='<div class="dirlist" id="dirlist"></div>';
+  center.innerHTML=h;
+  center.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{DIR_TAB=b.dataset.tab;drawEstudiantes();});
+  const sb=center.querySelector('#dirsearch');
+  sb.oninput=()=>{DIR_Q=sb.value;renderDirList();};
+  sb.focus(); sb.setSelectionRange(sb.value.length,sb.value.length);
+  renderDirList();
+}
+
+function renderDirList(){
+  const box=document.getElementById('dirlist'); if(!box)return;
+  const q=DIR_Q.trim().toLowerCase();
+  let rows;
+  if(DIR_TAB==='tutor'){
+    rows=DIRECTORIO.tutores.filter(t=>!q||t.nombre.toLowerCase().includes(q))
+      .map(t=>'<div class="dirrow" data-tutor="'+t.id+'"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="flex:1"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc(t.email||t.whatsapp||'sin contacto')+'</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>');
+  }else{
+    rows=DIRECTORIO.alumnos.filter(a=>(DIR_TAB==='todos'||a.tipo===DIR_TAB)&&(!q||a.nombre.toLowerCase().includes(q)))
+      .map(a=>'<div class="dirrow" data-alumno="'+a.id+'"><div class="avatar">'+esc(ini(a.nombre))+'</div><div style="flex:1"><div class="nm">'+esc(a.nombre)+' '+(a.verificado?'':'<span class="pill warn">sin verificar</span>')+'</div><div class="mut">'+esc(a.cod||'')+(a.programa?' · '+esc(a.programa):'')+'</div></div><i class="ti ti-chevron-right mut" aria-hidden="true"></i></div>');
+  }
+  box.innerHTML=rows.length?rows.join(''):'<div class="placeholder">Sin resultados.</div>';
+  box.querySelectorAll('[data-alumno]').forEach(el=>el.onclick=()=>verFichaAlumno(el.dataset.alumno));
+  box.querySelectorAll('[data-tutor]').forEach(el=>el.onclick=()=>verTutor(el.dataset.tutor));
+}
+
+async function verFichaAlumno(id){
+  const right=document.getElementById('rightcol');
+  right.innerHTML='<h2>Ficha</h2><div class="mut">Cargando…</div>';
+  const r=await call('ficha_alumno',{alumno_id:id});
+  if(!r||r.ok===false){ right.innerHTML='<h2>Ficha</h2><div class="mut">No se pudo cargar.</div>'; return; }
+  const al=r.al||{}, mem=r.mem, tutor=r.tutor, prox=r.prox||[], pagos=r.pagos||[];
+  let h='<h2>Ficha</h2>';
+  h+='<div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(al.nombre)+'</div><div class="mut">'+esc(al.cod||'')+' · '+esc(al.programa||'')+'</div>';
+  h+='<div style="margin-top:8px;font-size:12.5px" class="mut">Estatus: '+esc(al.estatus||'—')+' · Edad: '+esc(al.edad!=null?al.edad:'—')+'</div>';
+  h+='<div style="margin-top:4px;font-size:12.5px" class="mut">Verificado: '+(al.verificado?'sí':'no')+' · Inscripción: '+esc(al.insc||'—')+'</div>';
+  if(al.alergias)h+='<div style="margin-top:6px;font-size:12.5px;color:var(--danger)">Alergias: '+esc(al.alergias)+'</div>';
+  h+='</div>';
+  if(mem){ h+='<h2>Membresía</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div>Plan '+esc(mem.plan||'—')+' · '+esc(mem.creditos!=null?mem.creditos:'—')+' créditos ('+esc(mem.restantes!=null?mem.restantes:'—')+' restantes)</div><div class="mut" style="margin-top:4px">'+esc(mem.estado||'—')+'</div></div>'; }
+  if(tutor){ h+='<h2>Tutor</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px"><div class="nm" style="font-size:13px">'+esc(tutor.nombre)+'</div><div class="mut" style="margin-top:2px">'+esc(tutor.whatsapp||'')+(tutor.email?' · '+esc(tutor.email):'')+'</div></div>'; }
+  if(prox.length){ h+='<h2>Próximas clases</h2><div class="card" style="padding:12px;margin-bottom:14px;font-size:12.5px">'+prox.slice(0,5).map(p=>'<div>'+esc(p.fecha)+'</div>').join('')+'</div>'; }
+  if(pagos.length){ h+='<h2>Últimos pagos</h2><div class="card" style="padding:12px;font-size:12.5px">'+pagos.slice(0,5).map(p=>'<div style="display:flex;justify-content:space-between"><span>'+esc(p.concepto||'')+' · '+esc(p.fecha||'')+'</span><span>$'+esc(p.monto||0)+'</span></div>').join('')+'</div>'; }
+  right.innerHTML=h;
+}
+
+function verTutor(id){
+  const right=document.getElementById('rightcol');
+  const t=DIRECTORIO.tutores.find(x=>x.id===id);
+  if(!t){ right.innerHTML='<h2>Tutor</h2><div class="mut">No encontrado.</div>'; return; }
+  const hijos=DIRECTORIO.alumnos.filter(a=>a.tutor_id===id);
+  let h='<h2>Tutor</h2><div class="card" style="padding:14px;margin-bottom:14px"><div class="nm" style="font-size:15px">'+esc(t.nombre)+'</div><div class="mut" style="margin-top:4px">'+esc(t.email||'')+'</div><div class="mut">'+esc(t.whatsapp||'')+'</div></div>';
+  h+='<h2>Alumnos ('+hijos.length+')</h2>';
+  h+=hijos.length? hijos.map(a=>'<div class="venc" style="cursor:pointer" data-alumno2="'+a.id+'"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.programa||'')+'</div></div>').join('') : '<div class="mut">Sin alumnos vinculados en el directorio.</div>';
+  right.innerHTML=h;
+  right.querySelectorAll('[data-alumno2]').forEach(el=>el.onclick=()=>verFichaAlumno(el.dataset.alumno2));
 }
 
 if(!AUTH.token)loginScreen();
