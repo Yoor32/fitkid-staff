@@ -297,7 +297,7 @@ function loginScreen(msg){
   h+='<div class="mut" style="margin-bottom:6px">Contraseña</div><input class="field" id="lp" type="password" autocomplete="current-password">';
   h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:6px" id="lbtn"><i class="ti ti-login" aria-hidden="true"></i> Entrar</button>';
   h+='<div id="lerr" class="mut" style="margin-top:10px;color:var(--danger)"></div>';
-  h+='</div><div class="footer">FitKid Gymnastic · Formando gimnastas, creando Guerreros<br><a href="index.html">Ir al panel clásico</a></div></div>';
+  h+='</div><div class="footer">FitKid Gymnastic · Formando gimnastas, creando Guerreros</div></div>';
   fk.innerHTML=h;
   const lu=fk.querySelector('#lu'),lp=fk.querySelector('#lp'),err=fk.querySelector('#lerr'),btn=fk.querySelector('#lbtn');
   const submit=async()=>{
@@ -336,7 +336,7 @@ function shell(){
   h+='<div class="shell">';
   h+='<nav class="navcol"><div class="navbrand"><div class="hlogo" role="img" aria-label="FitKid"></div><b>FitKid CRM</b></div>';
   h+='<ul class="navlist">'+NAV.map(n=>'<li><button data-nav="'+n.id+'" class="'+(SECCION===n.id?'on':'')+'" '+(n.ready?'':'disabled')+'><i class="ti '+n.icon+'" aria-hidden="true"></i> '+n.label+(n.ready?'':'<span class="soon">pronto</span>')+'</button></li>').join('')+'</ul>';
-  h+='<div class="navfoot"><a href="index.html"><i class="ti ti-qrcode" aria-hidden="true"></i> Panel clásico (check-in)</a><button data-act="logout"><i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión ('+esc(AUTH.nombre||'')+')</button></div>';
+  h+='<div class="navfoot"><button data-act="logout"><i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión ('+esc(AUTH.nombre||'')+')</button></div>';
   h+='</nav>';
   h+='<main class="centercol" id="centercol"></main>';
   h+='<aside class="rightcol" id="rightpane" aria-label="Detalle"><div class="sheetbar"><button type="button" data-act="cerrar-panel"><i class="ti ti-x" aria-hidden="true"></i> Cerrar</button></div><div id="rightcol"></div></aside>';
@@ -1198,6 +1198,25 @@ function verTutor(id){
 }
 
 /* ---------- Calendario (agenda semanal + pasar lista) ---------- */
+/* Festivo / cierre: pasa a Cancelado las reservas de ese día. Solo Asistió/Falta consumen crédito
+   (fórmula "Consume crédito" en Asistencias), así que cancelar evita que se marquen como falta. Es masivo e irreversible desde el CRM: pide confirmación explícita. */
+function hoyLocal(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function cancelarDiaFestivo(){
+  const right=document.getElementById('rightcol'); abrirPanel();
+  right.innerHTML='<h2>Cancelar clases de un día</h2><div class="mut" style="margin-bottom:10px">Para festivos o cierres. Pasa a Cancelado <b>todas las reservas</b> de esa fecha, así nadie queda con falta ni se le descuenta crédito. Las asistencias ya registradas ese día no se tocan.</div>'+
+    '<label class="mut" for="festf">Fecha</label><input type="date" class="field" id="festf" min="'+hoyLocal()+'">'+
+    '<label class="chk"><input type="checkbox" id="festok"> Entiendo que se cancelan todas las clases de ese día y no se puede deshacer desde aquí</label>'+
+    '<button type="button" class="btn dng acbig" id="festgo"><i class="ti ti-calendar-x" aria-hidden="true"></i> Cancelar clases del día</button><div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
+  right.querySelector('#festgo').onclick=async e=>{
+    const f=right.querySelector('#festf').value, err=right.querySelector('#accerr');
+    if(!f){err.textContent='Elige la fecha';return;}
+    if(!right.querySelector('#festok').checked){err.textContent='Confirma que quieres cancelar todo el día';return;}
+    const res=await enviar(e.currentTarget,()=>call('cancelar_clase_del_dia',{fecha:f}));
+    if(!res)return;
+    calendario(); /* redibuja la semana; limpia la columna derecha de forma síncrona, por eso el resultado va después */
+    right.innerHTML='<h2>Clases canceladas</h2><div class="chkresp" style="background:var(--ok-bg);color:var(--ok)">'+(res.canceladas||0)+' reservas del '+esc(fmtFecha(f))+' pasaron a Cancelado.</div>'+((res.canceladas||0)===0?'<div class="mut" style="margin-top:8px">No había reservas en esa fecha. Revisa que sea el día correcto.</div>':'');
+  };
+}
 const DN=['Lun','Mar','Mié','Jue','Vie','Sáb'];
 let CAL_DESDE=null; let CAL_DIA=null;
 function lunesDeHoy(){const d=new Date();const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return d.toISOString().slice(0,10);}
@@ -1213,10 +1232,11 @@ async function calendario(){
   if(!CAL_DESDE)CAL_DESDE=lunesDeHoy();
   const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
   right.innerHTML='<h2>Pasar lista</h2><div class="mut">Toca una celda del calendario para ver el roster de esa clase.</div>';
-  center.innerHTML='<div class="pagehead"><h1>Calendario</h1></div><div class="weeknav"><button class="btn" id="calprev"><i class="ti ti-chevron-left" aria-hidden="true"></i></button><span class="mut" id="calrango">Cargando…</span><button class="btn" id="calnext"><i class="ti ti-chevron-right" aria-hidden="true"></i></button><button class="btn" id="calhoy" style="margin-left:auto">Esta semana</button></div><div id="calbody" class="mut">Cargando agenda…</div>';
+  center.innerHTML='<div class="pagehead"><h1>Calendario</h1></div><div class="weeknav"><button class="btn" id="calprev"><i class="ti ti-chevron-left" aria-hidden="true"></i></button><span class="mut" id="calrango">Cargando…</span><button class="btn" id="calnext"><i class="ti ti-chevron-right" aria-hidden="true"></i></button><button class="btn" id="calhoy" style="margin-left:auto">Esta semana</button><button class="btn" id="calfest" title="Cancelar todas las clases de un día"><i class="ti ti-calendar-x" aria-hidden="true"></i> Día festivo</button></div><div id="calbody" class="mut">Cargando agenda…</div>';
   document.getElementById('calprev').onclick=()=>{const d=new Date(CAL_DESDE+'T12:00:00');d.setDate(d.getDate()-7);CAL_DESDE=d.toISOString().slice(0,10);calendario();};
   document.getElementById('calnext').onclick=()=>{const d=new Date(CAL_DESDE+'T12:00:00');d.setDate(d.getDate()+7);CAL_DESDE=d.toISOString().slice(0,10);calendario();};
   document.getElementById('calhoy').onclick=()=>{CAL_DESDE=lunesDeHoy();calendario();};
+  document.getElementById('calfest').onclick=cancelarDiaFestivo;
 
   const r=await call('agenda_semana',{desde:CAL_DESDE});
   if(SECCION!=='calendario')return;

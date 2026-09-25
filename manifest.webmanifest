@@ -1,9 +1,9 @@
 {
   "name": "FitKid · Panel del Staff",
   "short_name": "FitKid Staff",
-  "description": "Acciones rápidas del CRM de FitKid Gymnastic",
+  "description": "CRM del staff de FitKid Gymnastic",
   "lang": "es-MX",
-  "start_url": "./",
+  "start_url": "./crm",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

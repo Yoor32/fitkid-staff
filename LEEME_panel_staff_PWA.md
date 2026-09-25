@@ -1,3 +1,5 @@
+> **Histórico (25-sep-2026):** el panel clásico (`index.html`) se retiró. Ahora `index.html` solo redirige a `crm` (el CRM del staff), que cubre check-in, kiosco, alta, ventas, eventos y calendario. Lo que sigue describe el panel viejo y se conserva como referencia.
+
 # Panel del Staff FitKid · embed en Duda (vía n8n, sin host externo)
 
 Panel guiado por botones con las 25 acciones del CRM. **Se sirve desde tu propio n8n**
