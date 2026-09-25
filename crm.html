@@ -68,7 +68,7 @@
   .navfoot a:hover,.navfoot button:hover{background:rgba(255,255,255,.08);color:#fff}
 
   .centercol{padding:22px 24px;overflow:auto}
-  .pagehead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+  .pagehead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px} .pagehead h1{white-space:nowrap}
   .pagehead h1{font-size:20px;margin:0;letter-spacing:-.2px}
   .pagehead .mut{font-size:12.5px}
   .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
@@ -158,6 +158,29 @@
   .kiorow{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);font-size:16px;font-family:inherit;text-align:left;cursor:pointer;color:var(--text)}
   .kiorow span{flex:1} .kiorow.hecho{background:var(--ok-bg);border-color:#bfe3d5;color:var(--ok);cursor:default} .kiorow.hecho i{font-size:22px}
   @media (max-width:760px){ .kiobody{grid-template-columns:1fr} }
+  .kiosel{display:block}
+  .lotebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px;margin-bottom:10px} .lotebar .field{flex:1;min-width:180px}
+  .lotesum{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 10px;font-size:14px}
+  .loterow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;flex-wrap:wrap} .loterow:last-child{border-bottom:0}
+  .loterow input{width:20px;height:20px;flex:none} .loterow .nm{flex:1;min-width:160px}
+  .lotetag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--warn-bg,#fff4e5);color:var(--warn,#9a5b00)} .lotetag.dng{background:var(--danger-bg);color:var(--danger)}
+  #printarea{display:none}
+  @media print{
+    @page{size:letter;margin:10mm}
+    body.imprimiendo{background:#fff!important}
+    body.imprimiendo > *:not(#printarea){display:none!important}
+    body.imprimiendo #printarea{display:block}
+    .phoja{display:grid;grid-template-columns:85.6mm 85.6mm;grid-auto-rows:54mm;gap:4mm;justify-content:center;break-after:page;page-break-after:always}
+    .phoja:last-child{break-after:auto;page-break-after:auto}
+    .ptarj{box-sizing:border-box;height:54mm;border:.3mm dashed #999;border-radius:3mm;padding:4mm;display:flex;gap:4mm;align-items:center;overflow:hidden;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#111;break-inside:avoid}
+    .pqr{width:40mm;height:40mm;flex:none} .pqr svg{width:100%;height:100%;display:block}
+    .ptxt{min-width:0;display:flex;flex-direction:column;gap:1mm}
+    .pmarca{font-size:7pt;font-weight:700;letter-spacing:.4pt;text-transform:uppercase;color:#444}
+    .pnom{font-size:11pt;font-weight:700;line-height:1.15;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .pnom.largo{font-size:8.5pt;-webkit-line-clamp:4}
+    .pcod{font-size:9pt;font-family:ui-monospace,Menlo,monospace}
+    .pcla{font-size:7.5pt;color:#444} .pnota{font-size:6.5pt;color:#666;margin-top:1mm}
+  }
   .rightcol{background:var(--surface);border-left:1px solid var(--line);padding:18px;overflow:auto}
   .rightcol h2{font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin:0 0 10px}
   .venc{padding:10px 0;border-bottom:1px solid var(--line)}
@@ -226,8 +249,8 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 /* ---------- red (mismo patron que index.html) ---------- */
 const SIN_SESION=()=>new Promise(()=>{});
 function borrarSesion(){ AUTH.token=null;AUTH.rol=null;AUTH.nombre=null;AUTH.expira=null; }
-function sessionExpired(){ borrarSesion(); loginScreen('Tu sesión expiró, vuelve a entrar'); }
-function doLogout(){ borrarSesion(); loginScreen(); }
+function sessionExpired(){ const eraKiosco=AUTH.rol==='kiosco'; if(eraKiosco)kioOlvidar(); limpiarKiosco(); borrarSesion(); loginScreen(eraKiosco?'La sesión del kiosco se cerró desde el servidor; vuelve a entrar':'Tu sesión expiró, vuelve a entrar'); }
+function doLogout(){ limpiarKiosco(); borrarSesion(); loginScreen(); }
 async function call(a,p){ return callUrl(CONFIG.WEBHOOK_URL,{accion:a,...(p||{})}); }
 async function callUrl(url,p){
   const tk=AUTH.token; if(!tk)return SIN_SESION();
@@ -254,7 +277,7 @@ function loginScreen(msg){
   h+='<div class="mut" style="margin-bottom:6px">Contraseña</div><input class="field" id="lp" type="password" autocomplete="current-password">';
   h+='<button class="btn pri" style="width:100%;justify-content:center;margin-top:6px" id="lbtn"><i class="ti ti-login" aria-hidden="true"></i> Entrar</button>';
   h+='<div id="lerr" class="mut" style="margin-top:10px;color:var(--danger)"></div>';
-  h+='</div><div class="footer">FitKid Gymnastic · Formando gimnastas, creando Guerreros<br><a href="index.html">Ir al panel clásico (check-in, kiosco, escáner)</a></div></div>';
+  h+='</div><div class="footer">FitKid Gymnastic · Formando gimnastas, creando Guerreros<br><a href="index.html">Ir al panel clásico</a></div></div>';
   fk.innerHTML=h;
   const lu=fk.querySelector('#lu'),lp=fk.querySelector('#lp'),err=fk.querySelector('#lerr'),btn=fk.querySelector('#lbtn');
   const submit=async()=>{
@@ -264,7 +287,8 @@ function loginScreen(msg){
     const r=await callAuth(usuario,pass);
     btn.disabled=false;
     if(!r||r.ok===false||!r.token||!r.rol){err.textContent=(r&&r.error)||'Usuario o contraseña incorrectos';return;}
-    if(r.rol!=='staff'){err.textContent='El CRM es solo para staff (usa el panel clásico para kiosco)';return;}
+    if(r.rol==='kiosco'){ const v={token:r.token,nombre:r.nombre||'Kiosco',expira:r.expira||null,modo:null}; kioGuardar(v); arrancarCuentaKiosco(v); return; }
+    if(r.rol!=='staff'){err.textContent='Esta cuenta no tiene acceso al CRM';return;}
     AUTH.token=r.token;AUTH.rol=r.rol;AUTH.nombre=r.nombre||null;AUTH.expira=r.expira||null;
     shell();
   };
@@ -287,7 +311,7 @@ const NAV=[
 
 function shell(){
   detenerEscaner();
-  let h='<div class="mobilebar"><b>FitKid CRM</b><a href="index.html">Check-in</a><button data-act="logout-m">Salir</button></div>';
+  let h='<div class="mobilebar"><b>FitKid CRM</b><button data-nav="checkin">Check-in</button><button data-act="logout-m">Salir</button></div>';
   h+='<div class="shell">';
   h+='<nav class="navcol"><div class="navbrand"><div class="hlogo" role="img" aria-label="FitKid"></div><b>FitKid CRM</b></div>';
   h+='<ul class="navlist">'+NAV.map(n=>'<li><button data-nav="'+n.id+'" class="'+(SECCION===n.id?'on':'')+'" '+(n.ready?'':'disabled')+'><i class="ti '+n.icon+'" aria-hidden="true"></i> '+n.label+(n.ready?'':'<span class="soon">pronto</span>')+'</button></li>').join('')+'</ul>';
@@ -627,7 +651,8 @@ async function iniciarEscaner(cont,onCode){
 function tarjetaResultado(r){
   if(!r||r.ok===false)return '<div class="chkres dng"><b>No se pudo registrar</b><div>'+esc((r&&r.error)||'error de red')+'</div></div>';
   const al=r.alumno||{}; const nom=esc(al.nombre||''); const cls=r.clase?esc(nombreSinGenero(r.clase)):'';
-  const alertas=(r.alertas||[]).length?'<ul class="chkalert">'+r.alertas.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul>':'';
+  /* En kiosco no se muestran alertas (membresía, verificación): la pantalla la ve cualquiera. */
+  const alertas=(!KIOSCO&&(r.alertas||[]).length)?'<ul class="chkalert">'+r.alertas.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul>':'';
   /* En kiosco no se ofrece abrir la ficha ni crear clases: la tablet la usan alumnos y tutores. */
   const enKiosco=!!KIOSCO;
   const ficha=(al.id&&!enKiosco)?'<button type="button" class="btn" data-verficha="'+esc(al.id)+'" style="margin-top:8px">Abrir ficha</button>':'';
@@ -654,7 +679,7 @@ function checkin(){
   detenerEscaner();
   const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
   right.innerHTML='<h2>Llegadas en este dispositivo</h2><div id="llegadas">'+listaLlegadas()+'</div>';
-  center.innerHTML='<div class="pagehead"><h1>Check-in</h1><button type="button" class="btn" id="abrirkiosco"><i class="ti ti-device-tablet" aria-hidden="true"></i> Modo kiosco</button></div>'
+  center.innerHTML='<div class="pagehead"><h1>Check-in</h1><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="btn" id="abrirkiosco"><i class="ti ti-device-tablet" aria-hidden="true"></i> Modo kiosco</button><button type="button" class="btn" id="imprtarj"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir tarjetas</button></div></div>'
    +'<div class="card chkcard"><label class="mut" for="chkcod">Escanea con lector o escribe el código del alumno (ej. 26-ADN-101)</label><div style="display:flex;gap:8px"><input class="field" id="chkcod" autocomplete="off" autocapitalize="characters" placeholder="Código o QR" style="margin:0"><button type="button" class="btn pri" id="chkok">Registrar</button></div>'
    +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn" id="chkcam"><i class="ti ti-camera" aria-hidden="true"></i> Usar cámara</button><input class="field" id="chkbus" placeholder="…o busca por nombre" autocomplete="off" style="margin:0;flex:1;min-width:180px"></div>'
    +'<div id="chkbusres" class="dirlist"></div><div id="chkcamcont" style="margin-top:10px"></div></div>'
@@ -666,59 +691,151 @@ function checkin(){
   const bus=document.getElementById('chkbus'), busres=document.getElementById('chkbusres'); let tb=null;
   bus.oninput=()=>{ clearTimeout(tb); tb=setTimeout(async()=>{ const q=bus.value.trim().toLowerCase(); if(q.length<2){busres.innerHTML='';return;} if(!DIRECTORIO){busres.innerHTML='<div class="mut">Cargando…</div>'; const r=await call('directorio',{}); if(r&&r.ok!==false)DIRECTORIO=r;} const arr=((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(a=>String(a.nombre).toLowerCase().indexOf(q)!==-1).slice(0,6); busres.innerHTML=arr.length?arr.map(a=>'<button type="button" class="dirrow" data-chkal="'+esc(a.id)+'"><div class="avatar">'+esc(ini(a.nombre))+'</div><div style="text-align:left"><div class="nm">'+esc(a.nombre)+'</div><div class="mut">'+esc(a.cod||'')+'</div></div></button>').join(''):'<div class="mut">Sin resultados.</div>'; busres.querySelectorAll('[data-chkal]').forEach(b=>b.onclick=()=>{bus.value='';busres.innerHTML='';registrarCheckin({alumno_id:b.dataset.chkal},box);}); },250); };
   document.getElementById('abrirkiosco').onclick=elegirBloqueKiosco;
+  document.getElementById('imprtarj').onclick=tarjetasLote;
   setTimeout(()=>cod.focus(),50);
 }
 
-/* Modo kiosco: pantalla completa en la tablet de recepción. Cámara siempre encendida + roster del bloque para
-   tocar el nombre. Para salir se pide usuario y contraseña de staff (no cierra la sesión actual). */
+/* Modo kiosco: pantalla completa en la tablet de recepción. Cámara siempre encendida + roster para tocar el nombre.
+   Se abre de dos formas: (a) un staff desde Check-in, con su sesión de 12 h; al desbloquear vuelve al CRM.
+   (b) con la cuenta "kiosco": su sesión no expira, se guarda en la tablet y al recargar vuelve directo al kiosco.
+   Para salir o cambiar de bloque siempre se piden usuario y contraseña de staff. */
+const KIO_LS='fk_kiosco';
+function kioGuardado(){ try{ const v=JSON.parse(localStorage.getItem(KIO_LS)||'null'); if(v&&v.token&&(!v.expira||new Date(v.expira).getTime()>Date.now()))return v; }catch(e){} return null; }
+function kioGuardar(v){ try{ localStorage.setItem(KIO_LS,JSON.stringify(v)); }catch(e){} }
+function kioOlvidar(){ try{ localStorage.removeItem(KIO_LS); }catch(e){} }
+function arrancarCuentaKiosco(v){ AUTH.token=v.token; AUTH.rol='kiosco'; AUTH.nombre=v.nombre||'Kiosco'; AUTH.expira=v.expira||null; if(v.modo)iniciarKiosco(v.modo); else elegirBloqueKiosco(); }
+function kioContenedor(){ document.body.classList.add('kiosk-on'); let k=document.getElementById('kiosco'); if(!k){k=document.createElement('div');k.id='kiosco';document.body.appendChild(k);} return k; }
+/* Quita la pantalla del kiosco sin decidir a dónde ir después. */
+function limpiarKiosco(){ detenerEscaner(); if(KIOSCO){ clearInterval(KIOSCO.timer); clearTimeout(KIOSCO.limpiar); } KIOSCO=null; document.body.classList.remove('kiosk-on'); const k=document.getElementById('kiosco'); if(k)k.remove(); if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{}); }
+/* Bloques en curso: desde 20 min antes de empezar hasta que termina (todos duran 1 h). Niñas y Niños del mismo horario cuentan juntos. */
+function bloquesActivos(bl){ const d=new Date(); const ahora=d.getHours()*60+d.getMinutes(); return bl.filter(b=>{ const ini=minutosBloque(b.bloque); return ini!==9999&&ahora>=ini-20&&ahora<ini+60; }); }
 async function elegirBloqueKiosco(){
-  detenerEscaner(); const center=document.getElementById('centercol');
-  center.innerHTML='<div class="pagehead"><h1>Modo kiosco</h1></div><div class="mut">Cargando bloques…</div>';
-  const bl=await horariosLista(); if(SECCION!=='checkin')return;
-  center.innerHTML='<div class="pagehead"><h1>Modo kiosco</h1></div><div class="mut" style="margin-bottom:12px">Elige el bloque que atiende este kiosco. La pantalla quedará bloqueada hasta que un staff la desbloquee.</div><div class="acts"><button type="button" class="actbtn prim" data-kb=""><i class="ti ti-clock" aria-hidden="true"></i><span><b>Todos los bloques de hoy</b><small>Solo cámara y búsqueda</small></span></button>'+bl.map(b=>'<button type="button" class="actbtn" data-kb="'+esc(b.id)+'" data-kn="'+esc(b.nombre)+'"><i class="ti ti-users" aria-hidden="true"></i><span><b>'+esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)+'</b><small>Cupo '+esc(b.cupo)+'</small></span></button>').join('')+'</div>';
-  center.querySelectorAll('[data-kb]').forEach(b=>b.onclick=()=>iniciarKiosco(b.dataset.kb||null,b.dataset.kn||'Todos los bloques'));
+  limpiarKiosco(); const k=kioContenedor(); const cuenta=AUTH.rol==='kiosco';
+  k.innerHTML='<header class="kiohead"><div><b>Modo kiosco</b><div class="kioclock">Elige qué atiende esta tablet</div></div>'+(cuenta?'':'<button type="button" class="btn" id="kiocancel">Cancelar</button>')+'</header><div class="kiobody kiosel"><div class="mut">Cargando bloques…</div></div>';
+  if(!cuenta)document.getElementById('kiocancel').onclick=cerrarKiosco;
+  const bl=await horariosLista(); const cuerpo=k.querySelector('.kiosel'); if(!cuerpo||!document.body.contains(cuerpo))return;
+  cuerpo.innerHTML='<div class="acts">'
+   +'<button type="button" class="actbtn prim" data-kt="auto"><i class="ti ti-clock-play" aria-hidden="true"></i><span><b>Automático según la hora</b><small>Muestra la clase en curso y cambia sola (recomendado)</small></span></button>'
+   +'<button type="button" class="actbtn" data-kt="todos"><i class="ti ti-scan" aria-hidden="true"></i><span><b>Solo escanear</b><small>Sin lista de nombres</small></span></button>'
+   +bl.map(b=>'<button type="button" class="actbtn" data-kt="bloque" data-kb="'+esc(b.id)+'" data-kn="'+esc(b.nombre)+'"><i class="ti ti-users" aria-hidden="true"></i><span><b>'+esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)+'</b><small>Solo este bloque · cupo '+esc(b.cupo)+'</small></span></button>').join('')+'</div>';
+  cuerpo.querySelectorAll('[data-kt]').forEach(b=>b.onclick=()=>{ const modo={tipo:b.dataset.kt,hid:b.dataset.kb||null,nombre:b.dataset.kn||''}; if(cuenta){ const v=kioGuardado(); if(v){v.modo=modo;kioGuardar(v);} } iniciarKiosco(modo); });
 }
-function iniciarKiosco(hid,nombre){
-  KIOSCO={hid:hid,nombre:nombre,timer:null};
-  document.body.classList.add('kiosk-on'); const el=document.documentElement; if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
-  let k=document.getElementById('kiosco'); if(!k){k=document.createElement('div');k.id='kiosco';document.body.appendChild(k);}
-  k.innerHTML='<header class="kiohead"><div><b>Check-in · '+esc(nombreSinGenero(nombre))+'</b><div class="kioclock" id="kioclock"></div></div><button type="button" class="kiolock" id="kiolock" aria-label="Salir del kiosco"><i class="ti ti-lock" aria-hidden="true"></i></button></header>'
+function iniciarKiosco(modo){
+  limpiarKiosco(); KIOSCO={modo:modo,timer:null,limpiar:null,pausa:false};
+  const el=document.documentElement; if(el.requestFullscreen&&!document.fullscreenElement)el.requestFullscreen().catch(()=>{});
+  const k=kioContenedor(); const titulo=modo.tipo==='bloque'?nombreSinGenero(modo.nombre):(modo.tipo==='auto'?'Clase en curso':'Escanea tu tarjeta');
+  k.innerHTML='<header class="kiohead"><div><b id="kiotit">Check-in · '+esc(titulo)+'</b><div class="kioclock" id="kioclock"></div></div><button type="button" class="kiolock" id="kiolock" aria-label="Opciones del kiosco (requiere staff)"><i class="ti ti-lock" aria-hidden="true"></i></button></header>'
    +'<div class="kiobody"><section class="kioscan"><div id="kiocam"></div><div style="display:flex;gap:8px;margin-top:10px"><input class="field" id="kiocod" placeholder="Código o QR" autocomplete="off" autocapitalize="characters" style="margin:0"><button type="button" class="btn pri" id="kiook">OK</button></div><div id="kiores" aria-live="polite" style="margin-top:12px"></div></section>'
-   +'<section class="kioroster"><h2>'+(hid?'Toca tu nombre':'Registros recientes')+'</h2><div id="kiolista" class="mut">Cargando…</div></section></div>';
-  const box=document.getElementById('kiores'); const extra=hid?{horario_id:hid}:{};
-  const tras=r=>{ if(hid)cargarRosterKiosco(); clearTimeout(KIOSCO&&KIOSCO.limpiar); if(KIOSCO)KIOSCO.limpiar=setTimeout(()=>{if(box)box.innerHTML='';},8000); };
-  const cod=document.getElementById('kiocod'); const env=async()=>{const v=cod.value.trim(); if(!v)return; cod.value=''; tras(await registrarCheckin({token:v},box,extra));};
+   +'<section class="kioroster"><h2>'+(modo.tipo==='todos'?'Registros recientes':'Toca tu nombre')+'</h2><div id="kiolista" class="mut">Cargando…</div></section></div>';
+  const box=document.getElementById('kiores'); const extra=modo.tipo==='bloque'?{horario_id:modo.hid}:{};
+  const tras=()=>{ cargarRosterKiosco(); if(!KIOSCO)return; clearTimeout(KIOSCO.limpiar); KIOSCO.limpiar=setTimeout(()=>{if(box)box.innerHTML='';},8000); };
+  const cod=document.getElementById('kiocod'); const env=async()=>{const v=cod.value.trim(); if(!v)return; cod.value=''; await registrarCheckin({token:v},box,extra); tras();};
   document.getElementById('kiook').onclick=env; cod.addEventListener('keydown',e=>{if(e.key==='Enter')env();});
-  iniciarEscaner(document.getElementById('kiocam'),async txt=>{ if(KIOSCO&&KIOSCO.pausa)return; tras(await registrarCheckin({token:txt},box,extra)); });
+  iniciarEscaner(document.getElementById('kiocam'),async txt=>{ if(KIOSCO&&KIOSCO.pausa)return; await registrarCheckin({token:txt},box,extra); tras(); });
   document.getElementById('kiolock').onclick=salirKiosco;
   const reloj=()=>{const c=document.getElementById('kioclock'); if(c)c.textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}; reloj();
-  KIOSCO.timer=setInterval(()=>{reloj(); if(hid)cargarRosterKiosco();},60000);
-  if(hid)cargarRosterKiosco(); else document.getElementById('kiolista').innerHTML=listaLlegadas();
+  KIOSCO.timer=setInterval(()=>{reloj(); cargarRosterKiosco();},60000);
+  cargarRosterKiosco();
 }
 async function cargarRosterKiosco(){
-  if(!KIOSCO||!KIOSCO.hid)return; const r=await call('clases_hoy',{fecha:'hoy',horario_id:KIOSCO.hid}); const l=document.getElementById('kiolista'); if(!l||!KIOSCO)return;
-  const rows=((r&&r.data)||[]).slice().sort((a,b)=>String(a.n).localeCompare(String(b.n)));
-  if(!rows.length){l.innerHTML='<div class="mut">No hay alumnos reservados en este bloque hoy.</div>';return;}
-  l.className=''; l.innerHTML=rows.map(x=>{ const hecho=x.e==='Asistió'; return '<button type="button" class="kiorow'+(hecho?' hecho':'')+'" data-kal="'+esc(x.id)+'" data-kn="'+esc(x.n)+'"'+(hecho?' disabled':'')+'><div class="avatar">'+esc(ini(x.n))+'</div><span>'+esc(x.n)+'</span>'+(hecho?'<i class="ti ti-circle-check" aria-hidden="true"></i>':'')+'</button>'; }).join('');
-  l.querySelectorAll('[data-kal]').forEach(b=>b.onclick=()=>confirmarKiosco(b));
+  if(!KIOSCO)return; const m=KIOSCO.modo; const l=document.getElementById('kiolista'); if(!l)return;
+  if(m.tipo==='todos'){ l.className=''; l.innerHTML=listaLlegadas(); return; }
+  let ids=null;
+  if(m.tipo==='auto'){ const act=bloquesActivos(await horariosLista()); if(!KIOSCO)return; ids=act.map(b=>b.id); const nombres=[...new Set(act.map(b=>nombreSinGenero(b.nombre)))]; const t=document.getElementById('kiotit'); if(t)t.textContent='Check-in · '+(nombres.join(' + ')||'sin clase en este momento'); if(!ids.length){ l.className='mut'; l.innerHTML='No hay clase en este momento. Puedes escanear tu tarjeta de todos modos.'; return; } }
+  const r=await call('clases_hoy',m.tipo==='bloque'?{fecha:'hoy',horario_id:m.hid}:{fecha:'hoy'}); if(!KIOSCO||!document.body.contains(l))return;
+  let rows=((r&&r.data)||[]); if(ids)rows=rows.filter(x=>ids.indexOf(x.hid)!==-1);
+  rows=rows.filter(x=>x.e!=='Cancelado'&&x.e!=='Reagendado').sort((a,b)=>String(a.n).localeCompare(String(b.n)));
+  if(!rows.length){ l.className='mut'; l.innerHTML='No hay alumnos reservados en esta clase hoy.'; return; }
+  l.className=''; l.innerHTML=rows.map(x=>{ const hecho=x.e==='Asistió'; return '<button type="button" class="kiorow'+(hecho?' hecho':'')+'" data-kaid="'+esc(x.aid||'')+'" data-khid="'+esc(x.hid||'')+'" data-kn="'+esc(x.n)+'"'+((hecho||!x.aid)?' disabled':'')+'><div class="avatar">'+esc(ini(x.n))+'</div><span>'+esc(x.n)+'</span>'+(hecho?'<i class="ti ti-circle-check" aria-hidden="true"></i>':'')+'</button>'; }).join('');
+  l.querySelectorAll('[data-kaid]').forEach(b=>b.onclick=()=>confirmarKiosco(b));
 }
 function confirmarKiosco(btn){
-  const box=document.getElementById('kiores'); const nom=btn.dataset.kn; const asisId=btn.dataset.kal;
+  const box=document.getElementById('kiores'); const nom=btn.dataset.kn;
   box.innerHTML='<div class="chkres info"><div><b>¿Eres '+esc(nom)+'?</b><div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn pri" id="kiosi">Sí, registrar</button><button type="button" class="btn" id="kiono">No</button></div></div></div>';
   document.getElementById('kiono').onclick=()=>{box.innerHTML='';};
-  document.getElementById('kiosi').onclick=async()=>{ box.innerHTML='<div class="mut">Registrando…</div>'; const r=await call('guardar_asistencias',{items:[{id:asisId,estatus:'Asistió'}]}); box.innerHTML=(r&&r.ok&&r.actualizadas)?'<div class="chkres ok"><i class="ti ti-circle-check" aria-hidden="true"></i><div><b>'+esc(nom)+'</b><div>Asistencia registrada. ¡Bienvenido!</div></div></div>':'<div class="chkres dng"><div><b>No se pudo registrar</b><div>Avisa al staff.</div></div></div>'; if(r&&r.ok&&r.actualizadas){CHECKINS.unshift({t:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),n:nom,res:'registrado'});} cargarRosterKiosco(); setTimeout(()=>{if(box)box.innerHTML='';},6000); };
+  /* Mismo camino que el QR (checkin_qr): el kiosco no puede usar guardar_asistencias. */
+  document.getElementById('kiosi').onclick=async()=>{ box.innerHTML='<div class="mut">Registrando…</div>'; const p={alumno_id:btn.dataset.kaid}; if(btn.dataset.khid)p.horario_id=btn.dataset.khid; const r=await call('checkin_qr',p); if(!document.body.contains(box))return; box.innerHTML=tarjetaResultado(r); anotar(r); cargarRosterKiosco(); if(KIOSCO){ clearTimeout(KIOSCO.limpiar); KIOSCO.limpiar=setTimeout(()=>{box.innerHTML='';},6000); } };
 }
 /* El desbloqueo va en su propia capa y pausa el escáner: si no, un QR leído mientras tanto borra el formulario. */
 function salirKiosco(){
   const k=document.getElementById('kiosco'); if(!k||!KIOSCO||document.getElementById('kiounlock'))return;
   KIOSCO.pausa=true;
-  k.insertAdjacentHTML('beforeend','<div class="kiounlock" id="kiounlock" role="dialog" aria-modal="true" aria-labelledby="kxtit"><form class="card" id="kxform"><b id="kxtit">Salir del kiosco</b><div class="mut" style="margin:4px 0 8px">Usuario y contraseña de staff</div><input class="field" id="kxu" autocomplete="username" autocapitalize="none" placeholder="Usuario"><input class="field" id="kxp" type="password" autocomplete="current-password" placeholder="Contraseña"><div style="display:flex;gap:8px"><button type="submit" class="btn pri" id="kxok">Desbloquear</button><button type="button" class="btn" id="kxno">Cancelar</button></div><div id="kxerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:6px"></div></form></div>');
+  k.insertAdjacentHTML('beforeend','<div class="kiounlock" id="kiounlock" role="dialog" aria-modal="true" aria-labelledby="kxtit"><form class="card" id="kxform"><b id="kxtit">Opciones del kiosco</b><div class="mut" style="margin:4px 0 8px">Usuario y contraseña de staff</div><input class="field" id="kxu" autocomplete="username" autocapitalize="none" placeholder="Usuario"><input class="field" id="kxp" type="password" autocomplete="current-password" placeholder="Contraseña"><div style="display:flex;gap:8px"><button type="submit" class="btn pri" id="kxok">Desbloquear</button><button type="button" class="btn" id="kxno">Cancelar</button></div><div id="kxerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:6px"></div></form></div>');
   const cerrar=()=>{ const o=document.getElementById('kiounlock'); if(o)o.remove(); if(KIOSCO)KIOSCO.pausa=false; };
   document.getElementById('kxno').onclick=cerrar;
-  document.getElementById('kxform').onsubmit=async e=>{ e.preventDefault(); const u=document.getElementById('kxu').value.trim(), p=document.getElementById('kxp').value, err=document.getElementById('kxerr'), ok=document.getElementById('kxok'); if(!u||!p){err.textContent='Escribe usuario y contraseña';return;} ok.disabled=true; err.textContent=''; const r=await callAuth(u,p); ok.disabled=false; if(r&&r.ok&&r.rol==='staff'){ cerrarKiosco(); } else { err.textContent='Usuario o contraseña incorrectos'; document.getElementById('kxp').value=''; } };
+  document.getElementById('kxform').onsubmit=async e=>{ e.preventDefault(); const u=document.getElementById('kxu').value.trim(), p=document.getElementById('kxp').value, err=document.getElementById('kxerr'), ok=document.getElementById('kxok'); if(!u||!p){err.textContent='Escribe usuario y contraseña';return;} ok.disabled=true; err.textContent=''; const r=await callAuth(u,p); ok.disabled=false;
+    if(!(r&&r.ok&&r.rol==='staff')){ err.textContent='Usuario o contraseña incorrectos'; document.getElementById('kxp').value=''; return; }
+    if(AUTH.rol!=='kiosco'){ cerrarKiosco(); return; }
+    /* Cuenta de kiosco: el staff solo autoriza; la tablet sigue con la sesión del kiosco. */
+    const f=document.getElementById('kxform'); f.innerHTML='<b>Opciones del kiosco</b><div class="mut" style="margin:4px 0 12px">Autorizado por '+esc(r.nombre||u)+'</div><div style="display:flex;flex-direction:column;gap:8px"><button type="button" class="btn pri" id="kxbloque">Cambiar bloque</button><button type="button" class="btn" id="kxcerrar" style="color:var(--danger)">Cerrar el kiosco en esta tablet</button><button type="button" class="btn" id="kxvolver">Volver al kiosco</button></div>';
+    document.getElementById('kxvolver').onclick=cerrar;
+    document.getElementById('kxbloque').onclick=()=>{ const v=kioGuardado(); if(v){v.modo=null;kioGuardar(v);} elegirBloqueKiosco(); };
+    document.getElementById('kxcerrar').onclick=()=>{ if(!confirm('¿Cerrar el kiosco? Habrá que volver a entrar con la cuenta kiosco.'))return; kioOlvidar(); limpiarKiosco(); borrarSesion(); loginScreen('Kiosco cerrado en esta tablet'); };
+  };
   setTimeout(()=>{const u=document.getElementById('kxu'); if(u)u.focus();},30);
 }
-function cerrarKiosco(){ detenerEscaner(); if(KIOSCO&&KIOSCO.timer)clearInterval(KIOSCO.timer); KIOSCO=null; document.body.classList.remove('kiosk-on'); const k=document.getElementById('kiosco'); if(k)k.remove(); if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{}); shell(); }
+function cerrarKiosco(){ limpiarKiosco(); shell(); }
+
+/* Impresión de tarjetas QR: 8 por hoja carta, tamaño tarjeta de crédito (85.6 × 54 mm) con línea de corte.
+   Se imprime desde la misma página (no una ventana nueva) para que funcione dentro del iframe de Duda. */
+async function imprimirTarjetas(items){
+  await cargarScript(QRGEN_URL);
+  let pa=document.getElementById('printarea'); if(!pa){pa=document.createElement('div');pa.id='printarea';document.body.appendChild(pa);}
+  const tj=items.map(x=>{ const q=window.qrcode(0,'M'); q.addData(x.token); q.make(); return '<div class="ptarj"><div class="pqr">'+q.createSvgTag({cellSize:4,margin:0,scalable:true})+'</div><div class="ptxt"><div class="pmarca">FitKid Gymnastic</div><div class="pnom'+(String(x.nombre).length>30?' largo':'')+'">'+esc(x.nombre)+'</div>'+(x.cod?'<div class="pcod">'+esc(x.cod)+'</div>':'')+(x.clase?'<div class="pcla">'+esc(nombreSinGenero(x.clase))+'</div>':'')+'<div class="pnota">Escanea esta tarjeta al llegar</div></div></div>'; });
+  let h=''; for(let i=0;i<tj.length;i+=8)h+='<div class="phoja">'+tj.slice(i,i+8).join('')+'</div>';
+  pa.innerHTML=h; document.body.classList.add('imprimiendo');
+  const fin=()=>{ document.body.classList.remove('imprimiendo'); window.removeEventListener('afterprint',fin); }; window.addEventListener('afterprint',fin);
+  setTimeout(()=>window.print(),60);
+}
+let LOTE=null;
+async function tarjetasLote(){
+  detenerEscaner(); const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
+  right.innerHTML='<h2>Cómo usarlo</h2><div class="mut" style="line-height:1.5">Filtra, desmarca a quien no quieras y pulsa Imprimir. Salen 8 tarjetas por hoja carta con línea de corte. A quien no tenga código se le genera al imprimir (tarda unos segundos por cada 25). Reimprimir no cambia los códigos: una tarjeta vieja sigue sirviendo mientras no la regeneres desde la ficha.</div>';
+  center.innerHTML='<div class="pagehead"><h1>Tarjetas QR</h1><button type="button" class="btn" id="lotevolver"><i class="ti ti-arrow-left" aria-hidden="true"></i> Check-in</button></div><div id="lotecont"><div class="mut">Cargando alumnos…</div></div>';
+  document.getElementById('lotevolver').onclick=checkin;
+  const r=await call('qr_lote',{}); const cont=document.getElementById('lotecont'); if(SECCION!=='checkin'||!cont)return;
+  if(!r||r.ok===false){ cont.innerHTML='<div class="mut" style="color:var(--danger)">No se pudo cargar: '+esc((r&&r.error)||'error de red')+'</div>'; return; }
+  LOTE={data:(r.data||[]).slice().sort((a,b)=>String(a.nombre).localeCompare(String(b.nombre))),excl:new Set(),bloque:'',inact:false,q:''};
+  const bls=[...new Set(LOTE.data.map(x=>x.horario||''))].sort((a,b)=>(minutosBloque(bloqueDe(a))-minutosBloque(bloqueDe(b)))||a.localeCompare(b));
+  cont.innerHTML='<div class="card lotebar"><select class="field" id="lotebloque" style="margin:0"><option value="*">Todos los horarios</option>'+bls.map(b=>'<option value="'+esc(b)+'">'+esc(b?b.replace(' (Lun-Vie)',''):'Sin horario asignado')+'</option>').join('')+'</select><input class="field" id="lotebus" placeholder="Buscar nombre" autocomplete="off" style="margin:0"><label class="mut" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="loteinact"> Incluir suspendidos y bajas</label></div>'
+   +'<div class="lotesum"><span id="loteres"></span><span style="display:flex;gap:6px"><button type="button" class="btn" id="lotetodos">Marcar todos</button><button type="button" class="btn" id="loteninguno">Ninguno</button></span></div>'
+   +'<div id="lotelista" class="card" style="padding:0"></div>'
+   +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="loteimp"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir</button><span class="mut" id="lotest" role="status"></span></div>';
+  LOTE.bloque='*';
+  document.getElementById('lotebloque').onchange=e=>{LOTE.bloque=e.target.value;pintarLote();};
+  document.getElementById('lotebus').oninput=e=>{LOTE.q=e.target.value.trim().toLowerCase();pintarLote();};
+  document.getElementById('loteinact').onchange=e=>{LOTE.inact=e.target.checked;pintarLote();};
+  document.getElementById('lotetodos').onclick=()=>{visiblesLote().forEach(x=>LOTE.excl.delete(x.id));pintarLote();};
+  document.getElementById('loteninguno').onclick=()=>{visiblesLote().forEach(x=>LOTE.excl.add(x.id));pintarLote();};
+  document.getElementById('loteimp').onclick=e=>imprimirLote(e.currentTarget);
+  pintarLote();
+}
+function bloqueDe(nombreHorario){ const m=String(nombreHorario||'').match(/(\d{1,2}:\d{2}-\d{1,2}:\d{2}\s*[AP]M)/i); return m?m[1]:''; }
+function visiblesLote(){ return LOTE.data.filter(x=>(LOTE.inact||(x.estatus!=='Suspendido'&&x.estatus!=='Baja'))&&(LOTE.bloque==='*'||(x.horario||'')===LOTE.bloque)&&(!LOTE.q||String(x.nombre).toLowerCase().indexOf(LOTE.q)!==-1)); }
+function seleccionLote(){ return visiblesLote().filter(x=>!LOTE.excl.has(x.id)); }
+function pintarLote(){
+  const l=document.getElementById('lotelista'); if(!l||!LOTE)return; const vis=visiblesLote(), sel=seleccionLote(); const sinq=sel.filter(x=>!x.token).length;
+  l.innerHTML=vis.length?vis.map(x=>'<label class="loterow"><input type="checkbox" data-lid="'+esc(x.id)+'"'+(LOTE.excl.has(x.id)?'':' checked')+'><span class="nm">'+esc(x.nombre)+'</span><span class="mut">'+esc(x.cod||'sin código de alumno')+(x.horario?' · '+esc(bloqueDe(x.horario)):'')+'</span>'+(x.token?'':'<span class="lotetag">sin QR</span>')+((x.estatus&&x.estatus!=='Activo')?'<span class="lotetag dng">'+esc(x.estatus)+'</span>':'')+'</label>').join(''):'<div class="mut" style="padding:14px">Nadie coincide con el filtro.</div>';
+  l.querySelectorAll('[data-lid]').forEach(c=>c.onchange=()=>{ if(c.checked)LOTE.excl.delete(c.dataset.lid); else LOTE.excl.add(c.dataset.lid); pintarLote(); });
+  document.getElementById('loteres').textContent=sel.length+' tarjeta'+(sel.length===1?'':'s')+' · '+Math.ceil(sel.length/8)+' hoja'+(Math.ceil(sel.length/8)===1?'':'s')+(sinq?' · '+sinq+' sin QR todavía (se generan al imprimir)':'');
+  const b=document.getElementById('loteimp'); if(b&&!b.dataset.ocupado){ b.disabled=!sel.length; b.innerHTML='<i class="ti ti-printer" aria-hidden="true"></i> Imprimir '+sel.length; }
+}
+async function imprimirLote(btn){
+  const sel=seleccionLote(); if(!sel.length)return; const st=document.getElementById('lotest');
+  const faltan=sel.filter(x=>!x.token).map(x=>x.id); btn.disabled=true; btn.dataset.ocupado='1';
+  try{
+    for(let i=0;i<faltan.length;i+=25){
+      st.textContent='Generando códigos '+Math.min(i+25,faltan.length)+' de '+faltan.length+'…';
+      const r=await call('qr_lote',{generar:faltan.slice(i,i+25)});
+      if(!r||r.ok===false){ st.textContent='Se detuvo: '+((r&&r.error)||'error de red')+'. Los códigos ya creados quedaron guardados; vuelve a pulsar Imprimir.'; return; }
+      const tk={}; (r.data||[]).forEach(d=>{ if(d.token)tk[d.id]=d.token; }); LOTE.data.forEach(d=>{ if(!d.token&&tk[d.id])d.token=tk[d.id]; });
+    }
+    const listos=seleccionLote().filter(x=>x.token);
+    st.textContent=listos.length+' tarjetas listas. Si no se abrió el diálogo de impresión, pulsa Imprimir otra vez.';
+    await imprimirTarjetas(listos.map(x=>({nombre:x.nombre,cod:x.cod,token:x.token,clase:x.horario})));
+  }catch(e){ st.textContent='No se pudo preparar la impresión: '+(e.message||e); }
+  finally{ delete btn.dataset.ocupado; btn.disabled=false; pintarLote(); }
+}
 
 /* Tarjeta QR del alumno (desde la ficha): imprimir o descargar; regenerar invalida la anterior. */
 async function tarjetaQR(regenerar){
@@ -733,7 +850,7 @@ async function tarjetaQR(regenerar){
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="qrprint"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir</button><a class="btn" id="qrdl" download="QR-'+esc((res.cod||'alumno').replace(/[^A-Za-z0-9-]/g,''))+'.png" href="'+url+'"><i class="ti ti-download" aria-hidden="true"></i> Descargar</a><button type="button" class="btn" id="qrregen"><i class="ti ti-refresh" aria-hidden="true"></i> Regenerar</button></div>'
    +'<div class="mut" style="font-size:12px;margin-top:8px">Regenerar invalida la tarjeta anterior (úsalo si se perdió).</div><div id="accerr" role="alert" style="color:var(--danger);font-size:13px;margin-top:8px"></div>';
   root.querySelector('[data-acc="volver"]').onclick=drawFicha;
-  root.querySelector('#qrprint').onclick=()=>{ const w=window.open('','_blank'); if(!w){root.querySelector('#accerr').textContent='El navegador bloqueó la ventana de impresión';return;} w.document.write('<!doctype html><title>QR '+esc(res.nombre)+'</title><body style="font-family:system-ui;text-align:center;padding:24px"><div style="display:inline-block;border:1px solid #ccc;border-radius:14px;padding:18px 22px"><img src="'+url+'" style="width:220px;height:220px"><div style="font-weight:700;margin-top:6px">'+esc(res.nombre)+'</div><div style="color:#667085;font-size:13px">'+esc(res.cod||'')+' · FitKid Gymnastic</div></div><script>onload=()=>{print();}<\/script></body>'); w.document.close(); };
+  root.querySelector('#qrprint').onclick=()=>imprimirTarjetas([{nombre:res.nombre,cod:res.cod,token:res.token,clase:(r.horario&&r.horario.nombre)||''}]).catch(()=>{root.querySelector('#accerr').textContent='No se pudo preparar la impresión';});
   root.querySelector('#qrregen').onclick=()=>{ if(confirm('¿Regenerar? La tarjeta actual dejará de funcionar.'))tarjetaQR(true); };
 }
 
@@ -847,7 +964,8 @@ function drawRoster(fecha,label,rows){
   };
 }
 
-if(!AUTH.token)loginScreen();
+/* Una tablet con la cuenta kiosco guardada arranca directo en el kiosco. */
+const _kio=kioGuardado(); if(_kio)arrancarCuentaKiosco(_kio); else if(!AUTH.token)loginScreen();
 </script>
 </body>
 </html>
