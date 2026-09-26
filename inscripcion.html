@@ -150,6 +150,19 @@ const ACUERDO={
   responsiva:'Manifiesto que conozco los riesgos inherentes a la práctica de la gimnasia y actividades deportivas. Acepto la inscripción del alumno en FITKID GYMNASTIC (FKM) y deslindo al club, sus propietarios, entrenadores y personal de cualquier responsabilidad civil o penal por accidentes, caídas o lesiones que pudieran ocurrir durante el desarrollo normal de las actividades, habiendo tomado el gimnasio las medidas de seguridad pertinentes.',
   aceptacion:'Al firmar este acuerdo, firmo de conformidad con todos los puntos anteriores en mi calidad de Padre, Madre o Tutor legal del alumno registrado.'
 };
+/* FitParents: acuerdo propio para el participante mayor de edad (mismo texto y versión que en crm.html). */
+const ACUERDO_ADULTOS_VERSION='2026-09-26-adultos';
+const ACUERDO_ADULTOS={
+  intro:'El presente documento establece las condiciones para la inscripción del participante mayor de edad al programa FitParents de FITKID GYMNASTIC (FKM) y contiene la confirmación de datos, la aceptación del reglamento interno, la declaración de salud, la autorización de uso de imagen y la carta responsiva.',
+  veracidad:'Declaro que la información que proporciono en esta ficha es verídica, completa y está actualizada. Me comprometo a notificar de inmediato a FitKid cualquier cambio en mi estado de salud o en mis datos de contacto.',
+  reglamentoIntro:'Al inscribirme, acepto cumplir las siguientes normas:',
+  reglamento:[['Puntualidad','Llegar puntual a la clase (5 min de tolerancia).'],['Reposición de Clases','Las clases no se reponen, salvo por enfermedad (con justificante médico), cierre del gimnasio o día festivo oficial.'],['Vestimenta','Asistir con ropa deportiva y calzado adecuados para el entrenamiento.'],['Horarios','Evitar cambios de horario sin previa autorización administrativa.'],['Respeto','Mantener un trato respetuoso hacia entrenadores y compañeros, y cuidar las instalaciones y el equipo.'],['Accesorios','No usar accesorios durante el entrenamiento (pulseras, collares, relojes, etc.) por seguridad.'],['Salud','No asistir si presento síntomas de enfermedad (gripe, fiebre, tos, etc.) e informar al entrenador de cualquier molestia durante la clase.']],
+  imagen:'Autorizo a FITKID GYMNASTIC (FKM) a utilizar fotografías y/o videos en los que aparezca, capturados durante las actividades, únicamente con fines promocionales y educativos de la institución (redes sociales, sitio web, folletos).',
+  imagenNota:'Esta autorización puede ser revocada por escrito en cualquier momento enviando un correo a la administración.',
+  salud:'Declaro que me encuentro en condiciones físicas y de salud para realizar actividad física de intensidad moderada a alta; que informé en esta ficha cualquier padecimiento, lesión, cirugía o tratamiento médico relevante, y que es mi responsabilidad consultar a un médico antes de iniciar o continuar el entrenamiento si tengo alguna condición que pueda agravarse con el ejercicio.',
+  responsiva:'Manifiesto que conozco los riesgos inherentes al entrenamiento funcional y a la actividad física. Participo de manera voluntaria y deslindo a FITKID GYMNASTIC (FKM), sus propietarios, entrenadores y personal de cualquier responsabilidad civil o penal por accidentes, caídas o lesiones que pudieran ocurrir durante el desarrollo normal de las actividades, habiendo tomado el gimnasio las medidas de seguridad pertinentes.',
+  aceptacion:'Al firmar este acuerdo, firmo de conformidad con todos los puntos anteriores en mi calidad de participante mayor de edad.'
+};
 const PARENTESCOS=['Mamá','Papá','Tutor legal','Abuela','Abuelo','Otro'];
 const PASOS=[['quien','¿A quién inscribes?'],['datos','Tus datos'],['alumnos','Alumnos y horarios'],['pago','Resumen y pago'],['acuerdo','Acuerdo y firma']];
 const DRAFT='fk_inscripcion_v1';
@@ -160,7 +173,18 @@ const tel10=v=>String(v||'').replace(/\D/g,'').slice(-10);
 const hoyISO=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 function edadDe(fn){ if(!/^\d{4}-\d{2}-\d{2}$/.test(fn||''))return null; const [y,m,d]=fn.split('-').map(Number); const [hy,hm,hd]=hoyISO().split('-').map(Number); let e=hy-y; if(hm<m||(hm===m&&hd<d))e--; return (fn>=hoyISO()||y<1920)?null:e; }
 function progDe(e){ if(e==null)return null; if(e>=18)return 'fp'; if(e>=7)return 'oli'; if(e>=3)return 'ini'; return 'chico'; }
-function mesesPermitidos(){ const [y,m,d]=hoyISO().split('-').map(Number); const ult=new Date(y,m,0).getDate(); const sig=m===12?(y+1)+'-01-01':y+'-'+String(m+1).padStart(2,'0')+'-01'; const out=[sig]; if(ult-d>=14)out.unshift(hoyISO().slice(0,8)+'01'); return out; }
+/* Inicio: desde mañana hasta el último día del mes siguiente. */
+const isoDe=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function inicioMin(){ const d=new Date(); d.setDate(d.getDate()+1); return isoDe(d); }
+function inicioMax(){ const d=new Date(); return isoDe(new Date(d.getFullYear(),d.getMonth()+2,0)); }
+function inicioValido(f){ return /^\d{4}-\d{2}-\d{2}$/.test(f||'')&&f>=inicioMin()&&f<=inicioMax(); }
+/* Prorrateo (regla de FitKid): precio por clase = precio del plan / clases del plan. Se cobran solo las clases de los
+   días elegidos entre el primer día y el fin de ese mes, con tope en las del plan. El mes siguiente va completo. */
+const DOW={Lunes:1,Martes:2,'Miércoles':3,Jueves:4,Viernes:5};
+function clasesDesde(inicio,dias){ const ds=dias.map(x=>DOW[x]); const [y,m,d]=inicio.split('-').map(Number); let n=0; for(const f=new Date(y,m-1,d,12); f.getMonth()===m-1; f.setDate(f.getDate()+1))if(ds.indexOf(f.getDay())!==-1)n++; return n; }
+function cobroMes(precio,creditos,dias){ if(!inicioValido(S.inicio)||!dias.length)return {clases:0,monto:0,completo:false}; const n=Math.min(clasesDesde(S.inicio,dias),creditos); return n>=creditos?{clases:creditos,monto:precio,completo:true}:{clases:n,monto:Math.round(precio/creditos*n),completo:false}; }
+const fechaCorta=f=>{ const [y,m,d]=f.split('-').map(Number); return d+' de '+MESES[m-1]; };
+const mesSig=f=>{ const [y,m]=f.split('-').map(Number); return MESES[m%12]+' '+(m===12?y+1:y); };
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const nombreMes=iso=>MESES[+iso.slice(5,7)-1]+' '+iso.slice(0,4);
 const waLink=txt=>'https://wa.me/'+WA_FITKID+'?text='+encodeURIComponent(txt);
@@ -171,13 +195,13 @@ function nuevoEstado(){ return {paso:0,ninos:false,yo:false,r:{nombre:'',whatsap
 let S=nuevoEstado();
 /* Borrador en este navegador (sin la firma): si cierran la página, al volver siguen donde iban. */
 function guardar(){ try{ const c=JSON.parse(JSON.stringify(S)); c.ac.trazos=[]; c.ac.veracidad=c.ac.reglamento=c.ac.responsiva=false; localStorage.setItem(DRAFT,JSON.stringify(c)); }catch(e){} }
-function cargar(){ try{ const c=JSON.parse(localStorage.getItem(DRAFT)||'null'); if(c&&c.r&&Array.isArray(c.kids)){ S=Object.assign(nuevoEstado(),c); S.t0=Date.now(); S.intentado={}; if(S.paso>3)S.paso=3; return true; } }catch(e){} return false; }
+function cargar(){ try{ const c=JSON.parse(localStorage.getItem(DRAFT)||'null'); if(c&&c.r&&Array.isArray(c.kids)){ S=Object.assign(nuevoEstado(),c); S.t0=Date.now(); S.intentado={}; if(S.paso>3)S.paso=3; if(S.ninos&&S.yo)S.yo=false; if(S.inicio&&!/^\d{4}-\d{2}-\d{2}$/.test(S.inicio))S.inicio=''; return true; } }catch(e){} return false; }
 function borrarBorrador(){ try{localStorage.removeItem(DRAFT);}catch(e){} }
 
 /* ---------- cálculo ---------- */
 function planKid(k){ const n=k.dias.length; return n?PLANES[n]:null; }
-function personas(){ const out=[]; if(S.ninos)S.kids.forEach(k=>{ const pl=planKid(k); out.push({nombre:k.nombre.trim()||'Alumno',plan:pl?pl[0]:'',mens:pl?pl[1]:0,dias:k.dias.length}); }); if(S.yo)out.push({nombre:S.r.nombre.trim()||'Tú',plan:'FP',mens:FP.precio,dias:5,yo:true}); return out; }
-function total(){ return personas().reduce((s,p)=>s+(p.mens?p.mens+INSCRIPCION:0),0); }
+function personas(){ const out=[]; if(S.ninos)S.kids.forEach(k=>{ const pl=planKid(k); const cr=k.dias.length*4; const c=pl?cobroMes(pl[1],cr,k.dias):{clases:0,monto:0}; out.push({nombre:k.nombre.trim()||'Alumno',plan:pl?pl[0]:'',completo:pl?pl[1]:0,creditos:cr,clases:c.clases,mens:c.monto,prorrateo:!c.completo}); }); if(S.yo){ const c=cobroMes(FP.precio,20,DIAS); out.push({nombre:S.r.nombre.trim()||'Tú',plan:'FP',completo:FP.precio,creditos:20,clases:c.clases,mens:c.monto,prorrateo:!c.completo,yo:true}); } return out; }
+function total(){ return personas().reduce((s,p)=>s+(p.completo?p.mens+INSCRIPCION:0),0); }
 
 /* ---------- validación por paso ---------- */
 function faltas(paso){ const f=[]; const r=S.r;
@@ -188,7 +212,7 @@ function faltas(paso){ const f=[]; const r=S.r;
     const vistos={}; if(S.ninos)S.kids.forEach(k=>{ const n=k.nombre.trim().toLowerCase().replace(/\s+/g,' '); if(n&&vistos[n])f.push(k.nombre.trim()+' está dos veces'); vistos[n]=1; });
     if(S.yo){ const e=edadDe(S.yo_d.fn); if(e==null)f.push('tu fecha de nacimiento (FitParents)'); else if(e<18)f.push('FitParents es para mayores de 18 años'); if(!S.yo_d.hid)f.push('tu horario de FitParents'); if(!S.yo_d.alergias.trim())f.push('tus alergias o padecimientos (o "Ninguna")'); }
   }
-  if(paso===3){ if(mesesPermitidos().indexOf(S.inicio)===-1)f.push('el mes en que empiezan'); if(!S.pago)f.push('cómo vas a pagar'); }
+  if(paso===3){ if(!inicioValido(S.inicio))f.push('el día en que empiezan (desde mañana hasta fin del próximo mes)'); else if(personas().some(p=>p.completo&&!p.clases))f.push('otra fecha de inicio: ese mes ya no quedan clases en los días elegidos'); if(!S.pago)f.push('cómo vas a pagar'); }
   if(paso===4){ const ac=S.ac; if(!ac.veracidad)f.push('la declaración de veracidad'); if(!ac.reglamento)f.push('aceptar el reglamento'); if(!ac.uso_imagen)f.push('tu respuesta sobre uso de imagen'); if(!ac.responsiva)f.push('aceptar la carta responsiva'); if(ac.firmante.trim().split(/\s+/).length<2)f.push('tu nombre completo en la firma'); if(!ac.trazos.some(t=>t.length>1))f.push('tu firma'); }
   return f;
 }
@@ -204,7 +228,7 @@ function draw(){
   h+='<input class="hp" tabindex="-1" autocomplete="off" aria-hidden="true" id="web" name="web"><footer>FitKid Gymnastic · Mérida, Yucatán · <a href="'+waLink('Hola, tengo una duda sobre la inscripción.')+'" target="_blank" rel="noopener">WhatsApp 999 385 9143</a></footer>';
   app.innerHTML=h; bind(P); drawBar(); guardar();
 }
-function drawBar(){ bar.hidden=false; const t=total(); document.getElementById('bartot').innerHTML=(S.paso>=2&&t?'Total a pagar<b>'+$$(t)+'</b>':'<span>'+esc(PASOS[S.paso][1])+'</span>');
+function drawBar(){ bar.hidden=false; const ps=personas(), mesC=ps.reduce((a,p)=>a+(p.completo||0),0); document.getElementById('bartot').innerHTML=(S.paso>=3&&inicioValido(S.inicio)?'Total a pagar<b>'+$$(total())+'</b>':S.paso===2&&mesC?'Mensualidad<b>'+$$(mesC)+'/mes</b>':'<span>'+esc(PASOS[S.paso][1])+'</span>');
   const at=document.getElementById('baratras'); at.hidden=S.paso===0; at.onclick=()=>{ S.paso--; draw(); window.scrollTo(0,0); };
   const sg=document.getElementById('barsig'); const ult=S.paso===PASOS.length-1;
   sg.innerHTML=ult?'<i class="ti ti-signature" aria-hidden="true"></i> '+(S.pago==='tarjeta'?'Firmar y pagar '+$$(total()):'Firmar y enviar'):'Continuar <i class="ti ti-arrow-right" aria-hidden="true"></i>';
@@ -214,13 +238,13 @@ function drawBar(){ bar.hidden=false; const t=total(); document.getElementById('
 function vQuien(){
   let h='<h1>Inscríbete en FitKid</h1><p class="lead">Llena la solicitud en unos minutos, firma el acuerdo desde tu celular y elige cómo pagar. Recepción confirma tu lugar.</p>';
   h+='<div class="progs"><div class="prog"><i class="ti ti-mood-kid" aria-hidden="true"></i><div><b>Iniciación Deportiva</b><small>3 a 6 años · lunes a viernes, 4 a 6 PM</small></div></div><div class="prog"><i class="ti ti-trophy" aria-hidden="true"></i><div><b>Gimnasia Olímpica</b><small>7 a 17 años · lunes a viernes, 6 a 8 PM</small></div></div><div class="prog"><i class="ti ti-barbell" aria-hidden="true"></i><div><b>FitParents</b><small>18 años o más · lunes a viernes, 7 a 11 AM</small></div></div></div>';
-  h+='<h2>¿A quién vas a inscribir?</h2><p class="hint" style="margin-top:-4px;margin-bottom:12px">Puedes elegir las dos opciones.</p>';
+  h+='<h2>¿A quién vas a inscribir?</h2><p class="hint" style="margin-top:-4px;margin-bottom:12px">Los niños y FitParents se inscriben en solicitudes separadas: al terminar una puedes hacer la otra con tus datos ya llenos.</p>';
   h+='<button type="button" class="opt'+(S.ninos?' on':'')+'" data-q="ninos" aria-pressed="'+S.ninos+'"><i class="ti ti-users" aria-hidden="true"></i><span><b>A mis hijos</b><small>Niñas y niños de 3 a 17 años. Puedes inscribir a varios hermanos en la misma solicitud.</small></span><i class="ti ti-circle-check chk" aria-hidden="true"></i></button>';
-  h+='<button type="button" class="opt'+(S.yo?' on':'')+'" data-q="yo" aria-pressed="'+S.yo+'"><i class="ti ti-user-heart" aria-hidden="true"></i><span><b>A mí, a FitParents</b><small>Entrenamiento funcional para adultos. '+$$(FP.precio)+' al mes, 20 clases (lunes a viernes).</small></span><i class="ti ti-circle-check chk" aria-hidden="true"></i></button>';
+  h+='<button type="button" class="opt'+(S.yo?' on':'')+'" data-q="yo" aria-pressed="'+S.yo+'"><i class="ti ti-user-heart" aria-hidden="true"></i><span><b>A mí, a FitParents</b><small>Entrenamiento funcional para adultos, por la mañana. Membresía única de '+$$(FP.precio)+' al mes, 20 clases (lunes a viernes). Inscripción anual '+$$(INSCRIPCION)+'.</small></span><i class="ti ti-circle-check chk" aria-hidden="true"></i></button>';
   return h+errHTML();
 }
 function vDatos(){ const r=S.r;
-  let h='<h1>Tus datos</h1><p class="lead">'+(S.ninos?'Eres el responsable de los alumnos: te contactaremos a ti.':'Con estos datos te contactamos y registramos tu inscripción.')+'</p>'+errHTML();
+  let h='<h1>Tus datos</h1><p class="lead">'+(S.ninos?'Eres el responsable de los alumnos: te contactaremos a ti.':'Con estos datos te contactamos y registramos tu inscripción a FitParents.')+'</p>'+errHTML();
   h+='<div class="card"><label class="lb" for="rnombre">Nombre completo</label><input class="field" id="rnombre" data-r="nombre" autocomplete="name" value="'+esc(r.nombre)+'">';
   h+='<div class="row2"><div><label class="lb" for="rwa">WhatsApp</label><input class="field" id="rwa" data-r="whatsapp" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="10 dígitos" value="'+esc(r.whatsapp)+'"></div><div><label class="lb" for="remail">Correo</label><input class="field" id="remail" data-r="email" type="email" autocomplete="email" value="'+esc(r.email)+'"></div></div>';
   h+='<label class="lb" for="rdir">Dirección</label><input class="field" id="rdir" data-r="direccion" autocomplete="street-address" placeholder="Calle, número, colonia" value="'+esc(r.direccion)+'">';
@@ -264,36 +288,40 @@ function yoHTML(){ const y=S.yo_d, e=edadDe(y.fn);
   let h='<div class="kidhead"><h2>FitParents · '+esc(S.r.nombre.trim()||'tú')+'</h2></div>';
   h+='<label class="lb" for="yf">Tu fecha de nacimiento</label><input class="field" id="yf" data-y="fn" type="date" max="'+hoyISO()+'" value="'+esc(y.fn)+'">';
   h+='<div id="yd">'+(y.fn?(e==null?'<div class="hint"><span class="pill bad">Revisa la fecha</span></div>':e<18?'<div class="hint"><span class="pill bad">FitParents es para mayores de 18 años</span></div>':'<div class="hint"><span class="pill"><i class="ti ti-check" aria-hidden="true"></i> '+e+' años · FitParents</span></div>'):'')+'</div>';
-  h+='<label class="lb">Horario (lunes a viernes)</label>'+chips('yhor',HORARIOS.filter(x=>x.p==='fp').map(x=>[x.id,x.h]),y.hid);
-  h+='<div class="hint">Plan FitParents: 20 clases al mes · <b>'+$$(FP.precio)+'/mes</b></div>';
+  h+='<label class="lb">Horario (lunes a viernes, por la mañana)</label>'+chips('yhor',HORARIOS.filter(x=>x.p==='fp').map(x=>[x.id,x.h]),y.hid);
+  h+='<div class="hint">Membresía FitParents: 20 clases al mes, lunes a viernes · <b>'+$$(FP.precio)+'/mes</b></div>';
   h+='<label class="lb" for="ya">Alergias o padecimientos</label><div style="display:flex;gap:8px"><input class="field" id="ya" data-y="alergias" placeholder="Ej. presión alta, lesión de rodilla…" value="'+esc(y.alergias)+'"><button type="button" class="chip" id="yninguna">Ninguna</button></div>';
   h+='<label class="lb" for="yo">Algo que debamos saber <span class="op">(opcional)</span></label><textarea class="field" id="yo" data-y="obs">'+esc(y.obs)+'</textarea>';
   return h;
 }
 function vPago(){
-  const meses=mesesPermitidos(); if(meses.indexOf(S.inicio)===-1)S.inicio=meses.length===1?meses[0]:'';
-  let h='<h1>Resumen y pago</h1><p class="lead">La inscripción anual es de '+$$(INSCRIPCION)+' por persona y la mensualidad depende del plan.</p>'+errHTML();
-  h+='<div class="card"><h2>¿Desde qué mes?</h2>'+chips('inicio',meses.map(m=>[m,nombreMes(m)]),S.inicio)+(meses.length===1?'<div class="hint">Este mes ya va muy avanzado: tu inscripción empieza el próximo mes.</div>':'')+'</div>';
-  h+='<div class="card"><h2>Resumen</h2>'; personas().forEach(p=>{ h+='<div class="who">'+esc(p.nombre)+'</div><div class="sumrow"><span>Inscripción anual</span><b>'+$$(INSCRIPCION)+'</b></div><div class="sumrow"><span>Mensualidad '+(S.inicio?nombreMes(S.inicio):'')+' · plan '+esc(p.plan)+' ('+(p.yo?20:p.dias*4)+' clases)</span><b>'+$$(p.mens)+'</b></div>'; });
-  h+='<div class="sumrow tot"><span>Total</span><span>'+$$(total())+'</span></div></div>';
+  if(S.inicio&&!inicioValido(S.inicio))S.inicio='';
+  const man=inicioMin(), lun=(()=>{ const d=new Date(); d.setDate(d.getDate()+((8-d.getDay())%7||7)); return isoDe(d); })(), uno=(()=>{ const d=new Date(); return isoDe(new Date(d.getFullYear(),d.getMonth()+1,1)); })();
+  let h='<h1>Resumen y pago</h1><p class="lead">Si empiezas a mitad de mes pagas solo las clases que quedan en el mes. La inscripción anual es de '+$$(INSCRIPCION)+' por persona.</p>'+errHTML();
+  h+='<div class="card"><h2>¿Qué día empiezas?</h2>'+chips('inicio',[[man,'Mañana'],[lun,'El lunes '+fechaCorta(lun).split(' ')[0]],[uno,'El 1 de '+MESES[+uno.slice(5,7)-1]]].filter((o,i,a)=>a.findIndex(x=>x[0]===o[0])===i),S.inicio)+'<label class="lb" for="inicio">U otra fecha</label><input class="field" id="inicio" type="date" min="'+man+'" max="'+inicioMax()+'" value="'+esc(S.inicio)+'"></div>';
+  h+='<div class="card"><h2>Resumen</h2>'; personas().forEach(p=>{ h+='<div class="who">'+esc(p.nombre)+'</div><div class="sumrow"><span>Inscripción anual</span><b>'+$$(INSCRIPCION)+'</b></div>';
+    if(!inicioValido(S.inicio))h+='<div class="sumrow"><span>Mensualidad · plan '+esc(p.plan)+'</span><b>elige la fecha</b></div>';
+    else if(p.prorrateo)h+='<div class="sumrow"><span>'+esc(MESES[+S.inicio.slice(5,7)-1])+' (del '+esc(fechaCorta(S.inicio))+' al fin de mes): '+p.clases+' clase'+(p.clases===1?'':'s')+' × $'+(p.completo/p.creditos).toLocaleString('es-MX',{minimumFractionDigits:(p.completo/p.creditos)%1?2:0,maximumFractionDigits:2})+'</span><b>'+$$(p.mens)+'</b></div><div class="hint" style="margin:-2px 0 6px">Desde '+esc(mesSig(S.inicio))+': plan '+esc(p.plan)+' completo, '+$$(p.completo)+' al mes (te lo recordamos entre el 1 y el 10).</div>';
+    else h+='<div class="sumrow"><span>Mensualidad '+esc(nombreMes(S.inicio.slice(0,8)+'01'))+' · plan '+esc(p.plan)+' ('+p.creditos+' clases)</span><b>'+$$(p.mens)+'</b></div>'; });
+  h+='<div class="sumrow tot"><span>Total</span><span>'+(inicioValido(S.inicio)?$$(total()):'—')+'</span></div></div>';
   h+='<h2>¿Cómo quieres pagar?</h2>';
   h+=[['tarjeta','ti-credit-card','Tarjeta, ahora en línea','Pago seguro con Stripe (Visa, Mastercard, AMEX). Tu lugar queda apartado al pagar.'],['efectivo','ti-cash','Efectivo en recepción','Pagas al llegar a tu primera clase. Tu lugar se confirma al pagar.'],['transferencia','ti-building-bank','Transferencia','Te enviamos los datos bancarios por WhatsApp y nos mandas tu comprobante.']].map(o=>'<button type="button" class="opt'+(S.pago===o[0]?' on':'')+'" data-pago="'+o[0]+'" aria-pressed="'+(S.pago===o[0])+'"><i class="ti '+o[1]+'" aria-hidden="true"></i><span><b>'+o[2]+'</b><small>'+o[3]+'</small></span><i class="ti ti-circle-check chk" aria-hidden="true"></i></button>').join('');
   return h;
 }
-function vAcuerdo(){ const ac=S.ac; if(!ac.firmante)ac.firmante=S.r.nombre.trim();
+function vAcuerdo(){ const ac=S.ac; if(!ac.firmante)ac.firmante=S.r.nombre.trim(); const T=S.yo?ACUERDO_ADULTOS:ACUERDO;
   const d=(k,v)=>'<div class="dato"><span>'+esc(k)+'</span><b>'+esc(v||'—')+'</b></div>';
   let h='<h1>Acuerdo y firma</h1><p class="lead">Lee el acuerdo, marca cada punto y firma con el dedo.</p>'+errHTML();
-  h+='<section class="card ac"><h2>Acuerdo General de Inscripción y Responsiva</h2><p>'+esc(ACUERDO.intro)+'</p><h3>1. Ficha de inscripción y confirmación de datos</h3>';
+  h+='<section class="card ac"><h2>'+(S.yo?'Acuerdo de Inscripción y Responsiva · FitParents (adultos)':'Acuerdo General de Inscripción y Responsiva')+'</h2><p>'+esc(T.intro)+'</p><h3>1. Ficha de inscripción y confirmación de datos</h3>';
   if(S.ninos)S.kids.forEach(k=>{ const e=edadDe(k.fn),p=progDe(e),hr=HORARIOS.find(x=>x.id===k.hid),pl=planKid(k); h+='<div class="who">'+esc(k.nombre)+'</div>'+d('Fecha de nacimiento',k.fn?k.fn.split('-').reverse().join('/')+' ('+e+' años)':'')+d('Programa',p&&PROG[p]?PROG[p].n:'')+d('Horario',hr?hr.h+' · '+(k.genero==='Niña'?'Niñas':'Niños'):'')+d('Días',k.dias.join(', '))+d('Membresía',pl?pl[0]+' · '+(k.dias.length*4)+' clases al mes · '+$$(pl[1]):'')+d('Alergias',k.alergias)+(k.obs?d('Observaciones',k.obs):''); });
   if(S.yo){ const hr=HORARIOS.find(x=>x.id===S.yo_d.hid); h+='<div class="who">'+esc(S.r.nombre)+' · FitParents</div>'+d('Fecha de nacimiento',S.yo_d.fn?S.yo_d.fn.split('-').reverse().join('/'):'')+d('Horario',hr?hr.h+' · lunes a viernes':'')+d('Membresía','FitParents · 20 clases al mes · '+$$(FP.precio))+d('Alergias',S.yo_d.alergias)+(S.yo_d.obs?d('Observaciones',S.yo_d.obs):''); }
-  h+='<div class="who">Responsable</div>'+d('Nombre',S.r.nombre)+(S.ninos?d('Parentesco',S.r.parentesco):'')+d('WhatsApp',S.r.whatsapp)+d('Correo',S.r.email)+d('Dirección',S.r.direccion)+d('Emergencia',S.r.em.nombre+' ('+S.r.em.relacion+') '+S.r.em.telefono);
+  h+='<div class="who">'+(S.yo?'Participante':'Responsable')+'</div>'+d('Nombre',S.r.nombre)+(S.ninos?d('Parentesco',S.r.parentesco):'')+d('WhatsApp',S.r.whatsapp)+d('Correo',S.r.email)+d('Dirección',S.r.direccion)+d('Emergencia',S.r.em.nombre+' ('+S.r.em.relacion+') '+S.r.em.telefono);
   h+='<p class="hint">¿Algo está mal? Usa el botón de atrás para corregirlo antes de firmar.</p>';
-  h+='<label class="tick"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'><span><b>Declaración de veracidad.</b> '+esc(ACUERDO.veracidad)+'</span></label>';
-  h+='<h3>2. Reglamento interno</h3><p>'+esc(ACUERDO.reglamentoIntro)+'</p><ol>'+ACUERDO.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol>';
-  h+='<label class="tick"><input type="checkbox" data-ac="reglamento"'+(ac.reglamento?' checked':'')+'><span>Acepto cumplir y hacer cumplir el reglamento interno.</span></label>';
-  h+='<h3>3. Autorización de uso de imagen</h3><p>'+esc(ACUERDO.imagen)+'</p><p class="hint">'+esc(ACUERDO.imagenNota)+' Es opcional: la inscripción no depende de esta respuesta.</p>'+chips('acimg',[['Autoriza','Sí autorizo'],['No autoriza','No autorizo']],ac.uso_imagen);
-  h+='<h3>4. Carta responsiva</h3><p>'+esc(ACUERDO.responsiva)+'</p><label class="tick"><input type="checkbox" data-ac="responsiva"'+(ac.responsiva?' checked':'')+'><span>Acepto la carta responsiva.</span></label>';
-  h+='<h3>Aceptación</h3><p>'+esc(ACUERDO.aceptacion)+'</p><label class="lb" for="acfirmante">Nombre completo de quien firma</label><input class="field" id="acfirmante" value="'+esc(ac.firmante)+'" autocomplete="name">';
+  h+='<label class="tick"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'><span><b>Declaración de veracidad.</b> '+esc(T.veracidad)+'</span></label>';
+  h+='<h3>2. Reglamento interno</h3><p>'+esc(T.reglamentoIntro)+'</p><ol>'+T.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol>';
+  h+='<label class="tick"><input type="checkbox" data-ac="reglamento"'+(ac.reglamento?' checked':'')+'><span>'+(S.yo?'Acepto cumplir el reglamento interno.':'Acepto cumplir y hacer cumplir el reglamento interno.')+'</span></label>';
+  h+='<h3>3. Autorización de uso de imagen</h3><p>'+esc(T.imagen)+'</p><p class="hint">'+esc(T.imagenNota)+' Es opcional: la inscripción no depende de esta respuesta.</p>'+chips('acimg',[['Autoriza','Sí autorizo'],['No autoriza','No autorizo']],ac.uso_imagen);
+  h+=(S.yo?'<h3>4. Declaración de salud y carta responsiva</h3><p>'+esc(T.salud)+'</p>':'<h3>4. Carta responsiva</h3>')+'<p>'+esc(T.responsiva)+'</p><label class="tick"><input type="checkbox" data-ac="responsiva"'+(ac.responsiva?' checked':'')+'><span>'+(S.yo?'Acepto la declaración de salud y la carta responsiva.':'Acepto la carta responsiva.')+'</span></label>';
+  h+='<h3>Aceptación</h3><p>'+esc(T.aceptacion)+'</p><label class="lb" for="acfirmante">Nombre completo de quien firma</label><input class="field" id="acfirmante" value="'+esc(ac.firmante)+'" autocomplete="name">';
   h+='<div class="firmahead"><b>Firma</b><button type="button" class="linkbtn" id="acborrar">Borrar firma</button></div><canvas id="acfirma" class="firmapad" aria-label="Firma: dibuja con el dedo"></canvas><div class="hint">Fecha: '+esc(new Date().toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' · Mérida, Yucatán</div></section>';
   h+='<div class="note">Total: <b>'+$$(total())+'</b> · '+({tarjeta:'pagarás con tarjeta al terminar',efectivo:'pagarás en efectivo en recepción',transferencia:'pagarás por transferencia'}[S.pago]||'')+'.</div>';
   return h;
@@ -302,7 +330,7 @@ function vAcuerdo(){ const ac=S.ac; if(!ac.firmante)ac.firmante=S.r.nombre.trim(
 /* ---------- eventos ---------- */
 function onChips(grp,cb,multi){ app.querySelectorAll('[data-grp="'+grp+'"] .chip').forEach(b=>b.onclick=()=>cb(b.dataset.v,b)); }
 function bind(P){
-  if(P==='quien')app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ S[b.dataset.q]=!S[b.dataset.q]; draw(); });
+  if(P==='quien')app.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ const q=b.dataset.q; S.ninos=q==='ninos'; S.yo=q==='yo'; draw(); });
   if(P==='datos'){ app.querySelectorAll('[data-r]').forEach(x=>x.oninput=()=>{ S.r[x.dataset.r]=x.value; guardar(); }); app.querySelectorAll('[data-e]').forEach(x=>x.oninput=()=>{ S.r.em[x.dataset.e]=x.value; guardar(); }); onChips('parentesco',v=>{ S.r.parentesco=v; draw(); }); }
   if(P==='alumnos'){
     S.kids.forEach((k,i)=>bindKid(i));
@@ -312,7 +340,7 @@ function bind(P){
       onChips('yhor',v=>{ S.yo_d.hid=v; app.querySelectorAll('[data-grp="yhor"] .chip').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); guardar(); });
       document.getElementById('yninguna').onclick=()=>{ S.yo_d.alergias='Ninguna'; document.getElementById('ya').value='Ninguna'; guardar(); }; }
   }
-  if(P==='pago'){ onChips('inicio',v=>{ S.inicio=v; draw(); }); app.querySelectorAll('[data-pago]').forEach(b=>b.onclick=()=>{ S.pago=b.dataset.pago; draw(); }); }
+  if(P==='pago'){ onChips('inicio',v=>{ S.inicio=v; draw(); }); const fi=document.getElementById('inicio'); fi.onchange=()=>{ S.inicio=fi.value; draw(); }; app.querySelectorAll('[data-pago]').forEach(b=>b.onclick=()=>{ S.pago=b.dataset.pago; draw(); }); }
   if(P==='acuerdo'){ const ac=S.ac;
     app.querySelectorAll('[data-ac]').forEach(c=>c.onchange=()=>{ ac[c.dataset.ac]=c.checked; });
     onChips('acimg',v=>{ ac.uso_imagen=v; app.querySelectorAll('[data-grp="acimg"] .chip').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); });
@@ -357,10 +385,11 @@ async function enviar(){
   const body={accion:'enviar',web:(document.getElementById('web')||{}).value||'',t_ms:Date.now()-S.t0,
     responsable:{nombre:r.nombre.trim(),whatsapp:tel10(r.whatsapp),email:r.email.trim(),direccion:r.direccion.trim(),parentesco:S.ninos?r.parentesco:'Participante',emergencia:{nombre:r.em.nombre.trim(),relacion:r.em.relacion.trim(),telefono:tel10(r.em.telefono)}},
     alumnos:alumnos,inicio:S.inicio,pago:S.pago,
-    acuerdo:{veracidad:ac.veracidad,reglamento:ac.reglamento,responsiva:ac.responsiva,uso_imagen:ac.uso_imagen,firmante:ac.firmante.trim(),firma:trazoSVG(ac.trazos),version:ACUERDO_VERSION}};
+    acuerdo:{veracidad:ac.veracidad,reglamento:ac.reglamento,responsiva:ac.responsiva,uso_imagen:ac.uso_imagen,firmante:ac.firmante.trim(),firma:trazoSVG(ac.trazos),version:S.yo?ACUERDO_ADULTOS_VERSION:ACUERDO_VERSION}};
   const res=await post(body);
   if(!res||res.ok===false){ sg.disabled=false; drawBar(); const e=document.createElement('div'); e.className='err'; e.setAttribute('role','alert'); e.textContent='No se pudo enviar: '+((res&&res.error)||'error desconocido')+'.'; app.querySelectorAll('.err').forEach(x=>x.remove()); app.insertBefore(e,app.children[2]||null); e.scrollIntoView({behavior:'smooth',block:'center'}); return; }
-  const fin={folio:res.folio,total:res.total||total(),pago:S.pago,nombre:r.nombre.trim().split(' ')[0],duplicado:!!res.duplicado,aviso:res.aviso||''};
+  const fin={folio:res.folio,total:res.total||total(),pago:S.pago,nombre:r.nombre.trim().split(' ')[0],duplicado:!!res.duplicado,aviso:res.aviso||'',fitparents:S.yo};
+  try{ sessionStorage.setItem('fk_insc_resp',JSON.stringify(S.r)); }catch(e){}
   try{ sessionStorage.setItem('fk_insc_fin',JSON.stringify(fin)); }catch(e){}
   borrarBorrador();
   if(S.pago==='tarjeta'&&res.url){ app.innerHTML='<div class="card done"><i class="ti ti-lock big" aria-hidden="true" style="color:var(--brand-600)"></i><h1>Solicitud '+esc(res.folio)+'</h1><p class="lead">Te llevamos al pago seguro de Stripe…</p><a class="btn pri full" href="'+esc(res.url)+'">Ir a pagar '+$$(fin.total)+'</a></div>'; bar.hidden=true; location.href=res.url; return; }
@@ -375,7 +404,7 @@ function pantallaFin(fin,extra){
   else if(fin.pago==='transferencia')h+='<p class="lead">Escríbenos por WhatsApp para recibir los datos bancarios y envíanos tu comprobante por <b>'+$$(fin.total)+'</b> con tu folio.</p>';
   else h+='<p class="lead">'+esc(fin.aviso||'Tu solicitud quedó registrada; el pago aún no aparece. Puedes pagar en recepción o escribirnos.')+'</p>';
   if(extra)h+='<div class="note">'+extra+'</div>';
-  h+='<div class="acts"><a class="btn wa full" target="_blank" rel="noopener" href="'+waLink(fin.pago==='transferencia'&&!fin.pagado?msgWA+' Quiero pagar por transferencia, ¿me comparten los datos?':msgWA)+'"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> '+(fin.pago==='transferencia'&&!fin.pagado?'Pedir datos para transferir':'Escribir a FitKid')+'</a><button type="button" class="btn full" onclick="window.print()"><i class="ti ti-printer" aria-hidden="true"></i> Guardar o imprimir</button><a class="btn full" href="inscripcion"><i class="ti ti-user-plus" aria-hidden="true"></i> Nueva solicitud</a></div></div>';
+  h+='<div class="acts"><a class="btn wa full" target="_blank" rel="noopener" href="'+waLink(fin.pago==='transferencia'&&!fin.pagado?msgWA+' Quiero pagar por transferencia, ¿me comparten los datos?':msgWA)+'"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> '+(fin.pago==='transferencia'&&!fin.pagado?'Pedir datos para transferir':'Escribir a FitKid')+'</a><button type="button" class="btn full" onclick="window.print()"><i class="ti ti-printer" aria-hidden="true"></i> Guardar o imprimir</button>'+(fin.fitparents?'<a class="btn full" href="inscripcion?p=ninos&amp;mismos=1"><i class="ti ti-users-plus" aria-hidden="true"></i> Inscribir también a mis hijos</a>':'')+'<a class="btn full" href="inscripcion"><i class="ti ti-user-plus" aria-hidden="true"></i> Nueva solicitud</a></div></div>';
   app.innerHTML=h;
 }
 
@@ -391,7 +420,8 @@ async function regresoStripe(){
     return true; }
   return false;
 }
-(async()=>{ if(await regresoStripe())return; const hay=cargar(); draw(); if(hay&&S.paso>0){ const n=document.createElement('div'); n.className='note noprint'; n.innerHTML='Continuamos donde te quedaste. <button type="button" class="linkbtn" id="empezar">Empezar de nuevo</button>'; app.insertBefore(n,app.children[2]||null); document.getElementById('empezar').onclick=()=>{ borrarBorrador(); S=nuevoEstado(); draw(); }; } })();
+function entradaDirecta(){ const q=new URLSearchParams(location.search); const p=q.get('p'); if(p!=='fitparents'&&p!=='ninos')return false; S=nuevoEstado(); S.yo=p==='fitparents'; S.ninos=!S.yo; if(q.get('mismos')){ try{ const r=JSON.parse(sessionStorage.getItem('fk_insc_resp')||'null'); if(r&&r.em)S.r=Object.assign(S.r,r,{parentesco:''}); }catch(e){} } S.paso=1; return true; }
+(async()=>{ if(await regresoStripe())return; if(entradaDirecta()){ borrarBorrador(); draw(); return; } const hay=cargar(); draw(); if(hay&&S.paso>0){ const n=document.createElement('div'); n.className='note noprint'; n.innerHTML='Continuamos donde te quedaste. <button type="button" class="linkbtn" id="empezar">Empezar de nuevo</button>'; app.insertBefore(n,app.children[2]||null); document.getElementById('empezar').onclick=()=>{ borrarBorrador(); S=nuevoEstado(); draw(); }; } })();
 </script>
 </body>
 </html>

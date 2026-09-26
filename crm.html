@@ -577,7 +577,7 @@ function bindChips(root,nombre,cb,multi){ root.querySelectorAll('[data-grp="'+no
 function valChip(root,nombre){ const b=root.querySelector('[data-grp="'+nombre+'"] .chipo.on'); return b?b.dataset.v:null; }
 function valsChip(root,nombre){ return [...root.querySelectorAll('[data-grp="'+nombre+'"] .chipo.on')].map(b=>b.dataset.v); }
 async function enviar(btn,fn){ const err=document.getElementById('accerr'); btn.disabled=true; const txt=btn.innerHTML; btn.innerHTML='Guardando…'; if(err)err.textContent=''; try{ const r=await fn(); if(!r||r.ok===false){ if(err)err.textContent='No se guardó: '+((r&&r.error)||'error de red'); btn.disabled=false; btn.innerHTML=txt; return null; } return r; }catch(e){ if(err)err.textContent='No se guardó: '+e; btn.disabled=false; btn.innerHTML=txt; return null; } }
-const METODOS=[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta (terminal)']];
+const METODOS=[['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta (terminal)'],['Transferencia','Transferencia']];
 
 async function ejecutarAccion(acc,asis){
   if(acc==='acuerdo'){ firmarAcuerdoFicha(); return; }
@@ -609,7 +609,7 @@ async function ejecutarAccion(acc,asis){
     const hoy=r.hoy||''; const mesAct=hoy.slice(0,7)+'-01'; const d=new Date(mesAct+'T12:00:00'); d.setMonth(d.getMonth()+1); const mesSig=d.toISOString().slice(0,7)+'-01';
     const cubreEste=mem&&String(mem.mes||'').slice(0,7)===hoy.slice(0,7);
     const planesF=planesPara(esFitParentsFicha(r)?'FitParents':''); const planAct=(mem&&planesF.find(p=>p[0]===mem.plan))?mem.plan:planesF[Math.min(1,planesF.length-1)][0];
-    const root=panelAccion(mem?'Renovar mensualidad':'Crear membresía','<label class="mut">Plan</label>'+chips('plan',planesF.map(p=>[p[0],p[0]+' · '+(p[1]/4)+'/sem · $'+p[2]]),planAct)+'<label class="mut">Mes</label>'+chips('mes',[[mesAct,'Este mes ('+MESES[+mesAct.slice(5,7)-1]+')'],[mesSig,'Próximo ('+MESES[+mesSig.slice(5,7)-1]+')']],cubreEste?mesSig:mesAct)+'<label class="mut">Pago</label>'+chips('pago',[['Efectivo','Pagado · efectivo'],['Tarjeta TPV','Pagado · tarjeta'],['Pendiente','Pendiente']],'Efectivo')+'<label class="chk"><input type="checkbox" id="accagendar" checked> Agendar sus clases del mes en su horario ('+esc(r.horario&&r.horario.nombre?nombreSinGenero(r.horario.nombre):'sin horario')+')</label><div class="mut" id="accres" style="margin:8px 0"></div><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-refresh" aria-hidden="true"></i> Renovar</button>');
+    const root=panelAccion(mem?'Renovar mensualidad':'Crear membresía','<label class="mut">Plan</label>'+chips('plan',planesF.map(p=>[p[0],p[0]+' · '+(p[1]/4)+'/sem · $'+p[2]]),planAct)+'<label class="mut">Mes</label>'+chips('mes',[[mesAct,'Este mes ('+MESES[+mesAct.slice(5,7)-1]+')'],[mesSig,'Próximo ('+MESES[+mesSig.slice(5,7)-1]+')']],cubreEste?mesSig:mesAct)+'<label class="mut">Pago</label>'+chips('pago',[['Efectivo','Pagado · efectivo'],['Tarjeta TPV','Pagado · tarjeta'],['Transferencia','Pagado · transferencia'],['Pendiente','Pendiente']],'Efectivo')+'<label class="chk"><input type="checkbox" id="accagendar" checked> Agendar sus clases del mes en su horario ('+esc(r.horario&&r.horario.nombre?nombreSinGenero(r.horario.nombre):'sin horario')+')</label><div class="mut" id="accres" style="margin:8px 0"></div><button type="button" class="btn pri acbig" id="accok"><i class="ti ti-refresh" aria-hidden="true"></i> Renovar</button>');
     const upd=()=>{ const pl=valChip(root,'plan'); root.querySelector('#accres').textContent='Total: $'+(PRECIO_PLAN[pl]||0)+' · '+(planesF.find(p=>p[0]===pl)||[0,0])[1]+' créditos'; };
     bindChips(root,'plan',upd); bindChips(root,'mes'); bindChips(root,'pago'); upd();
     root.querySelector('#accok').onclick=async e=>{ const pl=valChip(root,'plan'), pg=valChip(root,'pago'); const p={alumno_id:FICHA.id,plan:pl,mes:valChip(root,'mes'),agendar:root.querySelector('#accagendar').checked,estado_pago:pg==='Pendiente'?'Pendiente':'Pagado'}; if(pg!=='Pendiente'){p.metodo=pg;p.monto=PRECIO_PLAN[pl];} const res=await enviar(e.currentTarget,()=>call('renovar_mensualidad',p)); if(res)recargarFicha('✓ '+(res.folio||'Renovada')+(p.agendar?' · '+(res.agendadas||0)+' clases agendadas'+(res.sin_cupo?' · '+res.sin_cupo+' sin cupo':''):'')); }; return;
@@ -1005,9 +1005,12 @@ async function altaDesdeSolicitud(s){
   A.t={nombre:R.nombre||'',whatsapp:R.whatsapp||'',email:R.email||s.email||'',direccion:R.direccion||'',parentesco:R.parentesco||'',contacto_emergencia:E.nombre||'',relacion_emergencia:E.relacion||'',telefono_emergencia:E.telefono||''};
   A.kids=(d.alumnos||[]).map(a=>Object.assign(nuevoHijo(),{nombre:a.nombre||'',fn:a.fecha_nacimiento||'',gen:a.genero||'',alergias:a.alergias||'',obs:a.observaciones||'',prog:a.programa||'',hid:a.horario_id||'',dias:new Set(a.dias||[]),plan:a.plan||'M2',montoM:String(a.mensualidad||''),insc:true,montoI:String(a.inscripcion||500)}));
   if(!A.kids.length)A.kids=[nuevoHijo()];
-  A.mes=[A.mesAct,A.mesSig].indexOf(d.inicio)!==-1?d.inicio:A.mesAct;
+  /* Solicitudes nuevas: o todo niños o un solo adulto. Una antigua que mezcle ambos entra como niños y el adulto se quita para darlo de alta aparte. */
+  A.adulto=(d.alumnos||[]).length>0&&(d.alumnos||[]).every(a=>a.tipo==='adulto'); if(A.adulto)A.t.parentesco='Participante';
+  const mesSol=d.mes||(/^\d{4}-\d{2}-\d{2}$/.test(d.inicio||'')?d.inicio.slice(0,8)+'01':''); A.mes=[A.mesAct,A.mesSig].indexOf(mesSol)!==-1?mesSol:A.mesAct;
+  if(d.v>=2&&d.inicio&&d.inicio.slice(0,8)+'01'===A.mes)A.desde=d.inicio;
   A.pago=A.sol.pagado?'Stripe':'Pendiente';
-  A.ac={veracidad:true,reglamento:true,responsiva:true,uso_imagen:ac.uso_imagen||'',firmante:ac.firmante||'',trazos:[],firma:ac.firma||'',papel:false,online:true,fecha:A.sol.recibida};
+  A.ac={veracidad:true,reglamento:true,responsiva:true,uso_imagen:ac.uso_imagen||'',firmante:ac.firmante||'',trazos:[],firma:ac.firma||'',papel:false,online:true,fecha:A.sol.recibida,version:ac.version||''};
   A.nota='Solicitud '+s.folio+': revisa cada paso y da de alta. El acuerdo ya viene firmado.';
   /* drawAlta copia primero lo tecleado en pantalla (aún vacío): se limpia para no pisar lo que trae la solicitud. */
   const c=document.getElementById('centercol'); if(c)c.innerHTML='';
@@ -1015,7 +1018,7 @@ async function altaDesdeSolicitud(s){
 }
 function pasoAcuerdoOnline(A){
   const ac=A.ac;
-  let h='<section class="card altasec"><h2>Acuerdo firmado en línea</h2><div class="mut" style="font-size:13px;margin-bottom:8px">'+esc(ac.firmante)+' aceptó la declaración de veracidad, el reglamento y la carta responsiva (versión '+esc(ACUERDO_VERSION)+') el '+esc(fechaHoraSol(ac.fecha))+' · solicitud '+esc(A.sol.folio)+'. Uso de imagen: '+esc(ac.uso_imagen==='Autoriza'?'sí autoriza':'no autoriza')+'.</div><div class="solfirma">'+firmaSVG(ac.firma)+'</div>';
+  let h='<section class="card altasec"><h2>Acuerdo firmado en línea</h2><div class="mut" style="font-size:13px;margin-bottom:8px">'+esc(ac.firmante)+' aceptó la declaración de veracidad, el reglamento y la carta responsiva (versión '+esc(ac.version||ACUERDO_VERSION)+') el '+esc(fechaHoraSol(ac.fecha))+' · solicitud '+esc(A.sol.folio)+'. Uso de imagen: '+esc(ac.uso_imagen==='Autoriza'?'sí autoriza':'no autoriza')+'.</div><div class="solfirma">'+firmaSVG(ac.firma)+'</div>';
   h+='<div class="mut" style="font-size:12.5px;margin-top:8px">Se guarda con la fecha de la solicitud, no con la de hoy.'+(A.pago==='Stripe'?' El pago se registra como tarjeta en línea (Stripe).':'')+'</div></section>';
   return h+'<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="altaatras"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button><button type="button" class="btn pri" id="altasig"><i class="ti ti-user-check" aria-hidden="true"></i> Dar de alta'+(A.kids.length>1?' ('+A.kids.length+')':'')+'</button></div></div>';
 }
@@ -1037,11 +1040,26 @@ const ACUERDO={
   /* El original decía "Al aprobar este presupuesto y realizar el pago de la inscripción": en recepción se puede firmar sin pagar ese día. */
   aceptacion:'Al firmar este acuerdo, firmo de conformidad con todos los puntos anteriores en mi calidad de Padre, Madre o Tutor legal del alumno registrado.'
 };
+/* FitParents: el participante es mayor de edad y firma su propio acuerdo (mismo texto y versión que inscripcion.html). */
+const ACUERDO_ADULTOS_VERSION='2026-09-26-adultos';
+const ACUERDO_ADULTOS={
+  intro:'El presente documento establece las condiciones para la inscripción del participante mayor de edad al programa FitParents de FITKID GYMNASTIC (FKM) y contiene la confirmación de datos, la aceptación del reglamento interno, la declaración de salud, la autorización de uso de imagen y la carta responsiva.',
+  veracidad:'Declaro que la información que proporciono en esta ficha es verídica, completa y está actualizada. Me comprometo a notificar de inmediato a FitKid cualquier cambio en mi estado de salud o en mis datos de contacto.',
+  reglamentoIntro:'Al inscribirme, acepto cumplir las siguientes normas:',
+  reglamento:[['Puntualidad','Llegar puntual a la clase (5 min de tolerancia).'],['Reposición de Clases','Las clases no se reponen, salvo por enfermedad (con justificante médico), cierre del gimnasio o día festivo oficial.'],['Vestimenta','Asistir con ropa deportiva y calzado adecuados para el entrenamiento.'],['Horarios','Evitar cambios de horario sin previa autorización administrativa.'],['Respeto','Mantener un trato respetuoso hacia entrenadores y compañeros, y cuidar las instalaciones y el equipo.'],['Accesorios','No usar accesorios durante el entrenamiento (pulseras, collares, relojes, etc.) por seguridad.'],['Salud','No asistir si presento síntomas de enfermedad (gripe, fiebre, tos, etc.) e informar al entrenador de cualquier molestia durante la clase.']],
+  imagen:'Autorizo a FITKID GYMNASTIC (FKM) a utilizar fotografías y/o videos en los que aparezca, capturados durante las actividades, únicamente con fines promocionales y educativos de la institución (redes sociales, sitio web, folletos).',
+  imagenNota:'Esta autorización puede ser revocada por escrito en cualquier momento enviando un correo a la administración.',
+  salud:'Declaro que me encuentro en condiciones físicas y de salud para realizar actividad física de intensidad moderada a alta; que informé en esta ficha cualquier padecimiento, lesión, cirugía o tratamiento médico relevante, y que es mi responsabilidad consultar a un médico antes de iniciar o continuar el entrenamiento si tengo alguna condición que pueda agravarse con el ejercicio.',
+  responsiva:'Manifiesto que conozco los riesgos inherentes al entrenamiento funcional y a la actividad física. Participo de manera voluntaria y deslindo a FITKID GYMNASTIC (FKM), sus propietarios, entrenadores y personal de cualquier responsabilidad civil o penal por accidentes, caídas o lesiones que pudieran ocurrir durante el desarrollo normal de las actividades, habiendo tomado el gimnasio las medidas de seguridad pertinentes.',
+  aceptacion:'Al firmar este acuerdo, firmo de conformidad con todos los puntos anteriores en mi calidad de participante mayor de edad.'
+};
+const acuerdoTexto=adulto=>adulto?ACUERDO_ADULTOS:ACUERDO;
+const acuerdoTitulo=adulto=>adulto?'Acuerdo de Inscripción y Responsiva · FitParents (adultos)':'Acuerdo General de Inscripción y Responsiva';
 const PARENTESCOS=['Mamá','Papá','Tutor legal','Abuela','Abuelo','Otro'];
 let ALTA=null;
 function programaPorEdad(e){ if(e==null)return ''; if(e>=18)return 'FitParents'; if(e>=7&&e<=17)return 'Gimnasia Olímpica (7-17)'; if(e>=3&&e<=6)return 'Iniciación Deportiva (3-6)'; return 'Requiere revisión'; }
-/* Fechas que quedan en el mes (desde hoy) para los días elegidos: es lo que el servidor va a reservar. */
-function clasesRestantes(mesISO,dias,max){ const idx={Lunes:1,Martes:2,'Miércoles':3,Jueves:4,Viernes:5}; const ds=dias.map(d=>idx[d]).filter(Boolean); const hoy=new Date().toLocaleDateString('en-CA'); const y=+mesISO.slice(0,4), m=+mesISO.slice(5,7)-1; const out=[]; const d=new Date(y,m,1,12); while(d.getMonth()===m){ const f=d.toLocaleDateString('en-CA'); if(ds.indexOf(d.getDay())!==-1&&f>=hoy)out.push(f); d.setDate(d.getDate()+1); } return max?out.slice(0,max):out; }
+/* Fechas que quedan en el mes (desde hoy o desde el primer día de clase) para los días elegidos: es lo que el servidor va a reservar. */
+function clasesRestantes(mesISO,dias,max,desde){ const idx={Lunes:1,Martes:2,'Miércoles':3,Jueves:4,Viernes:5}; const ds=dias.map(d=>idx[d]).filter(Boolean); let hoy=new Date().toLocaleDateString('en-CA'); if(desde&&desde>hoy)hoy=desde; const y=+mesISO.slice(0,4), m=+mesISO.slice(5,7)-1; const out=[]; const d=new Date(y,m,1,12); while(d.getMonth()===m){ const f=d.toLocaleDateString('en-CA'); if(ds.indexOf(d.getDay())!==-1&&f>=hoy)out.push(f); d.setDate(d.getDate()+1); } return max?out.slice(0,max):out; }
 function nuevoHijo(){ return {nombre:'',fn:'',gen:'',alergias:'',obs:'',prog:'',progManual:false,hid:'',dias:new Set(),plan:'M2',montoM:'',insc:true,montoI:'500'}; }
 async function altaAlumno(pre){
   SECCION='estudiantes'; const center=document.getElementById('centercol'), right=document.getElementById('rightcol'); cerrarPanel();
@@ -1054,17 +1072,21 @@ async function altaAlumno(pre){
   if(ALTA.tutorSel)ALTA.paso=2;
   drawAlta();
 }
+/* Prorrateo (regla de FitKid): precio por clase = precio del plan / clases del plan; en el mes de inicio se cobran solo
+   las clases que quedan en los días elegidos, con tope en las del plan. Del mes siguiente en adelante va completo. */
+function montoMes(A,k){ const pl=planDe(k); const n=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>k.dias.has(d)),pl[1],A.desde).length; return n>=pl[1]?pl[2]:Math.round(pl[2]/pl[1]*n); }
+function montoKid(A,k){ return Number(k.montoM!==''?k.montoM:montoMes(A,k))||0; }
 function nombreTutorAlta(A){ return (A.tutorSel&&A.tutorSel.nombre)||String(A.t.nombre||'').trim(); }
 function edadKid(k){ return edadDe(k.fn); }
 function planDe(k){ return k.prog==='FitParents'?PLAN_FP:(PLANES.find(p=>p[0]===k.plan)||PLANES[1]); }
 function bloquesKid(A,k){ const esAd=k.prog==='FitParents'; return !k.prog?[]:A.bl.filter(b=>(k.prog==='Requiere revisión'||programaDeNombre(b.nombre)===k.prog)&&(esAd?!b.genero:paraGenero(b,k.gen))); }
 /* ---- validaciones por paso (devuelven la lista de lo que falta) ---- */
-function faltasTutor(A){ if(A.tutorSel)return []; const g=k=>String(A.t[k]||'').trim(); const wa=d10(g('whatsapp')), te=d10(g('telefono_emergencia'));
+function faltasTutor(A){ if(A.tutorSel)return []; if(A.adulto)A.t.parentesco='Participante'; const g=k=>String(A.t[k]||'').trim(); const wa=d10(g('whatsapp')), te=d10(g('telefono_emergencia'));
   return [[g('nombre').split(/\s+/).filter(Boolean).length<2,'nombre completo del tutor'],[!g('parentesco'),'relación con el alumno'],[wa.length!==10,'WhatsApp a 10 dígitos'],[!/^\S+@\S+\.\S+$/.test(g('email')),'correo válido'],[!g('contacto_emergencia'),'nombre del contacto de emergencia'],[te.length!==10,'teléfono de emergencia a 10 dígitos'],[te.length===10&&te===wa,'un contacto de emergencia distinto al tutor']].filter(x=>x[0]).map(x=>x[1]); }
 function faltasHijo(A,i){ const k=A.kids[i]; if(A.res[i]&&A.res[i].ok!==false)return []; const e=edadKid(k), esAd=k.prog==='FitParents'; const nm=k.nombre.trim().toLowerCase().replace(/\s+/g,' ');
   const repetido=nm&&A.kids.some((o,j)=>j<i&&o.nombre.trim().toLowerCase().replace(/\s+/g,' ')===nm);
-  return [[k.nombre.trim().split(/\s+/).filter(Boolean).length<2,'nombre completo'],[!k.fn,'fecha de nacimiento'],[!!k.fn&&(e==null||e<0||k.fn>A.hoy),'una fecha de nacimiento válida'],[!esAd&&!k.gen,'género'],[!k.alergias.trim(),'alergias (o "ninguna")'],[!k.prog||k.prog==='Requiere revisión','programa'],[!bloquesKid(A,k).find(b=>b.id===k.hid),'bloque'],[!k.dias.size,'días de clase'],[repetido,'un nombre distinto al de su hermano']].filter(x=>x[0]).map(x=>x[1]); }
-function faltasCobro(A){ if(A.pago==='Pendiente')return []; const f=[]; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); if(!(Number(k.montoM!==''?k.montoM:pl[2])>0))f.push('mensualidad de '+(primerNombre(k.nombre)||'alumno '+(i+1))); if(k.insc&&!(Number(k.montoI)>0))f.push('inscripción de '+(primerNombre(k.nombre)||'alumno '+(i+1))); }); return f; }
+  return [[k.nombre.trim().split(/\s+/).filter(Boolean).length<2,'nombre completo'],[!k.fn,'fecha de nacimiento'],[!!k.fn&&(e==null||e<0||k.fn>A.hoy),'una fecha de nacimiento válida'],[!esAd&&!k.gen,'género'],[!k.alergias.trim(),'alergias (o "ninguna")'],[!k.prog||k.prog==='Requiere revisión','programa'],[!bloquesKid(A,k).find(b=>b.id===k.hid),'bloque'],[!k.dias.size,'días de clase'],[repetido,'un nombre distinto al de su hermano'],[!!A.adulto&&e!=null&&e<18,'ser mayor de 18 años (FitParents)'],[!A.adulto&&esAd,'los adultos se dan de alta en "Adulto · FitParents"']].filter(x=>x[0]).map(x=>x[1]); }
+function faltasCobro(A){ if(A.pago==='Pendiente')return []; const f=[]; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); if(!(montoKid(A,k)>0))f.push('mensualidad de '+(primerNombre(k.nombre)||'alumno '+(i+1))); if(k.insc&&!(Number(k.montoI)>0))f.push('inscripción de '+(primerNombre(k.nombre)||'alumno '+(i+1))); }); return f; }
 function firmaValida(ac){ return ac.trazos.reduce((s,t)=>s+t.length,0)>=8; }
 function faltasAcuerdo(A){ const ac=A.ac; if(ac.papel||ac.online)return []; return [[!ac.veracidad,'la declaración de veracidad'],[!ac.reglamento,'el reglamento'],[!ac.uso_imagen,'la decisión sobre uso de imagen'],[!ac.responsiva,'la carta responsiva'],[String(ac.firmante||'').trim().split(/\s+/).filter(Boolean).length<2,'el nombre completo de quien firma'],[!firmaValida(ac),'la firma']].filter(x=>x[0]).map(x=>x[1]); }
 function pasoListo(A,p){ if(p===1)return !faltasTutor(A).length; if(p===2)return A.kids.every((k,i)=>!faltasHijo(A,i).length); if(p===3)return !faltasCobro(A).length; return !faltasAcuerdo(A).length; }
@@ -1096,7 +1118,7 @@ function bindPie(A,root,validar,siguiente){
 }
 /* Paso 1: tutor */
 function pasoTutor(A){
-  let h='<section class="card altasec"><h2>Padre, madre o tutor legal</h2>';
+  let h='<section class="card altasec"><h2>¿Quién se inscribe?</h2>'+chips('aquien',[['ninos','Niños (3 a 17 años)'],['adulto','Adulto · FitParents']],A.adulto?'adulto':'ninos')+'<div class="mut" style="font-size:12.5px">'+(A.adulto?'El adulto es el participante: firma su propio acuerdo. Si también inscribe a sus hijos, hazlo en otra alta.':'Uno o varios hermanos con el mismo tutor.')+'</div></section><section class="card altasec"><h2>'+(A.adulto?'Participante (adulto)':'Padre, madre o tutor legal')+'</h2>';
   if(A.tutorSel){ const t=A.tutorSel; const hijos=((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(x=>x.tutor_id===t.id);
     h+='<div class="dirrow" style="cursor:default"><div class="avatar">'+esc(ini(t.nombre))+'</div><div style="flex:1"><div class="nm">'+esc(t.nombre)+'</div><div class="mut">'+esc([t.email,t.whatsapp].filter(Boolean).join(' · ')||'sin contacto')+'</div>'+(hijos.length?'<div class="mut">Ya inscritos: '+esc(hijos.map(x=>x.nombre).join(', '))+'</div>':'')+'</div><button type="button" class="btn" id="altatcambiar">Cambiar</button></div>';
     h+='<div class="mut" style="font-size:12.5px;margin-top:8px">Se usan sus datos de contacto y emergencia ya registrados. Si cambiaron, actualízalos en su ficha.</div></section>';
@@ -1105,13 +1127,14 @@ function pasoTutor(A){
   const t=A.t, wa=d10(t.whatsapp), te=d10(t.telefono_emergencia);
   h+='<label class="mut" for="altatbus">¿Ya tiene un hijo inscrito? Busca al tutor</label><input class="field" id="altatbus" placeholder="Nombre, correo o WhatsApp" autocomplete="off"><div id="altatres" class="dirlist" style="margin:-4px 0 10px"></div>';
   h+='<div class="altagrid">'+campoAlta('t.nombre','Nombre completo','autocomplete="off"',t.nombre)+campoAlta('t.whatsapp','Celular / WhatsApp (10 dígitos)','type="tel" inputmode="tel" autocomplete="off"',t.whatsapp)+campoAlta('t.email','Correo electrónico','type="email" inputmode="email" autocomplete="off"',t.email)+campoAlta('t.direccion','Dirección (calle, número, colonia, C.P.) · opcional','autocomplete="off"',t.direccion)+'</div>';
-  h+='<label class="mut">Relación con el alumno</label>'+chips('tpar',PARENTESCOS.map(p=>[p,p]),t.parentesco||'');
-  h+='</section><section class="card altasec"><h2>Contacto de emergencia</h2><div class="mut" style="font-size:12.5px;margin:-4px 0 8px">Otra persona, no el tutor: alguien a quien llamar si el tutor no contesta.</div><div class="altagrid">'+campoAlta('t.contacto_emergencia','Nombre completo','autocomplete="off"',t.contacto_emergencia)+campoAlta('t.telefono_emergencia','Teléfono (10 dígitos)','type="tel" inputmode="tel" autocomplete="off"',t.telefono_emergencia)+campoAlta('t.relacion_emergencia','Relación con el alumno · opcional','placeholder="Tía, abuelo, vecina…" autocomplete="off"',t.relacion_emergencia)+'</div>';
+  if(!A.adulto)h+='<label class="mut">Relación con el alumno</label>'+chips('tpar',PARENTESCOS.map(p=>[p,p]),t.parentesco||'');
+  h+='</section><section class="card altasec"><h2>Contacto de emergencia</h2><div class="mut" style="font-size:12.5px;margin:-4px 0 8px">'+(A.adulto?'Otra persona: alguien a quien llamar si el participante no contesta.':'Otra persona, no el tutor: alguien a quien llamar si el tutor no contesta.')+'</div><div class="altagrid">'+campoAlta('t.contacto_emergencia','Nombre completo','autocomplete="off"',t.contacto_emergencia)+campoAlta('t.telefono_emergencia','Teléfono (10 dígitos)','type="tel" inputmode="tel" autocomplete="off"',t.telefono_emergencia)+campoAlta('t.relacion_emergencia','Relación con el alumno · opcional','placeholder="Tía, abuelo, vecina…" autocomplete="off"',t.relacion_emergencia)+'</div>';
   h+='<div id="altaemerg" class="mut" style="font-size:12.5px;color:var(--danger)">'+(te.length===10&&te===wa?'Es el mismo número del tutor: pide el de otra persona.':'')+'</div></section>';
   return h+pieAlta(A,[],'Continuar');
 }
 function bindTutor(A,root){
-  bindPie(A,root,()=>faltasTutor(A),()=>{ A.paso=2; drawAlta(); });
+  bindPie(A,root,()=>faltasTutor(A),()=>{ if(A.adulto){ A.t.parentesco='Participante'; const k=A.kids[0]; if(k&&!k.nombre)k.nombre=nombreTutorAlta(A); } A.paso=2; drawAlta(); });
+  bindChips(root,'aquien',v=>{ guardarTecleado(A,root); const ad=v==='adulto'; if(ad===!!A.adulto)return; A.adulto=ad; A.t.parentesco=ad?'Participante':''; A.kids=[ad?Object.assign(nuevoHijo(),{prog:'FitParents',progManual:true,plan:'FP'}):nuevoHijo()]; A.res=[]; A.abierto=0; drawAlta(); });
   if(A.tutorSel){ root.querySelector('#altatcambiar').onclick=()=>{ A.tutorSel=null; drawAlta(); }; return; }
   bindChips(root,'tpar',v=>{ A.t.parentesco=v; resumenAlta(); });
   const em=root.querySelector('#altaemerg'); const chkEm=()=>{ const wa=d10(A.t.whatsapp), te=d10(A.t.telefono_emergencia); em.textContent=te.length===10&&te===wa?'Es el mismo número del tutor: pide el de otra persona.':''; };
@@ -1128,12 +1151,12 @@ function bindTutor(A,root){
 function pasoHijos(A){
   let h=''; const existentes=A.tutorSel?((DIRECTORIO&&DIRECTORIO.alumnos)||[]).filter(x=>x.tutor_id===A.tutorSel.id):[];
   A.kids.forEach((k,i)=>{ const hecho=A.res[i]&&A.res[i].ok!==false; const e=edadKid(k); const f=faltasHijo(A,i); const abierto=A.abierto===i&&!hecho;
-    h+='<section class="card altasec alkid'+(abierto?' abierto':'')+'"><div class="alkidtop"><div style="flex:1;min-width:0"><h2 style="margin:0">Alumno '+(i+1)+'</h2><div class="nm">'+esc(k.nombre||'Sin nombre')+'</div><div class="mut" style="font-size:12.5px">'+[e!=null&&e>=0?e+' años':'',k.prog&&k.prog!=='Requiere revisión'?k.prog:'',k.hid?nombreSinGenero((A.bl.find(b=>b.id===k.hid)||{}).nombre||''):''].filter(Boolean).map(esc).join(' · ')+'</div></div>'
+    h+='<section class="card altasec alkid'+(abierto?' abierto':'')+'"><div class="alkidtop"><div style="flex:1;min-width:0"><h2 style="margin:0">'+(A.adulto?'Participante':'Alumno '+(i+1))+'</h2><div class="nm">'+esc(k.nombre||'Sin nombre')+'</div><div class="mut" style="font-size:12.5px">'+[e!=null&&e>=0?e+' años':'',k.prog&&k.prog!=='Requiere revisión'?k.prog:'',k.hid?nombreSinGenero((A.bl.find(b=>b.id===k.hid)||{}).nombre||''):''].filter(Boolean).map(esc).join(' · ')+'</div></div>'
       +(hecho?'<span class="pill ok">dado de alta</span>':(f.length?(abierto?'':'<span class="pill warn">faltan '+f.length+'</span>'):'<span class="pill ok">listo</span>'))
       +(!hecho&&!abierto?'<button type="button" class="btn" data-kab="'+i+'">Editar</button>':'')+(!hecho&&A.kids.length>1?'<button type="button" class="btn" data-kdel="'+i+'" aria-label="Quitar alumno '+(i+1)+'"><i class="ti ti-trash" aria-hidden="true"></i></button>':'')+'</div>';
     if(abierto)h+=cuerpoHijo(A,k,i,existentes);
     h+='</section>'; });
-  h+='<button type="button" class="btn acbig" id="altamas"><i class="ti ti-user-plus" aria-hidden="true"></i> Agregar otro hijo/a</button>';
+  if(!A.adulto)h+='<button type="button" class="btn acbig" id="altamas"><i class="ti ti-user-plus" aria-hidden="true"></i> Agregar otro hijo/a</button>';
   return h+pieAlta(A,[],'Continuar al cobro');
 }
 function cuerpoHijo(A,k,i,existentes){
@@ -1150,7 +1173,7 @@ function cuerpoHijo(A,k,i,existentes){
   if(!esAd)h+='<label class="mut">Género</label>'+chips('kgen'+i,[['Niña','Niña'],['Niño','Niño']],k.gen);
   h+='<label class="mut" for="al_'+i+'_alergias">Alergias (alimentos, medicamentos, otros)</label><div style="display:flex;gap:8px"><input class="field" id="al_'+i+'_alergias" data-kk="'+i+'.alergias" value="'+esc(k.alergias)+'" placeholder="Si no tiene, toca Ninguna" autocomplete="off" style="flex:1"><button type="button" class="btn" data-kning="'+i+'" style="margin-bottom:12px">Ninguna</button></div>';
   h+='<label class="mut" for="al_'+i+'_obs">Observaciones · opcional</label><textarea class="field" id="al_'+i+'_obs" data-kk="'+i+'.obs" rows="2" placeholder="Condiciones médicas, atención especial, algo que el entrenador deba saber">'+esc(k.obs)+'</textarea>';
-  h+='<label class="mut">Programa'+(k.progManual?'':' (según la edad)')+'</label>'+chips('kprog'+i,[['Iniciación Deportiva (3-6)','Iniciación (3-6)'],['Gimnasia Olímpica (7-17)','Olímpica (7-17)'],['FitParents','FitParents (adultos)']],k.prog);
+  if(A.adulto){ k.prog='FitParents'; k.progManual=true; } else h+='<label class="mut">Programa'+(k.progManual?'':' (según la edad)')+'</label>'+chips('kprog'+i,[['Iniciación Deportiva (3-6)','Iniciación (3-6)'],['Gimnasia Olímpica (7-17)','Olímpica (7-17)'],['FitParents','FitParents (adultos)']],k.prog);
   const prev=A.kids.slice(0,i).find(o=>o.hid&&o.dias.size);
   h+='<label class="mut">Bloque</label>'+(!esAd&&!k.gen?'<div class="mut" style="font-size:12px;margin-bottom:6px">Elige el género para ver los grupos de niñas o niños.</div>':'')+(!k.prog||k.prog==='Requiere revisión'?'<div class="mut" style="font-size:12px;margin-bottom:10px">Captura la fecha de nacimiento o elige el programa.</div>':vis.length?chips('kblq'+i,vis.map(b=>[b.id,esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)]),k.hid):'<div class="mut" style="font-size:12px;margin-bottom:10px">No hay bloques para esta combinación.</div>');
   h+='<label class="mut">Días de clase · el plan se ajusta solo</label><div class="chipsel" data-grp="kdias'+i+'">'+DIAS_CLASE.map(d=>'<button type="button" class="chipo'+(k.dias.has(d)?' on':'')+'" data-v="'+d+'">'+d.slice(0,3)+'</button>').join('')+'</div>';
@@ -1162,7 +1185,7 @@ function bindHijos(A,root){
   bindPie(A,root,()=>{ const f=[]; A.kids.forEach((k,i)=>{ const x=faltasHijo(A,i); if(x.length)f.push((A.kids.length>1?'alumno '+(i+1)+': ':'')+x.join(', ')); }); if(f.length){ const i=A.kids.findIndex((k,j)=>faltasHijo(A,j).length); if(i!==A.abierto){ A.abierto=i; drawAlta(); } } return f; },()=>{ A.paso=3; drawAlta(); });
   root.querySelectorAll('[data-kab]').forEach(b=>b.onclick=()=>{ guardarTecleado(A,root); A.abierto=+b.dataset.kab; drawAlta(); });
   root.querySelectorAll('[data-kdel]').forEach(b=>b.onclick=()=>{ guardarTecleado(A,root); const i=+b.dataset.kdel; const k=A.kids[i]; if(k.nombre&&!confirm('¿Quitar a '+k.nombre+' de esta alta?'))return; A.kids.splice(i,1); A.res.splice(i,1); A.abierto=Math.min(A.abierto,A.kids.length-1); drawAlta(); });
-  root.querySelector('#altamas').onclick=()=>{ guardarTecleado(A,root); A.kids.push(nuevoHijo()); A.abierto=A.kids.length-1; drawAlta(); const c=root.querySelectorAll('.alkid'); if(c.length)c[c.length-1].scrollIntoView({block:'start'}); };
+  const am=root.querySelector('#altamas'); if(am)am.onclick=()=>{ guardarTecleado(A,root); A.kids.push(nuevoHijo()); A.abierto=A.kids.length-1; drawAlta(); const c=root.querySelectorAll('.alkid'); if(c.length)c[c.length-1].scrollIntoView({block:'start'}); };
   const i=A.abierto, k=A.kids[i]; if(!k||!root.querySelector('[data-kk="'+i+'.nombre"]'))return;
   root.querySelectorAll('[data-kk]').forEach(inp=>{ const [n,c]=inp.dataset.kk.split('.'); inp.oninput=()=>{ A.kids[+n][c]=inp.value; resumenAlta(); }; });
   const nmI=root.querySelector('[data-kk="'+i+'.nombre"]'); nmI.onchange=()=>{ k.nombre=nmI.value; drawAlta(); };
@@ -1176,51 +1199,51 @@ function bindHijos(A,root){
 }
 /* Paso 3: cobro */
 function pasoCobro(A){
-  let h='<section class="card altasec"><h2>Cobro de hoy</h2>'+chips('apago',(A.sol&&A.sol.pagado?[['Stripe','Pagado en línea']]:[]).concat([['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['Pendiente','No paga hoy']]),A.pago)+(A.sol&&A.sol.pagado?'<div class="mut" style="font-size:12.5px;margin:-4px 0 8px">Ya pagó '+esc(A.sol.stripe||'')+' con tarjeta en línea: deja "Pagado en línea" para no cobrarle dos veces.</div>':'');
-  h+='<label class="mut">Empieza</label>'+chips('ames',[[A.mesAct,'Este mes ('+MESES[+A.mesAct.slice(5,7)-1]+')'],[A.mesSig,'Próximo mes ('+MESES[+A.mesSig.slice(5,7)-1]+')']],A.mes);
+  let h='<section class="card altasec"><h2>Cobro de hoy</h2>'+chips('apago',(A.sol&&A.sol.pagado?[['Stripe','Pagado en línea']]:[]).concat([['Efectivo','Efectivo'],['Tarjeta TPV','Tarjeta'],['Transferencia','Transferencia'],['Pendiente','No paga hoy']]),A.pago)+(A.sol&&A.sol.pagado?'<div class="mut" style="font-size:12.5px;margin:-4px 0 8px">Ya pagó '+esc(A.sol.stripe||'')+' con tarjeta en línea: deja "Pagado en línea" para no cobrarle dos veces.</div>':'');
+  h+='<label class="mut">Empieza</label>'+chips('ames',[[A.mesAct,'Este mes ('+MESES[+A.mesAct.slice(5,7)-1]+')'],[A.mesSig,'Próximo mes ('+MESES[+A.mesSig.slice(5,7)-1]+')']],A.mes)+(A.desde&&A.desde.slice(0,8)+'01'===A.mes?'<div class="mut" style="font-size:12.5px;margin:-4px 0 8px">Primer día de clase: '+esc(fmtFecha(A.desde))+' (lo eligió en la solicitud).</div>':'')+'<div class="mut" style="font-size:12px;margin:-2px 0 8px">Si empieza a mitad de mes se cobra proporcional: precio del plan entre sus clases, por las clases que le quedan.</div>';
   h+='<label class="chk"><input type="checkbox" id="altaagendar"'+(A.agendar?' checked':'')+'> Reservar sus clases del mes</label></section>';
-  A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); const rest=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>k.dias.has(d)),pl[1]); const aviso=A.mes===A.mesAct&&rest.length<pl[1];
+  A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); const rest=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>k.dias.has(d)),pl[1]); const rest2=clasesRestantes(A.mes,DIAS_CLASE.filter(d=>k.dias.has(d)),pl[1],A.desde); const aviso=rest2.length<pl[1]; if(A.desde)rest.splice(0,rest.length,...rest2);
     h+='<section class="card altasec"><h2>'+esc(k.nombre||'Alumno '+(i+1))+'</h2><div class="mut" style="font-size:12.5px;margin:-4px 0 8px">'+esc(pl[0])+' · '+(pl[1]/4)+' por semana · '+DIAS_CLASE.filter(d=>k.dias.has(d)).map(d=>d.slice(0,3)).join(', ')+'</div>';
-    if(A.agendar)h+='<div class="mut" style="font-size:12.5px;margin-bottom:8px'+(aviso?';color:var(--amber)':'')+'">'+(rest.length?'Se reservan '+rest.length+' clase'+(rest.length===1?'':'s')+': '+rest.slice(0,6).map(fmtFecha).join(', ')+(rest.length>6?'…':''):'No quedan clases de esos días este mes.')+(aviso?' Quedan menos clases que las del plan: ajusta el monto o empieza el próximo mes.':'')+'</div>';
-    if(A.pago!=='Pendiente')h+='<div class="altagrid"><div><label class="mut" for="al_'+i+'_montoM">Mensualidad</label><input class="field" id="al_'+i+'_montoM" data-kk="'+i+'.montoM" type="number" min="0" step="50" inputmode="numeric" value="'+esc(k.montoM!==''?k.montoM:String(pl[2]))+'"></div><div><label class="chk" style="margin:0 0 6px"><input type="checkbox" data-kinsc="'+i+'"'+(k.insc?' checked':'')+'> Inscripción anual</label><input class="field" data-kk="'+i+'.montoI" type="number" min="0" step="50" inputmode="numeric" value="'+esc(k.montoI)+'"'+(k.insc?'':' disabled')+' aria-label="Monto de inscripción"></div></div>';
+    if(A.agendar)h+='<div class="mut" style="font-size:12.5px;margin-bottom:8px'+(aviso?';color:var(--amber)':'')+'">'+(rest.length?'Se reservan '+rest.length+' clase'+(rest.length===1?'':'s')+': '+rest.slice(0,6).map(fmtFecha).join(', ')+(rest.length>6?'…':''):'No quedan clases de esos días este mes.')+(aviso&&rest.length?' Proporcional: '+rest.length+' × $'+(pl[2]/pl[1]).toLocaleString('es-MX',{maximumFractionDigits:2})+' = '+$$(montoMes(A,k))+'; desde el mes siguiente '+$$(pl[2])+'.':aviso?' No quedan clases: elige el próximo mes.':'')+'</div>';
+    if(A.pago!=='Pendiente')h+='<div class="altagrid"><div><label class="mut" for="al_'+i+'_montoM">Mensualidad</label><input class="field" id="al_'+i+'_montoM" data-kk="'+i+'.montoM" type="number" min="0" step="50" inputmode="numeric" value="'+esc(k.montoM!==''?k.montoM:String(montoMes(A,k)))+'"></div><div><label class="chk" style="margin:0 0 6px"><input type="checkbox" data-kinsc="'+i+'"'+(k.insc?' checked':'')+'> Inscripción anual</label><input class="field" data-kk="'+i+'.montoI" type="number" min="0" step="50" inputmode="numeric" value="'+esc(k.montoI)+'"'+(k.insc?'':' disabled')+' aria-label="Monto de inscripción"></div></div>';
     h+='</section>'; });
-  { let tot=0; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); tot+=(Number(k.montoM!==''?k.montoM:pl[2])||0)+((k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0); }); h+='<div class="card altasec" style="display:flex;justify-content:space-between;align-items:center"><b>'+(A.pago==='Pendiente'?'Queda pendiente':'Total a cobrar hoy')+'</b><b style="font-size:18px" id="altatotal">'+$$(tot)+'</b></div>'; }
+  { let tot=0; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); tot+=(montoKid(A,k)||0)+((k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0); }); h+='<div class="card altasec" style="display:flex;justify-content:space-between;align-items:center"><b>'+(A.pago==='Pendiente'?'Queda pendiente':'Total a cobrar hoy')+'</b><b style="font-size:18px" id="altatotal">'+$$(tot)+'</b></div>'; }
   if(A.pago==='Pendiente')h+='<div class="mut" style="font-size:12.5px;margin-bottom:10px">Las mensualidades quedan pendientes (aparecen en "Quién debe"). La inscripción no se registra: cóbrala después desde la ficha.</div>';
   return h+pieAlta(A,[],'Continuar al acuerdo');
 }
 function bindCobro(A,root){
   bindPie(A,root,()=>faltasCobro(A),()=>{ A.paso=4; if(!A.ac.firmante)A.ac.firmante=nombreTutorAlta(A); drawAlta(); });
-  bindChips(root,'apago',v=>{ A.pago=v; drawAlta(); }); bindChips(root,'ames',v=>{ A.mes=v; drawAlta(); });
+  bindChips(root,'apago',v=>{ A.pago=v; drawAlta(); }); bindChips(root,'ames',v=>{ A.mes=v; A.kids.forEach(k=>{ if(!A.sol)k.montoM=''; }); drawAlta(); });
   root.querySelector('#altaagendar').onchange=e=>{ A.agendar=e.target.checked; drawAlta(); };
   root.querySelectorAll('[data-kinsc]').forEach(c=>c.onchange=()=>{ A.kids[+c.dataset.kinsc].insc=c.checked; drawAlta(); });
-  const tt=root.querySelector('#altatotal'); const retot=()=>{ let tot=0; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); tot+=(Number(k.montoM!==''?k.montoM:pl[2])||0)+((k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0); }); if(tt)tt.textContent=$$(tot); };
+  const tt=root.querySelector('#altatotal'); const retot=()=>{ let tot=0; A.kids.forEach((k,i)=>{ if(A.res[i]&&A.res[i].ok!==false)return; const pl=planDe(k); tot+=(montoKid(A,k)||0)+((k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0); }); if(tt)tt.textContent=$$(tot); };
   root.querySelectorAll('[data-kk]').forEach(inp=>{ const [n,c]=inp.dataset.kk.split('.'); inp.oninput=()=>{ A.kids[+n][c]=inp.value; resumenAlta(); retot(); }; });
 }
 /* Paso 4: acuerdo. Se lee y firma en la tablet; no se redibuja al marcar casillas para no perder el scroll. */
 function pasoAcuerdo(A){
-  const ac=A.ac, t=A.tutorSel||A.t, kids=A.kids;
+  const ac=A.ac, t=A.tutorSel||A.t, kids=A.kids, T=acuerdoTexto(A.adulto);
   const dato=(k,v)=>'<div class="acdato"><span>'+k+'</span><b>'+(v?esc(v):'—')+'</b></div>';
-  let h='<section class="card altasec acuerdo"><div class="acentrega"><i class="ti ti-hand-finger" aria-hidden="true"></i> Entrega la tablet al tutor para que lea y firme.</div>';
-  h+='<h2 class="actit">Acuerdo General de Inscripción y Responsiva</h2><p>'+esc(ACUERDO.intro)+'</p>';
+  let h='<section class="card altasec acuerdo"><div class="acentrega"><i class="ti ti-hand-finger" aria-hidden="true"></i> Entrega la tablet al '+(A.adulto?'participante':'tutor')+' para que lea y firme.</div>';
+  h+='<h2 class="actit">'+esc(acuerdoTitulo(A.adulto))+'</h2><p>'+esc(T.intro)+'</p>';
   h+='<h3>1. Ficha de inscripción y confirmación de datos</h3>';
-  kids.forEach((k,i)=>{ const b=A.bl.find(x=>x.id===k.hid); const pl=planDe(k); h+='<div class="acbloque"><div class="acsub">Alumno '+(kids.length>1?(i+1):'')+'</div>'+dato('Nombre',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+' ('+edadKid(k)+' años)':'')+dato('Alergias',k.alergias)+dato('Programa',k.prog)+dato('Horario',b?nombreSinGenero(b.nombre):'')+dato('Días',DIAS_CLASE.filter(d=>k.dias.has(d)).join(', '))+dato('Membresía',pl[1]+' clases al mes ('+(pl[1]/4)+' por semana) · '+pl[0]+' · $'+Number(k.montoM!==''?k.montoM:pl[2]).toLocaleString('es-MX'))+(k.obs?dato('Observaciones',k.obs):'')+'</div>'; });
-  h+='<div class="acbloque"><div class="acsub">Padre, madre o tutor legal</div>'+dato('Nombre',t.nombre)+(A.tutorSel?'':dato('Relación',t.parentesco)+dato('Celular',t.whatsapp)+dato('Correo',t.email)+(t.direccion?dato('Dirección',t.direccion):'')+dato('Contacto de emergencia',[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':'',t.telefono_emergencia].filter(Boolean).join(' ')))+'</div>';
+  kids.forEach((k,i)=>{ const b=A.bl.find(x=>x.id===k.hid); const pl=planDe(k); h+='<div class="acbloque"><div class="acsub">'+(A.adulto?'Participante':'Alumno '+(kids.length>1?(i+1):''))+'</div>'+dato('Nombre',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+' ('+edadKid(k)+' años)':'')+dato('Alergias',k.alergias)+dato('Programa',k.prog)+dato('Horario',b?nombreSinGenero(b.nombre):'')+dato('Días',DIAS_CLASE.filter(d=>k.dias.has(d)).join(', '))+dato('Membresía',pl[1]+' clases al mes ('+(pl[1]/4)+' por semana) · '+pl[0]+' · $'+montoKid(A,k).toLocaleString('es-MX'))+(k.obs?dato('Observaciones',k.obs):'')+'</div>'; });
+  h+='<div class="acbloque"><div class="acsub">'+(A.adulto?'Contacto':'Padre, madre o tutor legal')+'</div>'+dato('Nombre',t.nombre)+(A.tutorSel?'':(A.adulto?'':dato('Relación',t.parentesco))+dato('Celular',t.whatsapp)+dato('Correo',t.email)+(t.direccion?dato('Dirección',t.direccion):'')+dato('Contacto de emergencia',[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':'',t.telefono_emergencia].filter(Boolean).join(' ')))+'</div>';
   h+='<p class="acnota">¿Algún dato está mal? Regresa la tablet a recepción para corregirlo antes de firmar.</p>';
-  h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(ACUERDO.veracidad)+'</span></label>';
-  h+=acuerdoCuerpo(ac);
+  h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(T.veracidad)+'</span></label>';
+  h+=acuerdoCuerpo(ac,A.adulto);
   h+='</section>';
-  h+='<label class="chk"><input type="checkbox" id="acpapel"'+(ac.papel?' checked':'')+'> El tutor no puede firmar ahora: firmará en papel después</label>'+(ac.papel?'<div class="mut" style="font-size:12.5px;color:var(--danger);margin:-4px 0 10px">Sin responsiva firmada no puede entrar a clase: el kiosco lo mandará a recepción. Al terminar podrás imprimir el acuerdo con sus datos para que lo firme.</div>':'');
+  h+='<label class="chk"><input type="checkbox" id="acpapel"'+(ac.papel?' checked':'')+'> '+(A.adulto?'El participante':'El tutor')+' no puede firmar ahora: firmará en papel después</label>'+(ac.papel?'<div class="mut" style="font-size:12.5px;color:var(--danger);margin:-4px 0 10px">Sin responsiva firmada no puede entrar a clase: el kiosco lo mandará a recepción. Al terminar podrás imprimir el acuerdo con sus datos para que lo firme.</div>':'');
   h+='<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="altaatras"><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button><button type="button" class="btn pri" id="altasig"><i class="ti ti-signature" aria-hidden="true"></i> '+(ac.papel?'Dar de alta sin firma':'Firmar y dar de alta')+(A.kids.length>1?' ('+A.kids.length+')':'')+'</button></div></div>';
   return h;
 }
 /* Secciones 2 a 4 y aceptación: las comparten el alta y la firma desde la ficha. */
-function acuerdoCuerpo(ac){
-  let h='';
-  h+='<h3>2. Reglamento interno</h3><p>'+esc(ACUERDO.reglamentoIntro)+'</p><ol class="acregla">'+ACUERDO.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol>';
-  h+='<label class="chk acchk"><input type="checkbox" data-ac="reglamento"'+(ac.reglamento?' checked':'')+'> <span>Acepto cumplir y hacer cumplir el reglamento interno.</span></label>';
-  h+='<h3>3. Autorización de uso de imagen</h3><p>'+esc(ACUERDO.imagen)+'</p><p class="acnota">'+esc(ACUERDO.imagenNota)+'</p><div class="chipsel acimg" data-grp="acimg">'+[['Autoriza','Sí autorizo'],['No autoriza','No autorizo']].map(o=>'<button type="button" class="chipo'+(ac.uso_imagen===o[0]?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div><div class="mut" style="font-size:12px;margin:-6px 0 10px">Es opcional: la inscripción no depende de esta respuesta.</div>';
-  h+='<h3>4. Carta responsiva</h3><p>'+esc(ACUERDO.responsiva)+'</p><label class="chk acchk"><input type="checkbox" data-ac="responsiva"'+(ac.responsiva?' checked':'')+'> <span>Acepto la carta responsiva.</span></label>';
-  h+='<h3>Aceptación</h3><p>'+esc(ACUERDO.aceptacion)+'</p><label class="mut" for="acfirmante">Nombre completo de quien firma</label><input class="field" id="acfirmante" value="'+esc(ac.firmante)+'" autocomplete="off">';
+function acuerdoCuerpo(ac,adulto){
+  const T=acuerdoTexto(adulto); let h='';
+  h+='<h3>2. Reglamento interno</h3><p>'+esc(T.reglamentoIntro)+'</p><ol class="acregla">'+T.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol>';
+  h+='<label class="chk acchk"><input type="checkbox" data-ac="reglamento"'+(ac.reglamento?' checked':'')+'> <span>'+(adulto?'Acepto cumplir el reglamento interno.':'Acepto cumplir y hacer cumplir el reglamento interno.')+'</span></label>';
+  h+='<h3>3. Autorización de uso de imagen</h3><p>'+esc(T.imagen)+'</p><p class="acnota">'+esc(T.imagenNota)+'</p><div class="chipsel acimg" data-grp="acimg">'+[['Autoriza','Sí autorizo'],['No autoriza','No autorizo']].map(o=>'<button type="button" class="chipo'+(ac.uso_imagen===o[0]?' on':'')+'" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div><div class="mut" style="font-size:12px;margin:-6px 0 10px">Es opcional: la inscripción no depende de esta respuesta.</div>';
+  h+=(adulto?'<h3>4. Declaración de salud y carta responsiva</h3><p>'+esc(T.salud)+'</p>':'<h3>4. Carta responsiva</h3>')+'<p>'+esc(T.responsiva)+'</p><label class="chk acchk"><input type="checkbox" data-ac="responsiva"'+(ac.responsiva?' checked':'')+'> <span>'+(adulto?'Acepto la declaración de salud y la carta responsiva.':'Acepto la carta responsiva.')+'</span></label>';
+  h+='<h3>Aceptación</h3><p>'+esc(T.aceptacion)+'</p><label class="mut" for="acfirmante">Nombre completo de quien firma</label><input class="field" id="acfirmante" value="'+esc(ac.firmante)+'" autocomplete="off">';
   h+='<div class="acfirmahead"><span class="mut">Firma</span><button type="button" class="btn" id="acborrar">Borrar firma</button></div><canvas id="acfirma" class="firmapad" aria-label="Firma del tutor: dibuja con el dedo"></canvas><div class="mut" style="font-size:12px;margin-top:4px">Fecha: '+esc(new Date().toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' · Mérida, Yucatán</div>';
   return h;
 }
@@ -1252,13 +1275,14 @@ function firmaSVG(d){ return /^M[\d .LM-]+$/.test(String(d||''))?'<svg viewBox="
 function payloadHijo(A,i){
   const k=A.kids[i], b=A.bl.find(x=>x.id===k.hid), pl=planDe(k), pagado=A.pago!=='Pendiente', esAd=k.prog==='FitParents';
   const p={alumno:{responsiva:!A.ac.papel,nombre:k.nombre.trim().replace(/\s+/g,' '),fecha_nacimiento:k.fn,genero:esAd?null:k.gen,alergias:k.alergias.trim(),observaciones:k.obs.trim(),programa:k.prog,horario_id:b.id,hora:horaDeNombre(b.nombre)||undefined,dias:DIAS_CLASE.filter(d=>k.dias.has(d))},
-    membresia:{plan:pl[0],mes:A.mes,estado_pago:pagado?'Pagado':'Pendiente',metodo:pagado?A.pago:undefined,monto:Number(k.montoM!==''?k.montoM:pl[2]),agendar:A.agendar},
+    membresia:{plan:pl[0],mes:A.mes,estado_pago:pagado?'Pagado':'Pendiente',metodo:pagado?A.pago:undefined,monto:montoKid(A,k),agendar:A.agendar},
     inscripcion:{cobrar:pagado&&k.insc,monto:Number(k.montoI)||0,metodo:pagado?A.pago:undefined}};
-  if(!A.ac.papel)p.acuerdo={veracidad:A.ac.veracidad,reglamento:A.ac.reglamento,responsiva:A.ac.responsiva,uso_imagen:A.ac.uso_imagen,firmante:A.ac.firmante.trim().replace(/\s+/g,' '),firma:A.ac.firma,version:ACUERDO_VERSION};
+  if(!A.ac.papel)p.acuerdo={veracidad:A.ac.veracidad,reglamento:A.ac.reglamento,responsiva:A.ac.responsiva,uso_imagen:A.ac.uso_imagen,firmante:A.ac.firmante.trim().replace(/\s+/g,' '),firma:A.ac.firma,version:A.adulto?ACUERDO_ADULTOS_VERSION:ACUERDO_VERSION};
   if(A.tutorSel)p.tutor_id=A.tutorSel.id; else if(A.tutorId)p.tutor_id=A.tutorId;
   else { const t=A.t; p.tutor={nombre:t.nombre.trim(),email:String(t.email).trim().toLowerCase(),whatsapp:'+52'+d10(t.whatsapp),parentesco:t.parentesco,direccion:String(t.direccion||'').trim(),contacto_emergencia:String(t.contacto_emergencia).trim(),relacion_emergencia:String(t.relacion_emergencia||'').trim(),telefono_emergencia:'+52'+d10(t.telefono_emergencia)}; }
   if(A.forzar[i])p.forzar=true;
   if(A.sol)p.solicitud_id=A.sol.id;
+  if(A.desde&&A.desde>A.hoy&&A.desde.slice(0,8)+'01'===A.mes)p.membresia.desde=A.desde;
   return p;
 }
 async function enviarAltas(){
@@ -1310,31 +1334,31 @@ function resumenAlta(){
   const A=ALTA, right=document.getElementById('rightcol'); if(!A||!right)return;
   const fila=(k,v)=>'<div class="venc" style="display:flex;justify-content:space-between;gap:8px"><span class="mut">'+k+'</span><span style="text-align:right">'+v+'</span></div>';
   let total=0, pend=0;
-  const kids=A.kids.map((k,i)=>{ const pl=planDe(k); const b=A.bl.find(x=>x.id===k.hid); const mM=Number(k.montoM!==''?k.montoM:pl[2])||0, mI=(k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0; if(A.pago==='Pendiente')pend+=mM; else total+=mM+mI;
+  const kids=A.kids.map((k,i)=>{ const pl=planDe(k); const b=A.bl.find(x=>x.id===k.hid); const mM=montoKid(A,k)||0, mI=(k.insc&&A.pago!=='Pendiente')?(Number(k.montoI)||0):0; if(A.pago==='Pendiente')pend+=mM; else total+=mM+mI;
     return '<div class="venc"><div class="nm">'+esc(k.nombre||'Alumno '+(i+1))+'</div><div class="mut">'+esc([b?nombreSinGenero(b.nombre):'',k.dias.size?DIAS_CLASE.filter(d=>k.dias.has(d)).map(d=>d.slice(0,3)).join(', '):'',pl[0]+' $'+pl[2]].filter(Boolean).join(' · '))+'</div></div>'; }).join('');
-  right.innerHTML='<h2>Resumen</h2>'+fila('Tutor',esc(nombreTutorAlta(A)||'—'))+kids+fila(A.pago==='Stripe'?'Pagado en línea':'Cobra hoy','<b>'+$$(total)+'</b>'+(A.pago==='Pendiente'?'<br><span class="mut">pendiente '+$$(pend)+'</span>':' · '+esc(A.pago==='Tarjeta TPV'?'tarjeta':A.pago==='Stripe'?'Stripe':'efectivo')))+fila('Acuerdo',A.ac.online?'firmado en línea':A.ac.papel?'<span style="color:var(--danger)">en papel después</span>':(A.paso===4&&!faltasAcuerdo(A).length?'listo para firmar':'pendiente'));
+  right.innerHTML='<h2>Resumen</h2>'+fila('Tutor',esc(nombreTutorAlta(A)||'—'))+kids+fila(A.pago==='Stripe'?'Pagado en línea':'Cobra hoy','<b>'+$$(total)+'</b>'+(A.pago==='Pendiente'?'<br><span class="mut">pendiente '+$$(pend)+'</span>':' · '+esc(A.pago==='Tarjeta TPV'?'tarjeta':A.pago==='Stripe'?'Stripe':A.pago==='Transferencia'?'transferencia':'efectivo')))+fila('Acuerdo',A.ac.online?'firmado en línea':A.ac.papel?'<span style="color:var(--danger)">en papel después</span>':(A.paso===4&&!faltasAcuerdo(A).length?'listo para firmar':'pendiente'));
 }
 /* ---- documento del acuerdo: firmado (alta o ficha) o en blanco para firmar en papel ---- */
 function datosAcuerdoAlta(A){
   const t=A.tutorSel||A.t;
-  return {tutor:{nombre:t.nombre,parentesco:t.parentesco||'',whatsapp:t.whatsapp||'',email:t.email||'',direccion:t.direccion||'',emergencia:A.tutorSel?'':[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':''].filter(Boolean).join(' '),tel_emergencia:A.tutorSel?'':t.telefono_emergencia},
+  return {adulto:!!A.adulto,tutor:{nombre:t.nombre,parentesco:t.parentesco||'',whatsapp:t.whatsapp||'',email:t.email||'',direccion:t.direccion||'',emergencia:A.tutorSel?'':[t.contacto_emergencia,t.relacion_emergencia?'('+t.relacion_emergencia+')':''].filter(Boolean).join(' '),tel_emergencia:A.tutorSel?'':t.telefono_emergencia},
     kids:A.kids.filter((k,i)=>A.res[i]&&A.res[i].ok!==false).map(k=>{ const b=A.bl.find(x=>x.id===k.hid); const pl=planDe(k); return {nombre:k.nombre,fn:k.fn,edad:edadKid(k),alergias:k.alergias,programa:k.prog,horario:b?nombreSinGenero(b.nombre):'',dias:DIAS_CLASE.filter(d=>k.dias.has(d)).join(', '),plan:pl[1]+' clases al mes ('+(pl[1]/4)+' por semana) · '+pl[0],obs:k.obs}; }),
-    ac:A.ac.papel?null:{uso_imagen:A.ac.uso_imagen,firmante:A.ac.firmante,firma:A.ac.firma,version:ACUERDO_VERSION,fecha:A.ac.online?A.ac.fecha:A.fecha}};
+    ac:A.ac.papel?null:{uso_imagen:A.ac.uso_imagen,firmante:A.ac.firmante,firma:A.ac.firma,version:A.adulto?ACUERDO_ADULTOS_VERSION:ACUERDO_VERSION,fecha:A.ac.online?A.ac.fecha:A.fecha}};
 }
 function imprimirAcuerdo(d){
-  const ac=d.ac, x=b=>ac?'☑':'☐';
+  const ac=d.ac, x=b=>ac?'☑':'☐'; const ad=!!d.adulto||!!(ac&&ac.version===ACUERDO_ADULTOS_VERSION), T=acuerdoTexto(ad);
   const dato=(k,v)=>'<tr><td class="pk">'+k+'</td><td>'+(v?esc(v):'<span class="plinea"></span>')+'</td></tr>';
-  let h='<div class="pcorte pacuerdo"><h1>Acuerdo General de Inscripción y Responsiva</h1><div class="psub">FITKID GYMNASTIC (FKM) · Mérida, Yucatán</div><p>'+esc(ACUERDO.intro)+'</p>';
+  let h='<div class="pcorte pacuerdo"><h1>'+esc(acuerdoTitulo(ad))+'</h1><div class="psub">FITKID GYMNASTIC (FKM) · Mérida, Yucatán</div><p>'+esc(T.intro)+'</p>';
   h+='<h2>1. Ficha de inscripción y confirmación de datos</h2>';
-  (d.kids.length?d.kids:[{}]).forEach((k,i,arr)=>{ h+='<h3>Datos del alumno'+(arr.length>1?' '+(i+1):'')+'</h3><table>'+dato('Nombre completo',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+(k.edad!=null?' ('+k.edad+' años)':''):'')+dato('Alergias (alimentos, medicamentos, otros)',k.alergias)+dato('Programa',k.programa)+dato('Horario',k.horario)+dato('Días',k.dias)+dato('Tipo de membresía',k.plan)+dato('Observaciones',k.obs||(ac?'Ninguna':''))+'</table>'; });
+  (d.kids.length?d.kids:[{}]).forEach((k,i,arr)=>{ h+='<h3>'+(ad?'Datos del participante':'Datos del alumno'+(arr.length>1?' '+(i+1):''))+'</h3><table>'+dato('Nombre completo',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+(k.edad!=null?' ('+k.edad+' años)':''):'')+dato('Alergias (alimentos, medicamentos, otros)',k.alergias)+dato('Programa',k.programa)+dato('Horario',k.horario)+dato('Días',k.dias)+dato('Tipo de membresía',k.plan)+dato('Observaciones',k.obs||(ac?'Ninguna':''))+'</table>'; });
   const t=d.tutor||{};
-  h+='<h3>Datos del padre, madre o tutor legal</h3><table>'+dato('Nombre completo',t.nombre)+dato('Relación con el alumno',t.parentesco)+dato('Teléfono celular',t.whatsapp)+dato('Correo electrónico',t.email)+dato('Dirección',t.direccion)+'</table><h3>Contacto de emergencia (diferente al tutor)</h3><table>'+dato('Nombre y relación',t.emergencia)+dato('Teléfono',t.tel_emergencia)+'</table>';
-  h+='<p class="pchk">'+x()+' <b>Declaración de veracidad:</b> '+esc(ACUERDO.veracidad)+'</p>';
-  h+='<h2>2. Reglamento interno</h2><p>'+esc(ACUERDO.reglamentoIntro)+'</p><ol>'+ACUERDO.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol><p class="pchk">'+x()+' Acepto cumplir y hacer cumplir el reglamento interno.</p>';
-  h+='<h2>3. Autorización de uso de imagen</h2><p>'+esc(ACUERDO.imagen)+'</p><p><i>'+esc(ACUERDO.imagenNota)+'</i></p><p class="pchk">'+(ac&&ac.uso_imagen==='Autoriza'?'☑':'☐')+' Sí autorizo &nbsp;&nbsp; '+(ac&&ac.uso_imagen==='No autoriza'?'☑':'☐')+' No autorizo</p>';
-  h+='<h2>4. Carta responsiva</h2><p>'+esc(ACUERDO.responsiva)+'</p><p class="pchk">'+x()+' Acepto la carta responsiva.</p>';
-  h+='<h2>Aceptación</h2><p>'+esc(ACUERDO.aceptacion)+'</p><table>'+dato('Nombre completo del padre/tutor',ac?ac.firmante:'')+'</table><div class="pfirmabox">'+(ac&&ac.firma?firmaSVG(ac.firma):'')+'<div class="pfirmalinea">Firma</div></div>';
-  h+='<div class="pmeta">'+(ac?'Aceptado digitalmente el '+esc(new Date(ac.fecha||Date.now()).toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' en recepción · versión del acuerdo '+esc(ac.version||'')+'.':'Fecha: ____________________')+'</div></div>';
+  h+=(ad?'<h3>Datos de contacto</h3><table>':'<h3>Datos del padre, madre o tutor legal</h3><table>'+dato('Nombre completo',t.nombre)+dato('Relación con el alumno',t.parentesco))+dato('Teléfono celular',t.whatsapp)+dato('Correo electrónico',t.email)+dato('Dirección',t.direccion)+'</table><h3>Contacto de emergencia ('+(ad?'otra persona':'diferente al tutor')+')</h3><table>'+dato('Nombre y relación',t.emergencia)+dato('Teléfono',t.tel_emergencia)+'</table>';
+  h+='<p class="pchk">'+x()+' <b>Declaración de veracidad:</b> '+esc(T.veracidad)+'</p>';
+  h+='<h2>2. Reglamento interno</h2><p>'+esc(T.reglamentoIntro)+'</p><ol>'+T.reglamento.map(r=>'<li><b>'+esc(r[0])+':</b> '+esc(r[1])+'</li>').join('')+'</ol><p class="pchk">'+x()+' '+(ad?'Acepto cumplir el reglamento interno.':'Acepto cumplir y hacer cumplir el reglamento interno.')+'</p>';
+  h+='<h2>3. Autorización de uso de imagen</h2><p>'+esc(T.imagen)+'</p><p><i>'+esc(T.imagenNota)+'</i></p><p class="pchk">'+(ac&&ac.uso_imagen==='Autoriza'?'☑':'☐')+' Sí autorizo &nbsp;&nbsp; '+(ac&&ac.uso_imagen==='No autoriza'?'☑':'☐')+' No autorizo</p>';
+  h+=(ad?'<h2>4. Declaración de salud y carta responsiva</h2><p>'+esc(T.salud)+'</p>':'<h2>4. Carta responsiva</h2>')+'<p>'+esc(T.responsiva)+'</p><p class="pchk">'+x()+' '+(ad?'Acepto la declaración de salud y la carta responsiva.':'Acepto la carta responsiva.')+'</p>';
+  h+='<h2>Aceptación</h2><p>'+esc(T.aceptacion)+'</p><table>'+dato(ad?'Nombre completo del participante':'Nombre completo del padre/tutor',ac?ac.firmante:'')+'</table><div class="pfirmabox">'+(ac&&ac.firma?firmaSVG(ac.firma):'')+'<div class="pfirmalinea">Firma</div></div>';
+  h+='<div class="pmeta">'+(ac?'Aceptado digitalmente el '+esc(new Date(ac.fecha||Date.now()).toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}))+' · versión del acuerdo '+esc(ac.version||'')+'.':'Fecha: ____________________')+'</div></div>';
   imprimirDoc(h);
 }
 /* Firma del acuerdo para alumnos que ya estaban inscritos: desde la ficha, con sus hermanos (mismo tutor) a la vez. */
@@ -1343,22 +1367,24 @@ function firmarAcuerdoFicha(){
   const r=FICHA&&FICHA.r; if(!r)return; const al=r.al||{}, t=r.tutor;
   if(!t){ toast('El alumno no tiene tutor vinculado: captúralo antes en "Verificar datos"',''); return; }
   const principal={id:FICHA.id,nombre:al.nombre,fn:al.fecha_nacimiento,alergias:al.alergias,programa:al.programa,horario:r.horario?nombreSinGenero(r.horario.nombre):'',dias:(al.dias||[]).join(', '),plan:r.mem&&r.mem.creditos?r.mem.creditos+' clases al mes · '+r.mem.plan:'',obs:al.observaciones,acuerdo:al.acuerdo,sel:true};
-  const hermanos=(r.hermanos||[]).map(x=>({id:x.id,nombre:x.nombre,fn:x.fecha_nacimiento,alergias:x.alergias,dias:(x.dias||[]).join(', '),acuerdo:x.acuerdo,sel:!x.acuerdo&&x.estatus!=='Suspendido'}));
-  FIRMA={kids:[principal].concat(hermanos),t:t,ac:{veracidad:false,reglamento:false,responsiva:false,uso_imagen:'',firmante:t.nombre||'',trazos:[],firma:''},volver:FICHA.id,listo:null};
+  const adulto=esFitParentsFicha(r);
+  const hermanos=adulto?[]:(r.hermanos||[]).map(x=>({id:x.id,nombre:x.nombre,fn:x.fecha_nacimiento,alergias:x.alergias,dias:(x.dias||[]).join(', '),acuerdo:x.acuerdo,sel:!x.acuerdo&&x.estatus!=='Suspendido'}));
+  FIRMA={adulto:adulto,kids:[principal].concat(hermanos),t:t,ac:{veracidad:false,reglamento:false,responsiva:false,uso_imagen:'',firmante:t.nombre||'',trazos:[],firma:''},volver:FICHA.id,listo:null};
   cerrarPanel(); drawFirmaFicha();
 }
 function drawFirmaFicha(){
   const F=FIRMA, center=document.getElementById('centercol'); if(!F||!center)return; const t=F.t, ac=F.ac;
   const dato=(k,v)=>'<div class="acdato"><span>'+k+'</span><b>'+(v?esc(v):'—')+'</b></div>';
+  const T=acuerdoTexto(F.adulto);
   let h='<div class="pagehead"><h1>Acuerdo de inscripción</h1><button type="button" class="btn" id="firvolver"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver a la ficha</button></div>';
   if(F.kids.length>1)h+='<section class="card altasec"><h2>¿Para quién firma?</h2>'+F.kids.map((k,i)=>'<label class="chk"><input type="checkbox" data-firk="'+i+'"'+(k.sel?' checked':'')+'> '+esc(k.nombre)+(k.acuerdo?' <span class="pill ok">ya firmado '+esc(fechaLargaDoc(String(k.acuerdo).slice(0,10)))+'</span>':'')+'</label>').join('')+'<div class="mut" style="font-size:12.5px">Hermanos con el mismo tutor. El tutor firma una vez por todos los marcados.</div></section>';
   const faltan=[!t.contacto_emergencia&&'contacto de emergencia',!t.direccion&&'dirección'].filter(Boolean);
-  h+='<section class="card altasec acuerdo"><div class="acentrega"><i class="ti ti-hand-finger" aria-hidden="true"></i> Entrega la tablet al tutor para que lea y firme.</div><h2 class="actit">Acuerdo General de Inscripción y Responsiva</h2><p>'+esc(ACUERDO.intro)+'</p><h3>1. Ficha de inscripción y confirmación de datos</h3>';
-  F.kids.forEach((k,i)=>{ const e=edadDe(k.fn); h+='<div class="acbloque" data-firb="'+i+'"'+(k.sel?'':' hidden')+'><div class="acsub">Alumno</div>'+dato('Nombre',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+(e!=null?' ('+e+' años)':''):'')+dato('Alergias',k.alergias)+(k.horario?dato('Horario',k.horario):'')+dato('Días',k.dias)+(k.plan?dato('Membresía',k.plan):'')+(k.obs?dato('Observaciones',k.obs):'')+'</div>'; });
-  h+='<div class="acbloque"><div class="acsub">Padre, madre o tutor legal</div>'+dato('Nombre',t.nombre)+dato('Relación',t.parentesco)+dato('Celular',t.whatsapp)+dato('Correo',t.email)+dato('Dirección',t.direccion)+dato('Contacto de emergencia',[t.contacto_emergencia,t.telefono_emergencia].filter(Boolean).join(' '))+'</div>';
+  h+='<section class="card altasec acuerdo"><div class="acentrega"><i class="ti ti-hand-finger" aria-hidden="true"></i> Entrega la tablet al '+(F.adulto?'participante':'tutor')+' para que lea y firme.</div><h2 class="actit">'+esc(acuerdoTitulo(F.adulto))+'</h2><p>'+esc(T.intro)+'</p><h3>1. Ficha de inscripción y confirmación de datos</h3>';
+  F.kids.forEach((k,i)=>{ const e=edadDe(k.fn); h+='<div class="acbloque" data-firb="'+i+'"'+(k.sel?'':' hidden')+'><div class="acsub">'+(F.adulto?'Participante':'Alumno')+'</div>'+dato('Nombre',k.nombre)+dato('Fecha de nacimiento',k.fn?fechaLargaDoc(k.fn)+(e!=null?' ('+e+' años)':''):'')+dato('Alergias',k.alergias)+(k.horario?dato('Horario',k.horario):'')+dato('Días',k.dias)+(k.plan?dato('Membresía',k.plan):'')+(k.obs?dato('Observaciones',k.obs):'')+'</div>'; });
+  h+='<div class="acbloque"><div class="acsub">'+(F.adulto?'Contacto':'Padre, madre o tutor legal')+'</div>'+dato('Nombre',t.nombre)+(F.adulto?'':dato('Relación',t.parentesco))+dato('Celular',t.whatsapp)+dato('Correo',t.email)+dato('Dirección',t.direccion)+dato('Contacto de emergencia',[t.contacto_emergencia,t.telefono_emergencia].filter(Boolean).join(' '))+'</div>';
   h+=faltan.length?'<p class="acnota" style="color:var(--amber)">Falta '+faltan.join(' y ')+'. Puedes firmar así, pero conviene capturarlo en "Verificar datos".</p>':'<p class="acnota">¿Algún dato está mal? Regresa la tablet a recepción para corregirlo antes de firmar.</p>';
-  h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(ACUERDO.veracidad)+'</span></label>';
-  h+=acuerdoCuerpo(ac)+'</section>';
+  h+='<label class="chk acchk"><input type="checkbox" data-ac="veracidad"'+(ac.veracidad?' checked':'')+'> <span><b>Declaración de veracidad.</b> '+esc(T.veracidad)+'</span></label>';
+  h+=acuerdoCuerpo(ac,F.adulto)+'</section>';
   h+='<div class="alpie"><div id="altaerr" role="alert" class="mut" style="color:var(--danger);font-size:13px"></div><div class="alpiebtn"><button type="button" class="btn" id="firvolver2">Cancelar</button><button type="button" class="btn pri" id="firok"><i class="ti ti-signature" aria-hidden="true"></i> Firmar acuerdo</button></div></div>';
   center.innerHTML=h; center.scrollTop=0;
   const volver=()=>{ const id=F.volver; FIRMA=null; shell(); verFichaAlumno(id); };
@@ -1374,11 +1400,11 @@ function drawFirmaFicha(){
     if(f.length){ err.textContent='Falta: '+f.join(', ')+'.'; return; }
     const btn=e.currentTarget; btn.disabled=true; btn.innerHTML='Guardando…'; err.textContent='';
     ac.firma=trazoSVG(ac.trazos);
-    const r=await call('registrar_acuerdo',{alumno_ids:sel.map(k=>k.id),acuerdo:{veracidad:true,reglamento:true,responsiva:true,uso_imagen:ac.uso_imagen,firmante:ac.firmante.trim().replace(/\s+/g,' '),firma:ac.firma,version:ACUERDO_VERSION}});
+    const r=await call('registrar_acuerdo',{alumno_ids:sel.map(k=>k.id),acuerdo:{veracidad:true,reglamento:true,responsiva:true,uso_imagen:ac.uso_imagen,firmante:ac.firmante.trim().replace(/\s+/g,' '),firma:ac.firma,version:F.adulto?ACUERDO_ADULTOS_VERSION:ACUERDO_VERSION}});
     if(FIRMA!==F)return;
     if(!r||r.ok===false){ btn.disabled=false; btn.innerHTML='<i class="ti ti-signature" aria-hidden="true"></i> Firmar acuerdo'; err.textContent='No se guardó: '+((r&&r.error)||'error de red'); return; }
     DIRECTORIO=null; BASE=null;
-    const datos={tutor:{nombre:t.nombre,parentesco:t.parentesco,whatsapp:t.whatsapp,email:t.email,direccion:t.direccion,emergencia:t.contacto_emergencia,tel_emergencia:t.telefono_emergencia},kids:sel,ac:{uso_imagen:ac.uso_imagen,firmante:ac.firmante,firma:ac.firma,version:ACUERDO_VERSION,fecha:r.fecha}};
+    const datos={adulto:F.adulto,tutor:{nombre:t.nombre,parentesco:t.parentesco,whatsapp:t.whatsapp,email:t.email,direccion:t.direccion,emergencia:t.contacto_emergencia,tel_emergencia:t.telefono_emergencia},kids:sel,ac:{uso_imagen:ac.uso_imagen,firmante:ac.firmante,firma:ac.firma,version:F.adulto?ACUERDO_ADULTOS_VERSION:ACUERDO_VERSION,fecha:r.fecha}};
     center.innerHTML='<div class="pagehead"><h1>Acuerdo firmado</h1></div><div class="card altasec"><ul class="altares">'+sel.map(k=>'<li class="ok"><i class="ti ti-circle-check" aria-hidden="true"></i> '+esc(k.nombre)+'</li>').join('')+'<li class="'+(ac.uso_imagen==='Autoriza'?'ok':'dng')+'"><i class="ti '+(ac.uso_imagen==='Autoriza'?'ti-camera':'ti-camera-off')+'" aria-hidden="true"></i> '+(ac.uso_imagen==='Autoriza'?'Autoriza fotos y videos':'No autoriza fotos ni videos')+'</li></ul><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="btn pri" id="firimp"><i class="ti ti-printer" aria-hidden="true"></i> Imprimir acuerdo</button><button type="button" class="btn" id="firfin">Volver a la ficha</button></div></div>';
     center.querySelector('#firimp').onclick=()=>imprimirAcuerdo(datos); center.querySelector('#firfin').onclick=volver;
   };
@@ -1386,7 +1412,7 @@ function drawFirmaFicha(){
 /* Reimpresión desde la ficha con lo que quedó guardado en Notion. */
 function imprimirAcuerdoFicha(){
   const r=FICHA&&FICHA.r; if(!r)return; const al=r.al||{}, t=r.tutor||{}, mem=r.mem;
-  imprimirAcuerdo({tutor:{nombre:t.nombre,parentesco:t.parentesco,whatsapp:t.whatsapp,email:t.email,direccion:t.direccion,emergencia:t.contacto_emergencia,tel_emergencia:t.telefono_emergencia},
+  imprimirAcuerdo({adulto:esFitParentsFicha(r),tutor:{nombre:t.nombre,parentesco:t.parentesco,whatsapp:t.whatsapp,email:t.email,direccion:t.direccion,emergencia:t.contacto_emergencia,tel_emergencia:t.telefono_emergencia},
     kids:[{nombre:al.nombre,fn:al.fecha_nacimiento,edad:typeof al.edad==='number'?al.edad:null,alergias:al.alergias,programa:al.programa,horario:r.horario?nombreSinGenero(r.horario.nombre):'',dias:(al.dias||[]).join(', '),plan:mem&&mem.creditos?mem.creditos+' clases al mes · '+mem.plan:'',obs:al.observaciones}],
     ac:al.acuerdo?{uso_imagen:al.uso_imagen,firmante:al.acuerdo_firmante,firma:al.firma,version:al.acuerdo_version,fecha:al.acuerdo}:null});
 }
@@ -1396,7 +1422,7 @@ function imprimirAcuerdoFicha(){
    Cada consulta es una ejecución de n8n y el plan tiene tope mensual; por eso "Actualizar" es explícito. */
 let VENTAS=null, VENTAS_TAB='corte', VENTAS_FECHA=null;
 const $$=n=>'$'+Math.round(Number(n)||0).toLocaleString('es-MX');
-const METODO_CORTO={'Efectivo (persona)':'Efectivo','Tarjeta (persona / TPV)':'Tarjeta TPV','Tarjeta (online / Stripe)':'Stripe'};
+const METODO_CORTO={'Efectivo (persona)':'Efectivo','Tarjeta (persona / TPV)':'Tarjeta TPV','Tarjeta (online / Stripe)':'Stripe','Transferencia':'Transferencia'};
 async function ventas(forzar){
   const center=document.getElementById('centercol'), right=document.getElementById('rightcol');
   if(!VENTAS_FECHA)VENTAS_FECHA=new Date().toLocaleDateString('en-CA');
@@ -1411,7 +1437,7 @@ async function ventas(forzar){
 function drawVentas(){
   const V=VENTAS, center=document.getElementById('centercol'), right=document.getElementById('rightcol'); if(!V||!center)return;
   const deuda=V.adeudos.reduce((s,a)=>s+(Number(a.monto)||0),0); const esHoy=V.fecha===V.hoy;
-  const tabs=[['corte','Corte del día'],['debe','Quién debe ('+V.adeudos.length+')'],['sinmem','Sin membresía ('+V.sin_membresia.length+')'],['aforo','Aforo'],['mes','Mes']];
+  const tabs=[['corte','Corte del día'],['debe','Quién debe ('+V.adeudos.length+')'],['sinmem','Por renovar ('+V.sin_membresia.length+')'],['aforo','Aforo'],['mes','Mes']];
   let h='<div class="pagehead"><h1>Ventas</h1><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="date" class="field" id="vfecha" value="'+esc(V.fecha)+'" max="'+esc(V.hoy)+'" style="margin:0;width:auto"><button type="button" class="btn" id="vact"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button></div></div>';
   h+='<div class="mut" style="font-size:12px;margin:-10px 0 14px">Datos de las '+V.cargado.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' · no se actualiza solo</div>';
   h+='<div class="statgrid"><div class="statcard"><div class="v">'+$$(V.corte.total)+'</div><div class="l">Cobrado '+(esHoy?'hoy':fmtFecha(V.fecha))+' · '+V.corte.n+' pago'+(V.corte.n===1?'':'s')+'</div></div><div class="statcard"><div class="v">'+$$(V.mes.total)+'</div><div class="l">Cobrado en '+esc(nombreMes(V.mes.mes))+'</div></div><div class="statcard"><div class="v">'+$$(deuda)+'</div><div class="l">Por cobrar · '+V.adeudos.length+' adeudo'+(V.adeudos.length===1?'':'s')+'</div></div><div class="statcard"><div class="v">'+V.sin_membresia.length+' <span style="font-size:13px;color:var(--muted);font-weight:500">de '+V.activos+'</span></div><div class="l">Activos sin membresía de '+esc(MESES[+V.fecha.slice(5,7)-1])+'</div></div></div>';
@@ -1433,8 +1459,9 @@ function drawVentas(){
     cuerpo.innerHTML=tabla([['Alumno'],['Concepto'],['Periodo'],['Monto',1],['']],rows,'Nadie debe nada registrado.')+'<div class="mut" style="font-size:12px;margin-top:6px">Membresías no marcadas como pagadas y pagos en estado Pendiente. El monto de mensualidad es el precio del plan.</div>';
   } else if(VENTAS_TAB==='sinmem'){
     const mesN=MESES[+V.fecha.slice(5,7)-1];
-    const rows=V.sin_membresia.map(a=>{ a.msg='Hola '+(a.tutor||'')+', le escribimos de FitKid Gymnastic para renovar la mensualidad de '+(a.alumno||'')+' de '+mesN+'.'; return '<tr><td><div class="nm">'+esc(a.alumno)+'</div><div class="mut">'+esc(a.cod||'')+'</div></td><td>'+(a.ultimo_mes?esc(nombreMes(a.ultimo_mes)):'<span class="pill warn">nunca</span>')+'</td><td>'+esc(a.tutor||'—')+'</td><td>'+acciones(a)+'</td></tr>'; });
-    cuerpo.innerHTML='<div class="mut" style="font-size:12.5px;margin-bottom:8px">Alumnos no suspendidos cuya última membresía es anterior a '+esc(mesN)+'. Renueva desde la ficha.</div>'+tabla([['Alumno'],['Última membresía'],['Tutor'],['']],rows,'Todos los activos tienen membresía de '+esc(mesN)+'.');
+    const rows=V.sin_membresia.map(a=>{ a.msg='Hola '+(a.tutor||'')+', le recordamos de FitKid Gymnastic que la mensualidad de '+(a.alumno||'')+' de '+mesN+(a.monto?' es de '+$$(a.monto)+(a.plan?' (plan '+a.plan+')':''):'')+'. Puede pagarla del 1 al 10 en recepción, por transferencia o con tarjeta. ¡Gracias!'; return '<tr><td><div class="nm">'+esc(a.alumno)+'</div><div class="mut">'+esc(a.cod||'')+'</div></td><td>'+(a.ultimo_mes?esc(nombreMes(a.ultimo_mes)):'<span class="pill warn">nunca</span>')+'</td><td>'+esc(a.plan||'—')+'</td><td class="num">'+(a.monto?$$(a.monto):'—')+'</td><td>'+esc(a.tutor||'—')+'</td><td>'+acciones(a)+'</td></tr>'; });
+    const dia=+String(V.hoy||V.fecha).slice(8,10);
+    cuerpo.innerHTML='<div class="mut" style="font-size:12.5px;margin-bottom:8px">Alumnos no suspendidos sin membresía de '+esc(mesN)+'. '+(dia<=10?'<b>Estamos en los días 1 al 10: mándales el recordatorio de pago.</b> ':'')+'El mes completo se cobra al precio del plan (el proporcional es solo para el mes en que entran). Renueva desde la ficha.</div>'+tabla([['Alumno'],['Última membresía'],['Plan'],['Monto',1],['Tutor'],['']],rows,'Todos los activos tienen membresía de '+esc(mesN)+'.');
   } else if(VENTAS_TAB==='aforo'){
     const bl=V.aforo.filter(b=>b.reservadas||b.cupo).sort((a,b)=>(minutosBloque(a.bloque)-minutosBloque(b.bloque))||String(a.nombre).localeCompare(String(b.nombre)));
     cuerpo.innerHTML=bl.length?'<div class="card" style="padding:4px 16px">'+bl.map(b=>{ const pc=b.cupo?Math.min(100,Math.round(b.reservadas/b.cupo*100)):0; return '<div class="vaforo"><div class="vaforo-t"><span class="nm">'+esc(nombreSinGenero(b.nombre))+chipGenero(b.genero?(b.genero==='Niña'?'Niñas':'Niños'):null)+'</span><span><b>'+b.reservadas+'</b>'+(b.cupo?' / '+b.cupo:'')+'</span></div>'+(b.cupo?'<div class="vbar"><i style="width:'+pc+'%"'+(pc>=100?' class="lleno"':'')+'></i></div>':'')+'<div class="mut" style="font-size:12px">'+b.asistio+' asistieron · '+b.falta+' faltas · '+b.pendiente+' sin marcar</div></div>'; }).join('')+'</div>':'<div class="placeholder">No hay clases reservadas '+(esHoy?'hoy':'ese día')+'.</div>';
@@ -1674,8 +1701,9 @@ function drawDocPanel(){
     right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">Abre la ficha del alumno; en "Últimos pagos" cada pago completado tiene su botón de imprimir.</div>');
     buscadorAlumno(right,a=>verFichaAlumno(a.id));
   } else if(DOC_SEL==='acuerdo'){
-    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">El acuerdo se firma en la tablet al dar de alta. Para alumnos que ya estaban inscritos, o si el tutor prefiere papel, imprime el formato en blanco.</div><button type="button" class="btn pri acbig" id="docimp"><i class="ti ti-printer" aria-hidden="true"></i> Formato en blanco</button><div class="mut" style="font-size:12.5px;margin:14px 0 8px">Para reimprimir uno firmado, abre la ficha del alumno:</div>');
+    right.insertAdjacentHTML('beforeend','<div class="mut" style="font-size:12.5px;margin-bottom:10px">El acuerdo se firma en la tablet al dar de alta. Para alumnos que ya estaban inscritos, o si el tutor prefiere papel, imprime el formato en blanco.</div><button type="button" class="btn pri acbig" id="docimp"><i class="ti ti-printer" aria-hidden="true"></i> Formato en blanco (niños)</button><button type="button" class="btn acbig" id="docimpad" style="margin-top:8px"><i class="ti ti-printer" aria-hidden="true"></i> Formato en blanco (adultos · FitParents)</button><div class="mut" style="font-size:12.5px;margin:14px 0 8px">Para reimprimir uno firmado, abre la ficha del alumno:</div>');
     right.querySelector('#docimp').onclick=()=>imprimirAcuerdo({tutor:{},kids:[{},{}],ac:null});
+    const da=right.querySelector('#docimpad'); if(da)da.onclick=()=>imprimirAcuerdo({adulto:true,tutor:{},kids:[{}],ac:null});
     buscadorAlumno(right,a=>verFichaAlumno(a.id));
   } else if(DOC_SEL==='imagen'){
     const no=BASE.activos.filter(a=>a.uso_imagen==='No autoriza'), sin=BASE.activos.filter(a=>!a.uso_imagen), si=BASE.activos.filter(a=>a.uso_imagen==='Autoriza');
